@@ -13,6 +13,7 @@
 // Vite ?raw imports → raw SQL strings. The Jest SQL transform (jest.sql-transform.js)
 // and the moduleNameMapper ("^(.+\\.sql)\\?raw$": "$1") together let this run in tests.
 import sql0000 from "@/db/migrations/0000_thick_eddie_brock.sql?raw";
+import sql0001 from "@/db/migrations/0001_name_normalized.sql?raw";
 import journal from "@/db/migrations/meta/_journal.json";
 
 /** Re-export the journal so runWorkerMigrations in db/client.ts can reuse it. */
@@ -51,6 +52,7 @@ interface MigrationRow {
 
 export const SQL_FILES: Record<string, string> = {
   "0000_thick_eddie_brock": sql0000,
+  "0001_name_normalized": sql0001,
 };
 
 // ---------------------------------------------------------------------------

@@ -19,11 +19,12 @@
 
 import Database from "better-sqlite3";
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, like } from "drizzle-orm";
 import { runWebMigrations, type MigratorExecutor } from "@/src/db/migrate.web";
 import * as schema from "@/db/schema";
 import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
 import { createDexieAdapter, type DexieAdapter } from "@/src/db/dexie-adapter";
+import { normalizeForSearch } from "@/lib/search";
 
 // ---------------------------------------------------------------------------
 // Shared backend interface
@@ -154,16 +155,16 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 
     async searchByName(query) {
       if (!query.trim()) return [];
-      // Normalize to NFKD + strip combining marks for accent-insensitive search.
-      // This mirrors the Dexie adapter's normalizeForSearch so both backends
-      // return identical results for Spanish food names (Jamón, Ñoquis, etc.).
-      const normalizeForSearch = (s: string) =>
-        s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      // Uses the real SQLite repo logic: search against name_normalized column
+      // with LIKE, exactly as db/repositories/foods.ts does. The shared
+      // normalizeForSearch helper ensures query and stored values are comparable.
       const normalizedQuery = normalizeForSearch(query);
-      const all = await db.select().from(schema.foods).limit(500);
-      return all
-        .filter((f) => normalizeForSearch(f.name).includes(normalizedQuery))
-        .slice(0, 30);
+      const rows = await db
+        .select()
+        .from(schema.foods)
+        .where(like(schema.foods.nameNormalized, `%${normalizedQuery}%`))
+        .limit(30);
+      return rows;
     },
 
     async getById(id) {
@@ -174,12 +175,14 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 
     async upsert(food) {
       // S2: .returning() → drizzle calls executor with method 'all'
+      const nameNormalized = normalizeForSearch(food.name);
       const rows = await db
-        .insert(schema.foods).values(food)
+        .insert(schema.foods).values({ ...food, nameNormalized })
         .onConflictDoUpdate({
           target: schema.foods.id,
           set: {
             name: food.name,
+            nameNormalized,
             brand: food.brand,
             caloriesPer100g: food.caloriesPer100g,
             proteinPer100g: food.proteinPer100g,
@@ -195,7 +198,8 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 
     async insert(food) {
       // S2: .returning() → drizzle calls executor with method 'all'
-      const rows = await db.insert(schema.foods).values(food).returning();
+      const nameNormalized = normalizeForSearch(food.name);
+      const rows = await db.insert(schema.foods).values({ ...food, nameNormalized }).returning();
       return rows[0];
     },
 
@@ -206,8 +210,12 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
     },
 
     async update(id, patch) {
+      const fullPatch: typeof patch & { nameNormalized?: string } = { ...patch };
+      if (patch.name !== undefined) {
+        fullPatch.nameNormalized = normalizeForSearch(patch.name);
+      }
       const rows = await db.update(schema.foods)
-        .set(patch)
+        .set(fullPatch)
         .where(eq(schema.foods.id, id))
         .returning();
       return rows[0];

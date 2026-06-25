@@ -35,11 +35,13 @@ export const foods = sqliteTable(
     servingSizeG: real("serving_size_g"),
     source: text("source", { enum: ["openfoodfacts", "custom"] }).notNull(),
     offProductCode: text("off_product_code"),
+    nameNormalized: text("name_normalized").notNull().default(""),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
     nameIdx: index("foods_name_idx").on(t.name),
     offCodeIdx: index("foods_off_code_idx").on(t.offProductCode),
+    nameNormalizedIdx: index("foods_name_normalized_idx").on(t.nameNormalized),
   })
 );
 

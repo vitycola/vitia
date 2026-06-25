@@ -16,6 +16,7 @@
 
 import Dexie, { type Table } from "dexie";
 import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
+import { normalizeForSearch } from "@/lib/search";
 
 // ---------------------------------------------------------------------------
 // IndexedDB table row types
@@ -45,7 +46,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -54,6 +55,7 @@ const DB_VERSION = 1;
  */
 const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0000_thick_eddie_brock", when: 1782165949458 },
+  { tag: "0001_name_normalized", when: 1782200000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -65,14 +67,28 @@ class VitiaDb extends Dexie {
   constructor(name: string) {
     super(name);
 
+    // Version 1: original schema (no nameNormalized)
+    this.version(1).stores({
+      foods: "id, name, source, offProductCode",
+      meal_entries: "id, date, [date+mealType], foodId",
+      users_profile: "id",
+      __drizzle_migrations: "++id, &tag",
+    });
+
+    // Version 2: adds nameNormalized index (0001_name_normalized migration)
     this.version(DB_VERSION).stores({
       // Dexie index syntax: first entry is the keyPath, subsequent are indexes
       // Primary keys + indexes mirror the SQLite schema exactly
-      foods: "id, name, source, offProductCode",
+      foods: "id, name, nameNormalized, source, offProductCode",
       meal_entries: "id, date, [date+mealType], foodId",
       users_profile: "id",
       // Migration tracking table
       __drizzle_migrations: "++id, &tag",
+    }).upgrade(async (trans) => {
+      // Backfill nameNormalized for any existing rows
+      await trans.table("foods").toCollection().modify((food) => {
+        food.nameNormalized = normalizeForSearch(food.name as string);
+      });
     });
   }
 }
@@ -159,28 +175,15 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     return new Date().toISOString();
   }
 
-  /**
-   * Normalize a string for accent-insensitive, case-insensitive comparison.
-   * Uses NFKD decomposition to strip combining diacritical marks so that
-   * "jamon" matches "Jamón" and "noquis" matches "Ñoquis" — covering the
-   * Spanish food names common in this app.
-   *
-   * This matches the behavior of the SQLite contract-test backend's
-   * accent-normalized searchByName, ensuring both paths return identical
-   * results for the same data (backend parity requirement).
-   */
-  function normalizeForSearch(s: string): string {
-    return s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  }
-
   const foods: FoodsRepo = {
     async searchByName(query) {
       if (!query.trim()) return [];
       const normalizedQuery = normalizeForSearch(query);
-      // Dexie doesn't have LIKE; use .filter() for accent+case-insensitive substring.
-      // Normalization via NFKD strips diacritics so "jamon" matches "Jamón".
+      // Search against the pre-computed nameNormalized field using filter().
+      // Both query and stored values are normalized via the shared helper,
+      // ensuring "jamon" matches "Jamón" and "noquis" matches "Ñoquis".
       return db.foods
-        .filter((f) => normalizeForSearch(f.name).includes(normalizedQuery))
+        .filter((f) => (f.nameNormalized ?? normalizeForSearch(f.name)).includes(normalizedQuery))
         .limit(30)
         .toArray();
     },
@@ -195,6 +198,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       const row: FoodRow = {
         id: food.id,
         name: food.name,
+        nameNormalized: normalizeForSearch(food.name),
         brand: food.brand ?? null,
         caloriesPer100g: food.caloriesPer100g,
         proteinPer100g: food.proteinPer100g ?? 0,
@@ -213,6 +217,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       const row: FoodRow = {
         id: food.id,
         name: food.name,
+        nameNormalized: normalizeForSearch(food.name),
         brand: food.brand ?? null,
         caloriesPer100g: food.caloriesPer100g,
         proteinPer100g: food.proteinPer100g ?? 0,
@@ -239,7 +244,11 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
 
     async update(id, patch) {
-      await db.foods.update(id, patch as Partial<FoodRow>);
+      const fullPatch: Partial<FoodRow> = { ...(patch as Partial<FoodRow>) };
+      if (patch.name !== undefined) {
+        fullPatch.nameNormalized = normalizeForSearch(patch.name);
+      }
+      await db.foods.update(id, fullPatch);
       // Return the updated row, or undefined when the id does not exist.
       // This matches the SQLite/proxy path which returns rows[0] (undefined on
       // no-match) without throwing — so both backends behave identically.

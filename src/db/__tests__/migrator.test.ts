@@ -58,15 +58,17 @@ describe("runWebMigrations", () => {
     expect(tables.map((t) => t.name)).toEqual(["foods", "meal_entries", "users_profile"]);
   });
 
-  it("records the migration tag in __drizzle_migrations after first run", async () => {
+  it("records all migration tags in __drizzle_migrations after first run", async () => {
     const { executor, db } = makeInMemoryExecutor();
     await runWebMigrations(executor);
 
     const rows = db
-      .prepare("SELECT tag FROM __drizzle_migrations")
+      .prepare("SELECT tag FROM __drizzle_migrations ORDER BY id")
       .all() as { tag: string }[];
-    expect(rows).toHaveLength(1);
+    // Two migrations: 0000 and 0001
+    expect(rows).toHaveLength(2);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
+    expect(rows[1].tag).toBe("0001_name_normalized");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -74,22 +76,34 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly one migration row — no duplicate inserts
+    // Still exactly two migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as { c: number };
-    expect(rows.c).toBe(1);
+    expect(rows.c).toBe(2);
   });
 
-  it("statement count matches the number of statement-breakpoints + 1 in the SQL file", async () => {
-    // The SQL file has 7 '--> statement-breakpoint' delimiters → 8 statements:
-    //   CREATE TABLE foods
-    //   CREATE INDEX foods_name_idx
-    //   CREATE INDEX foods_off_code_idx
-    //   CREATE TABLE meal_entries
-    //   CREATE INDEX meal_entries_date_idx
-    //   CREATE INDEX meal_entries_date_meal_idx
-    //   CREATE TABLE users_profile
-    // That's 7 statements (7 breakpoints = 8 parts, last may be empty).
-    // We verify by counting indexes created.
+  it("applies migrations in journal idx order (multi-migration ordered apply)", async () => {
+    const { executor, db } = makeInMemoryExecutor();
+    await runWebMigrations(executor);
+
+    // After both migrations the foods table must have the name_normalized column
+    const columns = db
+      .prepare("PRAGMA table_info(foods)")
+      .all() as { name: string }[];
+    const colNames = columns.map((c) => c.name);
+    expect(colNames).toContain("name_normalized");
+
+    // The index added by 0001 must also exist
+    const indexes = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")
+      .all() as { name: string }[];
+    const indexNames = indexes.map((i) => i.name);
+    expect(indexNames).toContain("foods_name_normalized_idx");
+  });
+
+  it("statement count — 0000 has 4 indexes, 0001 adds 1 more (5 total)", async () => {
+    // 0000: CREATE INDEX foods_name_idx, foods_off_code_idx,
+    //       meal_entries_date_idx, meal_entries_date_meal_idx = 4
+    // 0001: CREATE INDEX foods_name_normalized_idx = 1 more → 5 total
     const { executor, db } = makeInMemoryExecutor();
     await runWebMigrations(executor);
 
@@ -97,8 +111,7 @@ describe("runWebMigrations", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")
       .all() as { name: string }[];
 
-    // 2 foods indexes + 2 meal_entries indexes = 4 total
-    expect(indexes.length).toBe(4);
+    expect(indexes.length).toBe(5);
   });
 
   it("throws on hash drift — modified SQL content after migration applied", async () => {

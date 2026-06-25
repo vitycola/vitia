@@ -2,20 +2,23 @@ import { db } from "@/db/client";
 import { foods } from "@/db/schema";
 import type { Food, NewFood } from "@/db/schema";
 import { eq, like } from "drizzle-orm";
+import { normalizeForSearch } from "@/lib/search";
 
 const MAX_SEARCH_RESULTS = 30;
 
 /**
- * Search foods by name (case-insensitive LIKE %q%).
- * Returns local cache results including both OFF-sourced and custom foods.
+ * Search foods by name, accent-insensitive and case-insensitive.
+ * Matches against the pre-computed name_normalized column using LIKE so that
+ * "jamon" finds "Jamón" and "noquis" finds "Ñoquis".
  */
 export async function searchByName(query: string): Promise<Food[]> {
   if (!query.trim()) return [];
 
+  const normalizedQuery = normalizeForSearch(query);
   return db
     .select()
     .from(foods)
-    .where(like(foods.name, `%${query}%`))
+    .where(like(foods.nameNormalized, `%${normalizedQuery}%`))
     .limit(MAX_SEARCH_RESULTS);
 }
 
@@ -31,15 +34,18 @@ export async function getById(id: string): Promise<Food | null> {
 /**
  * Upsert an Open Food Facts food into the local cache.
  * On conflict (same id), updates all mutable fields so stale OFF data is refreshed.
+ * Always keeps name_normalized in sync with name.
  */
 export async function upsert(food: NewFood): Promise<Food> {
+  const nameNormalized = normalizeForSearch(food.name);
   const rows = await db
     .insert(foods)
-    .values(food)
+    .values({ ...food, nameNormalized })
     .onConflictDoUpdate({
       target: foods.id,
       set: {
         name: food.name,
+        nameNormalized,
         brand: food.brand,
         caloriesPer100g: food.caloriesPer100g,
         proteinPer100g: food.proteinPer100g,
@@ -57,9 +63,11 @@ export async function upsert(food: NewFood): Promise<Food> {
 /**
  * Insert a new custom food. Throws if a food with the same id already exists.
  * Use upsert() for OFF-sourced foods.
+ * Always computes name_normalized from name via the shared helper.
  */
 export async function insert(food: NewFood): Promise<Food> {
-  const rows = await db.insert(foods).values(food).returning();
+  const nameNormalized = normalizeForSearch(food.name);
+  const rows = await db.insert(foods).values({ ...food, nameNormalized }).returning();
   return rows[0];
 }
 
@@ -73,12 +81,18 @@ export async function getCustomFoods(): Promise<Food[]> {
 
 /**
  * Update specific fields of an existing food by id.
+ * If name is being updated, recomputes name_normalized automatically.
  * Returns the updated row.
  */
 export async function update(
   id: string,
   patch: Partial<Omit<NewFood, "id" | "createdAt">>
 ): Promise<Food> {
-  const rows = await db.update(foods).set(patch).where(eq(foods.id, id)).returning();
+  const fullPatch: Partial<Omit<NewFood, "id" | "createdAt">> & { nameNormalized?: string } =
+    { ...patch };
+  if (patch.name !== undefined) {
+    fullPatch.nameNormalized = normalizeForSearch(patch.name);
+  }
+  const rows = await db.update(foods).set(fullPatch).where(eq(foods.id, id)).returning();
   return rows[0];
 }
