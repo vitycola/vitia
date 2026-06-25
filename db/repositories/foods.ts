@@ -1,8 +1,8 @@
 import { db } from "@/db/client";
 import { foods } from "@/db/schema";
 import type { Food, NewFood } from "@/db/schema";
-import { eq, like } from "drizzle-orm";
 import { normalizeForSearch } from "@/lib/search";
+import { eq, like } from "drizzle-orm";
 
 const MAX_SEARCH_RESULTS = 30;
 
@@ -67,7 +67,10 @@ export async function upsert(food: NewFood): Promise<Food> {
  */
 export async function insert(food: NewFood): Promise<Food> {
   const nameNormalized = normalizeForSearch(food.name);
-  const rows = await db.insert(foods).values({ ...food, nameNormalized }).returning();
+  const rows = await db
+    .insert(foods)
+    .values({ ...food, nameNormalized })
+    .returning();
   return rows[0];
 }
 
@@ -88,8 +91,9 @@ export async function update(
   id: string,
   patch: Partial<Omit<NewFood, "id" | "createdAt">>
 ): Promise<Food> {
-  const fullPatch: Partial<Omit<NewFood, "id" | "createdAt">> & { nameNormalized?: string } =
-    { ...patch };
+  const fullPatch: Partial<Omit<NewFood, "id" | "createdAt">> & { nameNormalized?: string } = {
+    ...patch,
+  };
   if (patch.name !== undefined) {
     fullPatch.nameNormalized = normalizeForSearch(patch.name);
   }

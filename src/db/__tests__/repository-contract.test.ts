@@ -17,14 +17,21 @@
  *   - W2: Dexie tx adapter atomicity — insertBulk rollback test (Scenario 2.7)
  */
 
-import Database from "better-sqlite3";
-import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
-import { and, asc, eq, like } from "drizzle-orm";
-import { runWebMigrations, type MigratorExecutor } from "@/src/db/migrate.web";
 import * as schema from "@/db/schema";
-import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
-import { createDexieAdapter, type DexieAdapter } from "@/src/db/dexie-adapter";
+import type {
+  Food,
+  MealEntry,
+  NewFood,
+  NewMealEntry,
+  NewUserProfile,
+  UserProfile,
+} from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
+import { type DexieAdapter, createDexieAdapter } from "@/src/db/dexie-adapter";
+import { type MigratorExecutor, runWebMigrations } from "@/src/db/migrate.web";
+import Database from "better-sqlite3";
+import { and, asc, eq, like } from "drizzle-orm";
+import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
 
 // ---------------------------------------------------------------------------
 // Shared backend interface
@@ -63,7 +70,9 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
   const bsDb = new Database(":memory:");
 
   const migrationExecutor: MigratorExecutor = {
-    run(sql) { bsDb.exec(sql); },
+    run(sql) {
+      bsDb.exec(sql);
+    },
     query<T>(sql: string, params: unknown[] = []) {
       return bsDb.prepare(sql).all(...params) as T[];
     },
@@ -84,7 +93,7 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
   function execSync(
     sql: string,
     params: unknown[],
-    method: "run" | "all" | "get" | "values",
+    method: "run" | "all" | "get" | "values"
   ): { rows: unknown[][] } {
     const stmt = bsDb.prepare(sql);
     if (method === "run") {
@@ -104,7 +113,7 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
   const db = drizzleProxy(
     async (sql, params, method) =>
       execSync(sql, params, method as "run" | "all" | "get" | "values"),
-    { schema },
+    { schema }
   );
 
   /**
@@ -115,7 +124,10 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
   let txTail: Promise<void> = Promise.resolve();
   function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
     const next = txTail.then(() => fn());
-    txTail = next.then(() => {}, () => {});
+    txTail = next.then(
+      () => {},
+      () => {}
+    );
     return next;
   }
 
@@ -135,13 +147,17 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
         const txProxy = drizzleProxy(
           async (sql, params, method) =>
             execSync(sql, params, method as "run" | "all" | "get" | "values"),
-          { schema },
+          { schema }
         );
         const result = await fn(txProxy);
         bsDb.exec("COMMIT");
         return result;
       } catch (err) {
-        try { bsDb.exec("ROLLBACK"); } catch { /* already rolled back or closed */ }
+        try {
+          bsDb.exec("ROLLBACK");
+        } catch {
+          /* already rolled back or closed */
+        }
         throw err;
       }
     });
@@ -168,8 +184,7 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
     },
 
     async getById(id) {
-      const rows = await db.select().from(schema.foods)
-        .where(eq(schema.foods.id, id)).limit(1);
+      const rows = await db.select().from(schema.foods).where(eq(schema.foods.id, id)).limit(1);
       return rows[0] ?? null;
     },
 
@@ -177,7 +192,8 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
       // S2: .returning() → drizzle calls executor with method 'all'
       const nameNormalized = normalizeForSearch(food.name);
       const rows = await db
-        .insert(schema.foods).values({ ...food, nameNormalized })
+        .insert(schema.foods)
+        .values({ ...food, nameNormalized })
         .onConflictDoUpdate({
           target: schema.foods.id,
           set: {
@@ -199,12 +215,17 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
     async insert(food) {
       // S2: .returning() → drizzle calls executor with method 'all'
       const nameNormalized = normalizeForSearch(food.name);
-      const rows = await db.insert(schema.foods).values({ ...food, nameNormalized }).returning();
+      const rows = await db
+        .insert(schema.foods)
+        .values({ ...food, nameNormalized })
+        .returning();
       return rows[0];
     },
 
     async getCustomFoods() {
-      return db.select().from(schema.foods)
+      return db
+        .select()
+        .from(schema.foods)
         .where(eq(schema.foods.source, "custom"))
         .orderBy(schema.foods.name);
     },
@@ -214,7 +235,8 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
       if (patch.name !== undefined) {
         fullPatch.nameNormalized = normalizeForSearch(patch.name);
       }
-      const rows = await db.update(schema.foods)
+      const rows = await db
+        .update(schema.foods)
         .set(fullPatch)
         .where(eq(schema.foods.id, id))
         .returning();
@@ -224,8 +246,11 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
     // ── Profile ──────────────────────────────────────────────────────────
 
     async getProfile() {
-      const rows = await db.select().from(schema.usersProfile)
-        .where(eq(schema.usersProfile.id, 1)).limit(1);
+      const rows = await db
+        .select()
+        .from(schema.usersProfile)
+        .where(eq(schema.usersProfile.id, 1))
+        .limit(1);
       return rows[0] ?? null;
     },
 
@@ -244,17 +269,18 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
     // ── MealEntries ──────────────────────────────────────────────────────
 
     async getByDate(date) {
-      return db.select().from(schema.mealEntries)
+      return db
+        .select()
+        .from(schema.mealEntries)
         .where(eq(schema.mealEntries.date, date))
         .orderBy(asc(schema.mealEntries.loggedAt));
     },
 
     async getByDateAndMeal(date, mealType) {
-      return db.select().from(schema.mealEntries)
-        .where(and(
-          eq(schema.mealEntries.date, date),
-          eq(schema.mealEntries.mealType, mealType),
-        ))
+      return db
+        .select()
+        .from(schema.mealEntries)
+        .where(and(eq(schema.mealEntries.date, date), eq(schema.mealEntries.mealType, mealType)))
         .orderBy(asc(schema.mealEntries.loggedAt));
     },
 
@@ -281,12 +307,9 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 
     async deleteByDateAndMeal(date, mealType) {
       await transaction(async (tx) => {
-        await tx.delete(schema.mealEntries).where(
-          and(
-            eq(schema.mealEntries.date, date),
-            eq(schema.mealEntries.mealType, mealType),
-          ),
-        );
+        await tx
+          .delete(schema.mealEntries)
+          .where(and(eq(schema.mealEntries.date, date), eq(schema.mealEntries.mealType, mealType)));
       });
     },
   };
@@ -297,30 +320,54 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 // ---------------------------------------------------------------------------
 
 function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie: DexieAdapter } {
-  const adapter = createDexieAdapter("vitia-test-" + Math.random().toString(36).slice(2));
+  const adapter = createDexieAdapter(`vitia-test-${Math.random().toString(36).slice(2)}`);
 
   return {
     name: "Dexie/IndexedDB (fake-indexeddb)",
     _ready: adapter.ready,
     _dexie: adapter,
 
-    async searchByName(query) { return adapter.foods.searchByName(query); },
-    async getById(id) { return adapter.foods.getById(id); },
-    async upsert(food) { return adapter.foods.upsert(food); },
-    async insert(food) { return adapter.foods.insert(food); },
-    async getCustomFoods() { return adapter.foods.getCustomFoods(); },
-    async update(id, patch) { return adapter.foods.update(id, patch); },
+    async searchByName(query) {
+      return adapter.foods.searchByName(query);
+    },
+    async getById(id) {
+      return adapter.foods.getById(id);
+    },
+    async upsert(food) {
+      return adapter.foods.upsert(food);
+    },
+    async insert(food) {
+      return adapter.foods.insert(food);
+    },
+    async getCustomFoods() {
+      return adapter.foods.getCustomFoods();
+    },
+    async update(id, patch) {
+      return adapter.foods.update(id, patch);
+    },
 
-    async getProfile() { return adapter.profile.getProfile(); },
-    async upsertProfile(data) { return adapter.profile.upsertProfile(data); },
+    async getProfile() {
+      return adapter.profile.getProfile();
+    },
+    async upsertProfile(data) {
+      return adapter.profile.upsertProfile(data);
+    },
 
-    async getByDate(date) { return adapter.mealEntries.getByDate(date); },
+    async getByDate(date) {
+      return adapter.mealEntries.getByDate(date);
+    },
     async getByDateAndMeal(date, mealType) {
       return adapter.mealEntries.getByDateAndMeal(date, mealType);
     },
-    async insertEntry(entry) { return adapter.mealEntries.insert(entry); },
-    async insertBulk(entries) { return adapter.mealEntries.insertBulk(entries); },
-    async remove(id) { return adapter.mealEntries.remove(id); },
+    async insertEntry(entry) {
+      return adapter.mealEntries.insert(entry);
+    },
+    async insertBulk(entries) {
+      return adapter.mealEntries.insertBulk(entries);
+    },
+    async remove(id) {
+      return adapter.mealEntries.remove(id);
+    },
     async deleteByDateAndMeal(date, mealType) {
       return adapter.mealEntries.deleteByDateAndMeal(date, mealType);
     },
@@ -391,305 +438,321 @@ function makeProfile(): Omit<schema.NewUserProfile, "id"> {
 describe.each([
   ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
   ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
-] as const)(
-  "Repository contract — %s",
-  (_backendName, makeBackend) => {
-    // Each describe block gets its own backend instance to avoid cross-test
-    // state from the shared idCounter (foods inserted in one test are visible
-    // to subsequent tests on the same backend).
-    let backend: RepositoryBackend & { _ready: Promise<void> };
+] as const)("Repository contract — %s", (_backendName, makeBackend) => {
+  // Each describe block gets its own backend instance to avoid cross-test
+  // state from the shared idCounter (foods inserted in one test are visible
+  // to subsequent tests on the same backend).
+  let backend: RepositoryBackend & { _ready: Promise<void> };
 
-    beforeAll(async () => {
-      backend = makeBackend();
-      await backend._ready;
+  beforeAll(async () => {
+    backend = makeBackend();
+    await backend._ready;
+  });
+
+  // ─── Foods ──────────────────────────────────────────────────────────
+
+  describe("foods.insert (S2: INSERT...RETURNING → method 'all')", () => {
+    it("returns the inserted row with all fields (Scenario 2.8)", async () => {
+      const food = makeFood({ name: "Banana", source: "custom" });
+      const result = await backend.insert(food);
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(food.id);
+      expect(result.name).toBe("Banana");
+      expect(result.source).toBe("custom");
     });
 
-    // ─── Foods ──────────────────────────────────────────────────────────
+    it("throws when inserting a duplicate id", async () => {
+      const food = makeFood();
+      await backend.insert(food);
+      await expect(backend.insert(food)).rejects.toThrow();
+    });
+  });
 
-    describe("foods.insert (S2: INSERT...RETURNING → method 'all')", () => {
-      it("returns the inserted row with all fields (Scenario 2.8)", async () => {
-        const food = makeFood({ name: "Banana", source: "custom" });
-        const result = await backend.insert(food);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(food.id);
-        expect(result.name).toBe("Banana");
-        expect(result.source).toBe("custom");
-      });
-
-      it("throws when inserting a duplicate id", async () => {
-        const food = makeFood();
-        await backend.insert(food);
-        await expect(backend.insert(food)).rejects.toThrow();
-      });
+  describe("foods.upsert (S2: .returning() on conflict-update)", () => {
+    it("inserts when id is new and returns the row", async () => {
+      const food = makeFood({ name: "Apple", source: "openfoodfacts" });
+      const result = await backend.upsert(food);
+      expect(result.id).toBe(food.id);
+      expect(result.name).toBe("Apple");
     });
 
-    describe("foods.upsert (S2: .returning() on conflict-update)", () => {
-      it("inserts when id is new and returns the row", async () => {
-        const food = makeFood({ name: "Apple", source: "openfoodfacts" });
-        const result = await backend.upsert(food);
-        expect(result.id).toBe(food.id);
-        expect(result.name).toBe("Apple");
-      });
+    it("updates existing row and returns updated data", async () => {
+      const food = makeFood({ name: "Original", source: "openfoodfacts" });
+      await backend.upsert(food);
 
-      it("updates existing row and returns updated data", async () => {
-        const food = makeFood({ name: "Original", source: "openfoodfacts" });
-        await backend.upsert(food);
+      const updated = await backend.upsert({ ...food, name: "Updated" });
+      expect(updated.id).toBe(food.id);
+      expect(updated.name).toBe("Updated");
+    });
+  });
 
-        const updated = await backend.upsert({ ...food, name: "Updated" });
-        expect(updated.id).toBe(food.id);
-        expect(updated.name).toBe("Updated");
-      });
+  describe("foods.searchByName", () => {
+    it("returns empty array for empty query", async () => {
+      const result = await backend.searchByName("");
+      expect(result).toEqual([]);
     });
 
-    describe("foods.searchByName", () => {
-      it("returns empty array for empty query", async () => {
-        const result = await backend.searchByName("");
-        expect(result).toEqual([]);
-      });
+    it("finds foods matching name substring", async () => {
+      const food = makeFood({ name: "Whole Milk XYZ" });
+      await backend.insert(food);
 
-      it("finds foods matching name substring", async () => {
-        const food = makeFood({ name: "Whole Milk XYZ" });
-        await backend.insert(food);
-
-        const results = await backend.searchByName("Whole Milk XYZ");
-        const ids = results.map((f) => f.id);
-        expect(ids).toContain(food.id);
-      });
-
-      it("returns empty array when no match", async () => {
-        const results = await backend.searchByName("zzz-no-match-zzz-999");
-        expect(results).toEqual([]);
-      });
+      const results = await backend.searchByName("Whole Milk XYZ");
+      const ids = results.map((f) => f.id);
+      expect(ids).toContain(food.id);
     });
 
-    describe("foods.getById", () => {
-      it("returns the food when found", async () => {
-        const food = makeFood({ name: "Rice Special" });
-        await backend.insert(food);
+    it("returns empty array when no match", async () => {
+      const results = await backend.searchByName("zzz-no-match-zzz-999");
+      expect(results).toEqual([]);
+    });
+  });
 
-        const result = await backend.getById(food.id);
-        expect(result).not.toBeNull();
-        expect(result!.id).toBe(food.id);
-      });
+  describe("foods.getById", () => {
+    it("returns the food when found", async () => {
+      const food = makeFood({ name: "Rice Special" });
+      await backend.insert(food);
 
-      it("returns null when not found", async () => {
-        const result = await backend.getById("nonexistent-id-xyz-999");
-        expect(result).toBeNull();
-      });
+      const result = await backend.getById(food.id);
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(food.id);
     });
 
-    describe("foods.getCustomFoods", () => {
-      it("returns only custom foods ordered by name", async () => {
-        // Use a fresh isolated backend for this test to avoid cross-contamination
-        const fresh = makeBackend();
-        await fresh._ready;
+    it("returns null when not found", async () => {
+      const result = await backend.getById("nonexistent-id-xyz-999");
+      expect(result).toBeNull();
+    });
+  });
 
-        const c1 = makeFood({ name: "Zucchini Bread", source: "custom" });
-        const c2 = makeFood({ name: "Apple Jam", source: "custom" });
-        const off = makeFood({ name: "Commercial Product", source: "openfoodfacts" });
-        await fresh.insert(c1);
-        await fresh.insert(c2);
-        await fresh.insert(off);
+  describe("foods.getCustomFoods", () => {
+    it("returns only custom foods ordered by name", async () => {
+      // Use a fresh isolated backend for this test to avoid cross-contamination
+      const fresh = makeBackend();
+      await fresh._ready;
 
-        const result = await fresh.getCustomFoods();
-        // All results are custom
-        expect(result.every((f) => f.source === "custom")).toBe(true);
-        // Alphabetically sorted
-        const names = result.map((f) => f.name);
-        expect(names.indexOf("Apple Jam")).toBeLessThan(names.indexOf("Zucchini Bread"));
-      });
+      const c1 = makeFood({ name: "Zucchini Bread", source: "custom" });
+      const c2 = makeFood({ name: "Apple Jam", source: "custom" });
+      const off = makeFood({ name: "Commercial Product", source: "openfoodfacts" });
+      await fresh.insert(c1);
+      await fresh.insert(c2);
+      await fresh.insert(off);
+
+      const result = await fresh.getCustomFoods();
+      // All results are custom
+      expect(result.every((f) => f.source === "custom")).toBe(true);
+      // Alphabetically sorted
+      const names = result.map((f) => f.name);
+      expect(names.indexOf("Apple Jam")).toBeLessThan(names.indexOf("Zucchini Bread"));
+    });
+  });
+
+  describe("foods.update", () => {
+    it("updates specified fields and returns updated row", async () => {
+      const food = makeFood({ name: "Old Name", caloriesPer100g: 50 });
+      await backend.insert(food);
+
+      const updated = await backend.update(food.id, { name: "New Name", caloriesPer100g: 75 });
+      expect(updated.name).toBe("New Name");
+      expect(updated.caloriesPer100g).toBe(75);
+    });
+  });
+
+  // ─── Profile ─────────────────────────────────────────────────────────
+
+  describe("profile.getProfile / upsertProfile", () => {
+    it("returns null when no profile exists yet (first launch)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+      const result = await fresh.getProfile();
+      expect(result).toBeNull();
     });
 
-    describe("foods.update", () => {
-      it("updates specified fields and returns updated row", async () => {
-        const food = makeFood({ name: "Old Name", caloriesPer100g: 50 });
-        await backend.insert(food);
-
-        const updated = await backend.update(food.id, { name: "New Name", caloriesPer100g: 75 });
-        expect(updated.name).toBe("New Name");
-        expect(updated.caloriesPer100g).toBe(75);
-      });
+    it("inserts profile and returns it with id=1", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+      const result = await fresh.upsertProfile(makeProfile());
+      expect(result.id).toBe(1);
+      expect(result.age).toBe(30);
     });
 
-    // ─── Profile ─────────────────────────────────────────────────────────
+    it("second upsertProfile call updates, does not duplicate (singleton id=1)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+      await fresh.upsertProfile(makeProfile());
+      await fresh.upsertProfile({ ...makeProfile(), age: 35 });
 
-    describe("profile.getProfile / upsertProfile", () => {
-      it("returns null when no profile exists yet (first launch)", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-        const result = await fresh.getProfile();
-        expect(result).toBeNull();
+      const profile = await fresh.getProfile();
+      expect(profile).not.toBeNull();
+      expect(profile?.age).toBe(35);
+      expect(profile?.id).toBe(1);
+    });
+  });
+
+  // ─── MealEntries ─────────────────────────────────────────────────────
+
+  describe("mealEntries.insert + getByDate", () => {
+    it("inserts entry and retrieves it by date", async () => {
+      const food = makeFood({ name: "FK Food Entry" });
+      await backend.insert(food);
+
+      const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-08-01" });
+      await backend.insertEntry(entry);
+
+      const results = await backend.getByDate("2024-08-01");
+      expect(results.map((e) => e.id)).toContain(entry.id);
+    });
+  });
+
+  describe("mealEntries.getByDateAndMeal", () => {
+    it("filters by date AND mealType", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "FilterByMeal Food" });
+      await fresh.insert(food);
+
+      const lunchEntry = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-09-01",
+        mealType: "lunch",
       });
-
-      it("inserts profile and returns it with id=1", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-        const result = await fresh.upsertProfile(makeProfile());
-        expect(result.id).toBe(1);
-        expect(result.age).toBe(30);
+      const dinnerEntry = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-09-01",
+        mealType: "dinner",
       });
+      await fresh.insertEntry(lunchEntry);
+      await fresh.insertEntry(dinnerEntry);
 
-      it("second upsertProfile call updates, does not duplicate (singleton id=1)", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-        await fresh.upsertProfile(makeProfile());
-        await fresh.upsertProfile({ ...makeProfile(), age: 35 });
+      const lunches = await fresh.getByDateAndMeal("2024-09-01", "lunch");
+      expect(lunches.map((e) => e.id)).toContain(lunchEntry.id);
+      expect(lunches.map((e) => e.id)).not.toContain(dinnerEntry.id);
+    });
+  });
 
-        const profile = await fresh.getProfile();
-        expect(profile).not.toBeNull();
-        expect(profile!.age).toBe(35);
-        expect(profile!.id).toBe(1);
-      });
+  describe("mealEntries.remove", () => {
+    it("removes an entry by id", async () => {
+      const food = makeFood({ name: "RemoveMe Food" });
+      await backend.insert(food);
+
+      const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-10-01" });
+      await backend.insertEntry(entry);
+      await backend.remove(entry.id);
+
+      const results = await backend.getByDate("2024-10-01");
+      expect(results.map((e) => e.id)).not.toContain(entry.id);
+    });
+  });
+
+  describe("mealEntries.insertBulk (transaction atomicity — R9/Scenario 2.7)", () => {
+    it("inserts all entries and returns them (happy path)", async () => {
+      const food = makeFood({ name: "Bulk Food" });
+      await backend.insert(food);
+
+      const entries = [
+        makeEntry({
+          foodId: food.id,
+          foodName: food.name,
+          date: "2024-11-01",
+          mealType: "breakfast",
+        }),
+        makeEntry({ foodId: food.id, foodName: food.name, date: "2024-11-01", mealType: "lunch" }),
+      ];
+      const results = await backend.insertBulk(entries);
+      expect(results).toHaveLength(2);
+      expect(results[0].id).toBe(entries[0].id);
+      expect(results[1].id).toBe(entries[1].id);
     });
 
-    // ─── MealEntries ─────────────────────────────────────────────────────
-
-    describe("mealEntries.insert + getByDate", () => {
-      it("inserts entry and retrieves it by date", async () => {
-        const food = makeFood({ name: "FK Food Entry" });
-        await backend.insert(food);
-
-        const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-08-01" });
-        await backend.insertEntry(entry);
-
-        const results = await backend.getByDate("2024-08-01");
-        expect(results.map((e) => e.id)).toContain(entry.id);
-      });
+    it("returns empty array when entries list is empty", async () => {
+      const results = await backend.insertBulk([]);
+      expect(results).toEqual([]);
     });
 
-    describe("mealEntries.getByDateAndMeal", () => {
-      it("filters by date AND mealType", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
+    it("rolls back on partial failure — no partial state committed (W2)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
 
-        const food = makeFood({ name: "FilterByMeal Food" });
-        await fresh.insert(food);
+      const food = makeFood({ name: "Rollback Food" });
+      await fresh.insert(food);
 
-        const lunchEntry = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-09-01", mealType: "lunch",
-        });
-        const dinnerEntry = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-09-01", mealType: "dinner",
-        });
-        await fresh.insertEntry(lunchEntry);
-        await fresh.insertEntry(dinnerEntry);
-
-        const lunches = await fresh.getByDateAndMeal("2024-09-01", "lunch");
-        expect(lunches.map((e) => e.id)).toContain(lunchEntry.id);
-        expect(lunches.map((e) => e.id)).not.toContain(dinnerEntry.id);
+      const validEntry = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-12-01",
+        mealType: "breakfast",
       });
+      // Duplicate id causes a unique constraint violation on the second insert
+      const duplicateEntry = { ...validEntry };
+
+      await expect(fresh.insertBulk([validEntry, duplicateEntry])).rejects.toThrow();
+
+      // The first entry MUST NOT be committed (atomicity guarantee — R9)
+      const rows = await fresh.getByDate("2024-12-01");
+      expect(rows.map((e) => e.id)).not.toContain(validEntry.id);
+    });
+  });
+
+  describe("mealEntries.deleteByDateAndMeal (uses db.transaction)", () => {
+    it("deletes all entries for a date+mealType", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "DeleteAll Food" });
+      await fresh.insert(food);
+
+      const e1 = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-12-15",
+        mealType: "dinner",
+      });
+      const e2 = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-12-15",
+        mealType: "dinner",
+      });
+      await fresh.insertEntry(e1);
+      await fresh.insertEntry(e2);
+
+      await fresh.deleteByDateAndMeal("2024-12-15", "dinner");
+
+      const rows = await fresh.getByDateAndMeal("2024-12-15", "dinner");
+      expect(rows).toHaveLength(0);
     });
 
-    describe("mealEntries.remove", () => {
-      it("removes an entry by id", async () => {
-        const food = makeFood({ name: "RemoveMe Food" });
-        await backend.insert(food);
+    it("does not delete entries for a different mealType on the same date", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
 
-        const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-10-01" });
-        await backend.insertEntry(entry);
-        await backend.remove(entry.id);
+      const food = makeFood({ name: "Keep Food" });
+      await fresh.insert(food);
 
-        const results = await backend.getByDate("2024-10-01");
-        expect(results.map((e) => e.id)).not.toContain(entry.id);
+      const keeper = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-12-16",
+        mealType: "breakfast",
       });
+      const toDelete = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2024-12-16",
+        mealType: "lunch",
+      });
+      await fresh.insertEntry(keeper);
+      await fresh.insertEntry(toDelete);
+
+      await fresh.deleteByDateAndMeal("2024-12-16", "lunch");
+
+      const remaining = await fresh.getByDate("2024-12-16");
+      expect(remaining.map((e) => e.id)).toContain(keeper.id);
     });
-
-    describe("mealEntries.insertBulk (transaction atomicity — R9/Scenario 2.7)", () => {
-      it("inserts all entries and returns them (happy path)", async () => {
-        const food = makeFood({ name: "Bulk Food" });
-        await backend.insert(food);
-
-        const entries = [
-          makeEntry({ foodId: food.id, foodName: food.name, date: "2024-11-01", mealType: "breakfast" }),
-          makeEntry({ foodId: food.id, foodName: food.name, date: "2024-11-01", mealType: "lunch" }),
-        ];
-        const results = await backend.insertBulk(entries);
-        expect(results).toHaveLength(2);
-        expect(results[0].id).toBe(entries[0].id);
-        expect(results[1].id).toBe(entries[1].id);
-      });
-
-      it("returns empty array when entries list is empty", async () => {
-        const results = await backend.insertBulk([]);
-        expect(results).toEqual([]);
-      });
-
-      it("rolls back on partial failure — no partial state committed (W2)", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-
-        const food = makeFood({ name: "Rollback Food" });
-        await fresh.insert(food);
-
-        const validEntry = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-12-01", mealType: "breakfast",
-        });
-        // Duplicate id causes a unique constraint violation on the second insert
-        const duplicateEntry = { ...validEntry };
-
-        await expect(fresh.insertBulk([validEntry, duplicateEntry])).rejects.toThrow();
-
-        // The first entry MUST NOT be committed (atomicity guarantee — R9)
-        const rows = await fresh.getByDate("2024-12-01");
-        expect(rows.map((e) => e.id)).not.toContain(validEntry.id);
-      });
-    });
-
-    describe("mealEntries.deleteByDateAndMeal (uses db.transaction)", () => {
-      it("deletes all entries for a date+mealType", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-
-        const food = makeFood({ name: "DeleteAll Food" });
-        await fresh.insert(food);
-
-        const e1 = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-12-15", mealType: "dinner",
-        });
-        const e2 = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-12-15", mealType: "dinner",
-        });
-        await fresh.insertEntry(e1);
-        await fresh.insertEntry(e2);
-
-        await fresh.deleteByDateAndMeal("2024-12-15", "dinner");
-
-        const rows = await fresh.getByDateAndMeal("2024-12-15", "dinner");
-        expect(rows).toHaveLength(0);
-      });
-
-      it("does not delete entries for a different mealType on the same date", async () => {
-        const fresh = makeBackend();
-        await fresh._ready;
-
-        const food = makeFood({ name: "Keep Food" });
-        await fresh.insert(food);
-
-        const keeper = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-12-16", mealType: "breakfast",
-        });
-        const toDelete = makeEntry({
-          foodId: food.id, foodName: food.name,
-          date: "2024-12-16", mealType: "lunch",
-        });
-        await fresh.insertEntry(keeper);
-        await fresh.insertEntry(toDelete);
-
-        await fresh.deleteByDateAndMeal("2024-12-16", "lunch");
-
-        const remaining = await fresh.getByDate("2024-12-16");
-        expect(remaining.map((e) => e.id)).toContain(keeper.id);
-      });
-    });
-  }
-);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Dexie-specific: migration tracking idempotence (W2/S1, Scenario 2.4)
@@ -697,7 +760,7 @@ describe.each([
 
 describe("Dexie migration tracking — idempotence (W2/S1, Scenario 2.4)", () => {
   it("records all migration tags on first open", async () => {
-    const adapter = createDexieAdapter("vitia-idem-" + Math.random().toString(36).slice(2));
+    const adapter = createDexieAdapter(`vitia-idem-${Math.random().toString(36).slice(2)}`);
     await adapter.ready;
 
     const tags = await adapter.getAppliedMigrationTags();
@@ -706,7 +769,7 @@ describe("Dexie migration tracking — idempotence (W2/S1, Scenario 2.4)", () =>
   });
 
   it("re-opening the same database name does not duplicate migration records", async () => {
-    const dbName = "vitia-idem-dedup-" + Math.random().toString(36).slice(2);
+    const dbName = `vitia-idem-dedup-${Math.random().toString(36).slice(2)}`;
     const adapter1 = createDexieAdapter(dbName);
     await adapter1.ready;
     const tags1 = await adapter1.getAppliedMigrationTags();
@@ -734,39 +797,36 @@ describe("Dexie migration tracking — idempotence (W2/S1, Scenario 2.4)", () =>
 describe.each([
   ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
   ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
-] as const)(
-  "Accent-insensitive searchByName — %s",
-  (_backendName, makeBackend) => {
-    let backend: RepositoryBackend & { _ready: Promise<void> };
+] as const)("Accent-insensitive searchByName — %s", (_backendName, makeBackend) => {
+  let backend: RepositoryBackend & { _ready: Promise<void> };
 
-    beforeAll(async () => {
-      backend = makeBackend();
-      await backend._ready;
-    });
+  beforeAll(async () => {
+    backend = makeBackend();
+    await backend._ready;
+  });
 
-    it("finds 'Jamón' when searching 'jamon' (accent-insensitive, Spain app)", async () => {
-      const food = makeFood({ name: "Jamón ibérico", source: "custom" });
-      await backend.insert(food);
+  it("finds 'Jamón' when searching 'jamon' (accent-insensitive, Spain app)", async () => {
+    const food = makeFood({ name: "Jamón ibérico", source: "custom" });
+    await backend.insert(food);
 
-      const results = await backend.searchByName("jamon");
-      expect(results.map((f) => f.id)).toContain(food.id);
-    });
+    const results = await backend.searchByName("jamon");
+    expect(results.map((f) => f.id)).toContain(food.id);
+  });
 
-    it("finds 'Ñoquis' when searching 'noquis' (ñ normalization)", async () => {
-      const food = makeFood({ name: "Ñoquis de patata", source: "custom" });
-      await backend.insert(food);
+  it("finds 'Ñoquis' when searching 'noquis' (ñ normalization)", async () => {
+    const food = makeFood({ name: "Ñoquis de patata", source: "custom" });
+    await backend.insert(food);
 
-      const results = await backend.searchByName("noquis");
-      expect(results.map((f) => f.id)).toContain(food.id);
-    });
+    const results = await backend.searchByName("noquis");
+    expect(results.map((f) => f.id)).toContain(food.id);
+  });
 
-    it("returns empty for unmatched query even with accented data", async () => {
-      await backend.insert(makeFood({ name: "Jamón cocido" }));
-      const results = await backend.searchByName("zzz-no-match-accented");
-      expect(results).toHaveLength(0);
-    });
-  }
-);
+  it("returns empty for unmatched query even with accented data", async () => {
+    await backend.insert(makeFood({ name: "Jamón cocido" }));
+    const results = await backend.searchByName("zzz-no-match-accented");
+    expect(results).toHaveLength(0);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // FIFO transaction mutex — concurrency correctness (CRITICAL 1)
@@ -790,20 +850,27 @@ describe("FIFO transaction mutex — concurrent transaction() calls (CRITICAL 1)
     await backend.insert(food);
 
     const batch1 = [
-      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "breakfast" }),
+      makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2025-01-01",
+        mealType: "breakfast",
+      }),
       makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "lunch" }),
     ];
     const batch2 = [
       makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "dinner" }),
-      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-02", mealType: "breakfast" }),
+      makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2025-01-02",
+        mealType: "breakfast",
+      }),
     ];
 
     // Fire both concurrently — without a mutex this causes "cannot start a
     // transaction within a transaction" on a shared single-connection backend.
-    const [r1, r2] = await Promise.all([
-      backend.insertBulk(batch1),
-      backend.insertBulk(batch2),
-    ]);
+    const [r1, r2] = await Promise.all([backend.insertBulk(batch1), backend.insertBulk(batch2)]);
 
     expect(r1).toHaveLength(2);
     expect(r2).toHaveLength(2);
@@ -854,7 +921,12 @@ describe("FIFO transaction mutex — concurrent transaction() calls (CRITICAL 1)
     const food = makeFood({ name: "Rollback Integrity Food" });
     await backend.insert(food);
 
-    const valid = makeEntry({ foodId: food.id, foodName: food.name, date: "2025-03-01", mealType: "breakfast" });
+    const valid = makeEntry({
+      foodId: food.id,
+      foodName: food.name,
+      date: "2025-03-01",
+      mealType: "breakfast",
+    });
     const duplicate = { ...valid }; // same id → constraint violation
 
     await expect(backend.insertBulk([valid, duplicate])).rejects.toThrow();

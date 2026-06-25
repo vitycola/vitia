@@ -7,7 +7,7 @@
  * Registered in package.json jest.transform as "^.+\\.sql$".
  * The moduleNameMapper strips "?raw" before it reaches the transform.
  */
-const fs = require("fs");
+const fs = require("node:fs");
 
 module.exports = {
   process(sourceText, sourcePath) {
@@ -17,6 +17,8 @@ module.exports = {
     // when __esModule IS set. We set __esModule so the default import gets the
     // string, not the wrapper object.
     const content = JSON.stringify(fs.readFileSync(sourcePath, "utf-8"));
-    return { code: `Object.defineProperty(exports, '__esModule', { value: true }); exports.default = ${content};` };
+    return {
+      code: `Object.defineProperty(exports, '__esModule', { value: true }); exports.default = ${content};`,
+    };
   },
 };

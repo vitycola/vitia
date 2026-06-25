@@ -143,11 +143,10 @@ export async function runWebMigrations(executor: MigratorExecutor): Promise<void
     const computedHash = hashContent(raw);
 
     if (applied.has(tag)) {
-      const storedHash = applied.get(tag)!;
+      const storedHash = applied.get(tag) ?? "";
       if (storedHash !== computedHash) {
         throw new Error(
-          `[migrator] Migration drift detected for '${tag}': stored hash '${storedHash}' ≠ computed '${computedHash}'. ` +
-            "The .sql file was modified after it was applied. Do not edit applied migrations."
+          `[migrator] Migration drift detected for '${tag}': stored hash '${storedHash}' ≠ computed '${computedHash}'. The .sql file was modified after it was applied. Do not edit applied migrations.`
         );
       }
       // Already applied and hash matches — skip

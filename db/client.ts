@@ -13,18 +13,18 @@
  *       R6 (contracts preserved), R9 (no partial state on error)
  */
 
-import { drizzle } from "drizzle-orm/sqlite-proxy";
 import * as schema from "@/db/schema";
 import { createDexieAdapter } from "@/src/db/dexie-adapter";
-import type { DbRequest, DbResponse } from "@/src/db/worker";
 import {
-  SQL_FILES,
   CREATE_TRACKING_TABLE,
+  type MigrationJournal,
+  SQL_FILES,
   STATEMENT_BREAKPOINT,
   hashContent,
   migrationJournal,
-  type MigrationJournal,
 } from "@/src/db/migrate.web";
+import type { DbRequest, DbResponse } from "@/src/db/worker";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
 
 // ---------------------------------------------------------------------------
 // OPFS probe (W4) — named timeout constant
@@ -151,8 +151,8 @@ function openWorker(): {
       new Promise<void>((_, reject) =>
         setTimeout(
           () => reject(new Error(`[db] Worker readiness timeout after ${timeoutMs}ms`)),
-          timeoutMs,
-        ),
+          timeoutMs
+        )
       ),
     ]);
   }
@@ -183,7 +183,7 @@ function createMutex() {
       // The tail must never reject — isolate errors so the queue keeps draining.
       tail = next.then(
         () => {},
-        () => {},
+        () => {}
       );
       return next;
     },
@@ -216,7 +216,7 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
   const executor = async (
     sql: string,
     params: unknown[],
-    method: string,
+    method: string
   ): Promise<{ rows: unknown[][] }> =>
     call({
       kind: "exec",
@@ -247,7 +247,7 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
         const txExecutor = async (
           sql: string,
           params: unknown[],
-          method: string,
+          method: string
         ): Promise<{ rows: unknown[][] }> =>
           call({
             kind: "tx-exec",
@@ -262,7 +262,11 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
         await call({ kind: "commit", txId });
         return result;
       } catch (err) {
-        try { await call({ kind: "rollback", txId }); } catch { /* ignore rollback errors */ }
+        try {
+          await call({ kind: "rollback", txId });
+        } catch {
+          /* ignore rollback errors */
+        }
         throw err; // R9: propagate to caller
       }
     });
@@ -294,7 +298,7 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
  * and migrationJournal from migrate.web.ts to stay in sync with the tested path.
  */
 async function runWorkerMigrations(
-  call: (req: AnyCall) => Promise<{ rows: unknown[][] }>,
+  call: (req: AnyCall) => Promise<{ rows: unknown[][] }>
 ): Promise<void> {
   // Ensure tracking table — uses shared DDL constant
   await call({
@@ -313,7 +317,7 @@ async function runWorkerMigrations(
     method: "all",
   });
   const applied = new Map<string, string>(
-    appliedResult.rows.map((r) => [r[0] as string, r[1] as string]),
+    appliedResult.rows.map((r) => [r[0] as string, r[1] as string])
   );
 
   const entries = [...journal.entries].sort((a, b) => a.idx - b.idx);
@@ -367,13 +371,14 @@ async function runWorkerMigrations(
 type BackendType = "opfs" | "dexie";
 
 /** Resolves when the storage backend is ready. main.tsx awaits this. */
+// biome-ignore lint/style/useConst: declared before the IIFE that assigns it; two-phase init pattern
 export let dbReady: Promise<{ type: BackendType }>;
 
 /** Dexie adapter singleton — non-null when the Dexie path is active. */
 export let dexieAdapter: ReturnType<typeof createDexieAdapter> | null = null;
 
 // The actual db instance, set once init() completes.
-let _db: ProxyDb & { transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T> } | null = null;
+let _db: (ProxyDb & { transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T> }) | null = null;
 
 /**
  * The database singleton consumed by all repositories.
@@ -385,21 +390,19 @@ let _db: ProxyDb & { transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T>
  */
 export const db: ProxyDb & {
   transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T>;
-} = new Proxy(
-  {} as ProxyDb & { transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T> },
-  {
-    get(_target, prop) {
-      if (!_db) {
-        throw new Error(
-          `[db] Not ready. Await dbReady before calling db.${String(prop)}(). ` +
-            "Ensure main.tsx awaits dbReady before mounting the router.",
-        );
-      }
-      const value = (_db as unknown as Record<string | symbol, unknown>)[prop];
-      return typeof value === "function" ? (value as Function).bind(_db) : value;
-    },
+} = new Proxy({} as ProxyDb & { transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T> }, {
+  get(_target, prop) {
+    if (!_db) {
+      throw new Error(
+        `[db] Not ready. Await dbReady before calling db.${String(prop)}(). Ensure main.tsx awaits dbReady before mounting the router.`
+      );
+    }
+    const value = (_db as unknown as Record<string | symbol, unknown>)[prop];
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(_db)
+      : value;
   },
-);
+});
 
 // ---------------------------------------------------------------------------
 // Dexie fallback helper — extracted so both failure paths can reuse it
@@ -408,7 +411,7 @@ export const db: ProxyDb & {
 async function startDexiePath(): Promise<{ type: BackendType }> {
   console.warn(
     "[vitia] OPFS not available — falling back to Dexie/IndexedDB. " +
-      "Data persists via IndexedDB.",
+      "Data persists via IndexedDB."
   );
   dexieAdapter = createDexieAdapter("vitia");
   await dexieAdapter.ready;
@@ -419,15 +422,15 @@ async function startDexiePath(): Promise<{ type: BackendType }> {
   // throws clearly if any code bypasses the stores and calls drizzle directly.
   const shimExecutor = async (_sql: string, _params: unknown[], _method: string) => {
     throw new Error(
-      "[db] Dexie backend active. Access data via dexieAdapter, not the drizzle db object.",
+      "[db] Dexie backend active. Access data via dexieAdapter, not the drizzle db object."
     );
   };
   const shimBase = drizzle(shimExecutor, { schema });
-  const shim = Object.create(shimBase) as typeof _db;
+  const shim = Object.create(shimBase) as NonNullable<typeof _db>;
 
   // Dexie's own transaction() is already mutex-guarded per adapter method;
   // this shim throws if somehow called directly.
-  Object.defineProperty(shim!, "transaction", {
+  Object.defineProperty(shim, "transaction", {
     value: async () => {
       throw new Error("[db] Dexie backend: use dexieAdapter.mealEntries instead.");
     },
@@ -458,10 +461,7 @@ const _init = (async (): Promise<{ type: BackendType }> => {
       _db = buildOpfsDb(call);
       return { type: "opfs" };
     } catch (err) {
-      console.warn(
-        "[vitia] OPFS Worker init/migration failed — falling back to Dexie.",
-        err,
-      );
+      console.warn("[vitia] OPFS Worker init/migration failed — falling back to Dexie.", err);
       terminate();
       return startDexiePath();
     }

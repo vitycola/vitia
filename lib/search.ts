@@ -9,9 +9,6 @@
  * prevent drift between backends.
  */
 export function normalizeForSearch(s: string): string {
-  return s
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
+  // \p{M} (Unicode Mark category, requires u flag) strips combining diacritical marks after NFKD decomposition.
+  return s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }

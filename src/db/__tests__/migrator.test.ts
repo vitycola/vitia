@@ -9,11 +9,8 @@
  *   - Hash drift detected and throws
  */
 
+import { type MigratorExecutor, runWebMigrations } from "@/src/db/migrate.web";
 import Database from "better-sqlite3";
-import {
-  runWebMigrations,
-  type MigratorExecutor,
-} from "@/src/db/migrate.web";
 
 /** Build a MigratorExecutor backed by a fresh in-memory better-sqlite3 DB. */
 function makeInMemoryExecutor(): { executor: MigratorExecutor; db: Database.Database } {
@@ -62,9 +59,9 @@ describe("runWebMigrations", () => {
     const { executor, db } = makeInMemoryExecutor();
     await runWebMigrations(executor);
 
-    const rows = db
-      .prepare("SELECT tag FROM __drizzle_migrations ORDER BY id")
-      .all() as { tag: string }[];
+    const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
+      tag: string;
+    }[];
     // Two migrations: 0000 and 0001
     expect(rows).toHaveLength(2);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
@@ -77,7 +74,9 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor); // second run
 
     // Still exactly two migration rows — no duplicate inserts
-    const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as { c: number };
+    const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
+      c: number;
+    };
     expect(rows.c).toBe(2);
   });
 
@@ -86,9 +85,7 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
 
     // After both migrations the foods table must have the name_normalized column
-    const columns = db
-      .prepare("PRAGMA table_info(foods)")
-      .all() as { name: string }[];
+    const columns = db.prepare("PRAGMA table_info(foods)").all() as { name: string }[];
     const colNames = columns.map((c) => c.name);
     expect(colNames).toContain("name_normalized");
 
