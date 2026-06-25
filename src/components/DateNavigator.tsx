@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDayLabel, todayISO } from "@/lib/date";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DateNavigatorProps {
   selectedDate: string;

@@ -1,16 +1,11 @@
-import {
-  ChevronDown,
-  ChevronRight,
-  MoreVertical,
-  Plus,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { getByDateAndMeal } from "@/db/repositories/mealEntries";
 import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanner";
 import { MealEntryRow } from "@/src/components/MealEntryRow";
-import { getByDateAndMeal } from "@/db/repositories/mealEntries";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
 import type { MealEntry } from "@/types";
 import type { MealType } from "@/types";
+import { ChevronDown, ChevronRight, MoreVertical, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: "Desayuno",
@@ -26,7 +21,7 @@ interface MealSectionProps {
   onDeleteEntry: (id: string) => void;
   selectedDate: string;
   isToday: boolean;
-  onRepeatMeal: (mealType: MealType) => Promise<number>;
+  onRepeatMeal: (mealType: MealType, sourceDate?: string) => Promise<number>;
   onPasteMeal: (mealType: MealType) => Promise<number>;
   onClearMeal: (mealType: MealType) => Promise<void>;
   onAcceptSuggestion: (mealType: MealType) => Promise<number>;
@@ -59,14 +54,15 @@ export function MealSection({
   const mealCarbs = entries.reduce((sum, e) => sum + e.carbsG, 0);
   const mealFat = entries.reduce((sum, e) => sum + e.fatG, 0);
 
-  // Reset dismissed state when the selected date changes
+  // Reset dismissed state when the selected date changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selectedDate is the change trigger, not used in the body.
   useEffect(() => {
     setDismissed(false);
   }, [selectedDate]);
 
   // Fetch previous day entries to power the "copy from yesterday" banner
   useEffect(() => {
-    if (!isToday) {
+    if (!isToday || entries.length > 0) {
       setPreviousDayEntries([]);
       return;
     }
@@ -81,7 +77,7 @@ export function MealSection({
     getByDateAndMeal(prevDate, mealType)
       .then(setPreviousDayEntries)
       .catch(() => setPreviousDayEntries([]));
-  }, [selectedDate, mealType, isToday]);
+  }, [selectedDate, mealType, isToday, entries.length]);
 
   // Click outside to close context menu
   useEffect(() => {
@@ -106,8 +102,7 @@ export function MealSection({
     }
   }
 
-  const showBanner =
-    isToday && entries.length === 0 && previousDayEntries.length > 0 && !dismissed;
+  const showBanner = isToday && entries.length === 0 && previousDayEntries.length > 0 && !dismissed;
 
   const hasClipboard = clipboardMeal !== null && clipboardMeal.entries.length > 0;
 
@@ -156,9 +151,7 @@ export function MealSection({
                   type="button"
                   onClick={() =>
                     runAction(() => {
-                      useMealClipboardStore
-                        .getState()
-                        .copyMeal(entries, mealType);
+                      useMealClipboardStore.getState().copyMeal(entries, mealType);
                       return Promise.resolve();
                     })
                   }
@@ -179,7 +172,9 @@ export function MealSection({
 
                 <button
                   type="button"
-                  onClick={() => runAction(() => onRepeatMeal(mealType))}
+                  onClick={() =>
+                    runAction(() => onRepeatMeal(mealType, isToday ? undefined : selectedDate))
+                  }
                   className="flex w-full items-center px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
                   Repetir comida
@@ -190,9 +185,7 @@ export function MealSection({
                     type="button"
                     onClick={() => {
                       if (
-                        window.confirm(
-                          `¿Eliminar todas las entradas de ${MEAL_LABELS[mealType]}?`,
-                        )
+                        window.confirm(`¿Eliminar todas las entradas de ${MEAL_LABELS[mealType]}?`)
                       ) {
                         void runAction(() => onClearMeal(mealType));
                       } else {

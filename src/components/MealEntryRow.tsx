@@ -1,5 +1,5 @@
-import { Trash2 } from "lucide-react";
 import type { MealEntry } from "@/types";
+import { Trash2 } from "lucide-react";
 
 interface MealEntryRowProps {
   entry: MealEntry;
@@ -17,7 +17,9 @@ export function MealEntryRow({ entry, onDelete }: MealEntryRowProps) {
         </p>
       </div>
       <div className="ml-3 flex items-center gap-3">
-        <span className="text-sm font-semibold text-gray-700">{Math.round(entry.calories)} kcal</span>
+        <span className="text-sm font-semibold text-gray-700">
+          {Math.round(entry.calories)} kcal
+        </span>
         <button
           type="button"
           onClick={() => onDelete(entry.id)}

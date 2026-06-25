@@ -1,23 +1,32 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useDailyTotals } from "@/hooks/useDailyTotals";
+import { todayISO } from "@/lib/date";
 import { CalorieRing } from "@/src/components/CalorieRing";
 import { DateNavigator } from "@/src/components/DateNavigator";
 import { MacroBar } from "@/src/components/MacroBar";
 import { MealSection } from "@/src/components/MealSection";
-import { useDailyTotals } from "@/hooks/useDailyTotals";
-import { todayISO } from "@/lib/date";
 import { useDayStore } from "@/stores/useDayStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { MealType } from "@/types";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
 export function DayScreen() {
   const navigate = useNavigate();
 
-  const { selectedDate, entries, loadEntries, goPreviousDay, goNextDay, deleteEntry, repeatMeal, pasteEntries, clearMeal } =
-    useDayStore();
-  const { profile, load, hasProfile } = useProfileStore();
+  const {
+    selectedDate,
+    entries,
+    loadEntries,
+    goPreviousDay,
+    goNextDay,
+    deleteEntry,
+    repeatMeal,
+    pasteEntries,
+    clearMeal,
+  } = useDayStore();
+  const { profile, load } = useProfileStore();
 
   const totals = useDailyTotals(entries);
   const isToday = selectedDate === todayISO();
@@ -27,19 +36,21 @@ export function DayScreen() {
     void loadEntries();
   }, [loadEntries]);
 
-  // Load profile on mount — idempotent
+  // Load profile once on mount (also fires for users who have no profile yet)
+  const profileLoadAttempted = useRef(false);
   useEffect(() => {
-    if (!hasProfile) {
+    if (!profileLoadAttempted.current) {
+      profileLoadAttempted.current = true;
       void load();
     }
-  }, [load, hasProfile]);
+  }, [load]);
 
   function handleAddFood(mealType: MealType) {
     void navigate(`/search?meal=${mealType}`);
   }
 
-  async function handleRepeatMeal(mealType: MealType): Promise<number> {
-    return repeatMeal(mealType);
+  async function handleRepeatMeal(mealType: MealType, sourceDate?: string): Promise<number> {
+    return repeatMeal(mealType, sourceDate);
   }
 
   async function handlePasteMeal(mealType: MealType): Promise<number> {
@@ -68,9 +79,7 @@ export function DayScreen() {
       <div className="mx-4 mb-3 flex flex-col items-center rounded-2xl bg-white px-4 py-5 shadow-sm">
         <CalorieRing consumed={totals.calories} goal={profile?.calorieGoal ?? 2000} />
 
-        {!isToday && (
-          <p className="mt-2 text-xs text-gray-400">Día anterior — solo lectura</p>
-        )}
+        {!isToday && <p className="mt-2 text-xs text-gray-400">Día anterior — solo lectura</p>}
 
         {/* Daily totals summary */}
         <p className="mt-3 text-xs text-gray-500">
@@ -87,8 +96,8 @@ export function DayScreen() {
           carbsG={totals.carbsG}
           fatG={totals.fatG}
           proteinGoalG={profile?.proteinGoalG ?? 150}
-          carbsGoalG={profile?.carbsGoalG ?? 200}
-          fatGoalG={profile?.fatGoalG ?? 65}
+          carbsGoalG={profile?.carbsGoalG ?? 250}
+          fatGoalG={profile?.fatGoalG ?? 70}
         />
       </div>
 

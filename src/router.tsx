@@ -1,6 +1,6 @@
-import { createBrowserRouter } from "react-router-dom";
 import { TabLayout } from "@/src/layouts/TabLayout";
 import { DayScreen } from "@/src/routes/day";
+import { createBrowserRouter } from "react-router-dom";
 
 export const router = createBrowserRouter([
   {
@@ -13,15 +13,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "search",
-        element: (
-          <div className="p-8 text-center text-gray-500">Buscar — próximamente</div>
-        ),
+        element: <div className="p-8 text-center text-gray-500">Buscar — próximamente</div>,
       },
       {
         path: "profile",
-        element: (
-          <div className="p-8 text-center text-gray-500">Perfil — próximamente</div>
-        ),
+        element: <div className="p-8 text-center text-gray-500">Perfil — próximamente</div>,
       },
     ],
   },

@@ -5,12 +5,7 @@ interface CalorieRingProps {
   strokeWidth?: number;
 }
 
-export function CalorieRing({
-  consumed,
-  goal,
-  size = 160,
-  strokeWidth = 14,
-}: CalorieRingProps) {
+export function CalorieRing({ consumed, goal, size = 160, strokeWidth = 14 }: CalorieRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const fraction = goal > 0 ? Math.min(consumed / goal, 1) : 0;
@@ -18,14 +13,12 @@ export function CalorieRing({
   const percentage = goal > 0 ? Math.round((consumed / goal) * 100) : 0;
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       {/* SVG ring rotated so progress starts at top */}
-      <svg
-        width={size}
-        height={size}
-        style={{ transform: "rotate(-90deg)" }}
-        aria-hidden="true"
-      >
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }} aria-hidden="true">
         {/* Track circle */}
         <circle
           cx={size / 2}

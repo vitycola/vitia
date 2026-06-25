@@ -55,10 +55,11 @@ interface DayActions {
    */
   deleteEntry: (id: string) => Promise<void>;
   /**
-   * Copy entries from the previous day's meal into the current selected date.
-   * Returns the number of entries added (0 if yesterday had none).
+   * Repeat a meal: copy entries from a source date's meal into today.
+   * Source defaults to the day before the selected date when sourceDate is omitted.
+   * Returns the number of entries added (0 if the source meal was empty).
    */
-  repeatMeal: (mealType: MealType) => Promise<number>;
+  repeatMeal: (mealType: MealType, sourceDate?: string) => Promise<number>;
   /**
    * Paste entries from the clipboard into the specified meal type.
    * Destination meal type overrides the clipboard's original meal type.

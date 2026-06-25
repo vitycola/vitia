@@ -17,7 +17,9 @@ export function CopyFromYesterdayBanner({
     <div className="mx-4 mb-2 flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2">
       <div>
         <p className="text-sm font-semibold text-green-800">¿Copiar de ayer?</p>
-        <p className="text-xs text-green-600">{count} alimento{count !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-green-600">
+          {count} alimento{count !== 1 ? "s" : ""}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <button
