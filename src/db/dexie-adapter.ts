@@ -14,9 +14,16 @@
  *     insertBulk and deleteByDateAndMeal atomicity (rollback on partial failure)
  */
 
-import Dexie, { type Table } from "dexie";
-import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
+import type {
+  Food,
+  MealEntry,
+  NewFood,
+  NewMealEntry,
+  NewUserProfile,
+  UserProfile,
+} from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
+import Dexie, { type Table } from "dexie";
 
 // ---------------------------------------------------------------------------
 // IndexedDB table row types
@@ -76,20 +83,25 @@ class VitiaDb extends Dexie {
     });
 
     // Version 2: adds nameNormalized index (0001_name_normalized migration)
-    this.version(DB_VERSION).stores({
-      // Dexie index syntax: first entry is the keyPath, subsequent are indexes
-      // Primary keys + indexes mirror the SQLite schema exactly
-      foods: "id, name, nameNormalized, source, offProductCode",
-      meal_entries: "id, date, [date+mealType], foodId",
-      users_profile: "id",
-      // Migration tracking table
-      __drizzle_migrations: "++id, &tag",
-    }).upgrade(async (trans) => {
-      // Backfill nameNormalized for any existing rows
-      await trans.table("foods").toCollection().modify((food) => {
-        food.nameNormalized = normalizeForSearch(food.name as string);
+    this.version(DB_VERSION)
+      .stores({
+        // Dexie index syntax: first entry is the keyPath, subsequent are indexes
+        // Primary keys + indexes mirror the SQLite schema exactly
+        foods: "id, name, nameNormalized, source, offProductCode",
+        meal_entries: "id, date, [date+mealType], foodId",
+        users_profile: "id",
+        // Migration tracking table
+        __drizzle_migrations: "++id, &tag",
+      })
+      .upgrade(async (trans) => {
+        // Backfill nameNormalized for any existing rows
+        await trans
+          .table("foods")
+          .toCollection()
+          .modify((food) => {
+            food.nameNormalized = normalizeForSearch(food.name as string);
+          });
       });
-    });
   }
 }
 
@@ -238,9 +250,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       // localeCompare with Spanish locale and sensitivity:"base" provides
       // accent-insensitive alphabetical ordering consistent with SQLite's
       // ORDER BY name for Spanish food names (ñ sorts after n, etc.).
-      return all.sort((a, b) =>
-        a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
-      );
+      return all.sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
     },
 
     async update(id, patch) {

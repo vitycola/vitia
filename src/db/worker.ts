@@ -74,18 +74,14 @@ export const OPFS_PROBE_TIMEOUT_MS = 3_000;
 // exported from the module and are not available in the WebWorker lib context.
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: wa-sqlite types use ambient globals not exported from the module
 type SQLiteAny = any;
 
 /**
  * Bind parameters to a prepared statement (1-based index).
  */
 function bindParams(sqlite3: SQLiteAny, stmt: number, params: unknown[]): void {
-  const {
-    SQLITE_INTEGER: _INT,
-    SQLITE_FLOAT: _FLOAT,
-    SQLITE_TEXT: _TEXT,
-  } = sqlite3;
+  const { SQLITE_INTEGER: _INT, SQLITE_FLOAT: _FLOAT, SQLITE_TEXT: _TEXT } = sqlite3;
 
   for (let i = 0; i < params.length; i++) {
     const value = params[i];
@@ -119,7 +115,7 @@ async function execStatement(
   db: number,
   sql: string,
   params: unknown[],
-  method: ExecMethod,
+  method: ExecMethod
 ): Promise<unknown[][]> {
   const { SQLITE_ROW, SQLITE_INTEGER, SQLITE_FLOAT, SQLITE_TEXT, SQLITE_BLOB } = sqlite3;
   const rows: unknown[][] = [];
@@ -183,16 +179,17 @@ async function init(): Promise<{ sqlite3: SQLiteAny; db: number }> {
   try {
     // OPFSCoopSyncVFS requires crossOriginIsolated (COOP/COEP headers).
     // The file is JavaScript-only inside wa-sqlite with no TypeScript types.
-    // We use a dynamic import + any cast to avoid a TS2307 error.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const opfsVfsModule = await import(/* @vite-ignore */ "wa-sqlite/src/examples/OPFSCoopSyncVFS.js" as any);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // OPFSCoopSyncVFS.js ships as plain JS with no TypeScript types; `as any` suppresses TS2307.
+    const opfsVfsModule = await import(
+      // biome-ignore lint/suspicious/noExplicitAny: JS-only wa-sqlite file with no TS types; suppresses TS2307
+      /* @vite-ignore */ "wa-sqlite/src/examples/OPFSCoopSyncVFS.js" as any
+    );
     const OPFSCoopSyncVFS: new (name: string) => SQLiteVFS = opfsVfsModule.OPFSCoopSyncVFS;
     const vfs = new OPFSCoopSyncVFS("vitia");
     await sqlite3.vfs_register(vfs, true /* as default */);
     db = await sqlite3.open_v2(
       "vitia.db",
-      0x00000002 | 0x00000004, // SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
+      0x00000002 | 0x00000004 // SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
     );
   } catch {
     // Fallback: in-memory SQLite (should not reach here if probe passed)
@@ -243,14 +240,19 @@ self.onmessage = async (event: MessageEvent<DbRequest>) => {
       }
       case "rollback": {
         activeTx.delete(req.txId);
-        try { await execStatement(sqlite3, db, "ROLLBACK", [], "run"); } catch { /* ignore */ }
+        try {
+          await execStatement(sqlite3, db, "ROLLBACK", [], "run");
+        } catch {
+          /* ignore */
+        }
         postMessage({ id: req.id, ok: true, rows: [] } satisfies DbResponse);
         break;
       }
       case "tx-exec": {
         if (!activeTx.has(req.txId)) {
           postMessage({
-            id: req.id, ok: false,
+            id: req.id,
+            ok: false,
             error: `[worker] tx-exec on unknown txId ${req.txId}`,
           } satisfies DbResponse);
           return;
