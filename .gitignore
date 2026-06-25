@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Coverage / test output
+coverage/
+
+# Editor / OS
+.DS_Store
+*.local
+.vscode/
+.idea/
+
+# Vite / PWA
+*.local
+vite.config.ts.timestamp-*
