@@ -159,13 +159,28 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     return new Date().toISOString();
   }
 
+  /**
+   * Normalize a string for accent-insensitive, case-insensitive comparison.
+   * Uses NFKD decomposition to strip combining diacritical marks so that
+   * "jamon" matches "Jamón" and "noquis" matches "Ñoquis" — covering the
+   * Spanish food names common in this app.
+   *
+   * This matches the behavior of the SQLite contract-test backend's
+   * accent-normalized searchByName, ensuring both paths return identical
+   * results for the same data (backend parity requirement).
+   */
+  function normalizeForSearch(s: string): string {
+    return s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+
   const foods: FoodsRepo = {
     async searchByName(query) {
       if (!query.trim()) return [];
-      const lower = query.toLowerCase();
-      // Dexie doesn't have LIKE; use .filter() for case-insensitive substring
+      const normalizedQuery = normalizeForSearch(query);
+      // Dexie doesn't have LIKE; use .filter() for accent+case-insensitive substring.
+      // Normalization via NFKD strips diacritics so "jamon" matches "Jamón".
       return db.foods
-        .filter((f) => f.name.toLowerCase().includes(lower))
+        .filter((f) => normalizeForSearch(f.name).includes(normalizedQuery))
         .limit(30)
         .toArray();
     },
@@ -215,14 +230,20 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
 
     async getCustomFoods() {
       const all = await db.foods.where("source").equals("custom").toArray();
-      return all.sort((a, b) => a.name.localeCompare(b.name));
+      // localeCompare with Spanish locale and sensitivity:"base" provides
+      // accent-insensitive alphabetical ordering consistent with SQLite's
+      // ORDER BY name for Spanish food names (ñ sorts after n, etc.).
+      return all.sort((a, b) =>
+        a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+      );
     },
 
     async update(id, patch) {
       await db.foods.update(id, patch as Partial<FoodRow>);
-      const updated = await db.foods.get(id);
-      if (!updated) throw new Error(`[dexie] foods.update: row '${id}' not found after update`);
-      return updated;
+      // Return the updated row, or undefined when the id does not exist.
+      // This matches the SQLite/proxy path which returns rows[0] (undefined on
+      // no-match) without throwing — so both backends behave identically.
+      return (await db.foods.get(id)) as Food;
     },
   };
 

@@ -7,7 +7,7 @@
  * Design: openspec/changes/web-pwa-migration/design.md
  *   - Architecture Decisions 3 (drizzle sqlite-proxy) and 4 (two first-class adapters)
  *   - "CRITICAL: Transactions across the Worker boundary"
- *   - W4: OPFS probe with OPFS_PROBE_TIMEOUT_MS constant + Worker teardown on fallback
+ *   - W4: OPFS probe with OPFS_PROBE_TIMEOUT_MS constant
  *
  * Spec: web-local-storage R1, R4 (OPFS primary), R5 (Dexie fallback),
  *       R6 (contracts preserved), R9 (no partial state on error)
@@ -17,6 +17,14 @@ import { drizzle } from "drizzle-orm/sqlite-proxy";
 import * as schema from "@/db/schema";
 import { createDexieAdapter } from "@/src/db/dexie-adapter";
 import type { DbRequest, DbResponse } from "@/src/db/worker";
+import {
+  SQL_FILES,
+  CREATE_TRACKING_TABLE,
+  STATEMENT_BREAKPOINT,
+  hashContent,
+  migrationJournal,
+  type MigrationJournal,
+} from "@/src/db/migrate.web";
 
 // ---------------------------------------------------------------------------
 // OPFS probe (W4) — named timeout constant
@@ -33,9 +41,6 @@ const OPFS_PROBE_TIMEOUT_MS = 3_000;
  *   3. A test-write succeeds (VFS is functional, not just declared)
  *
  * On any failure (including timeout) → resolves false → Dexie fallback.
- *
- * W4 Worker teardown: the Worker that was spawned during the probe is
- * terminated when the probe fails (see openWorker / startOpfsPath).
  */
 async function probeOpfs(): Promise<boolean> {
   // crossOriginIsolated is false when COOP/COEP headers are absent
@@ -77,11 +82,14 @@ type AnyCall = ExecCall | TxExecCall | TxControlCall;
 /**
  * Open the wa-sqlite Worker and return a caller + terminate pair.
  * The caller sends messages and correlates responses by id.
- * W4: `terminate()` is called if the OPFS probe fails (Worker teardown).
+ *
+ * URL is relative to this file's source location (db/client.ts) and points at
+ * src/db/worker.ts — Vite resolves it at build time into a hashed worker chunk.
  */
 function openWorker(): {
   call: (req: AnyCall) => Promise<{ rows: unknown[][] }>;
   terminate: () => void;
+  waitForReady: (timeoutMs: number) => Promise<void>;
 } {
   const worker = new Worker(new URL("../src/db/worker.ts", import.meta.url), { type: "module" });
 
@@ -91,9 +99,21 @@ function openWorker(): {
     { resolve: (v: { rows: unknown[][] }) => void; reject: (e: Error) => void }
   >();
 
+  // Ready promise — resolves when the Worker posts { kind: "ready" }.
+  let resolveReady!: () => void;
+  let rejectReady!: (e: Error) => void;
+  const readyPromise = new Promise<void>((res, rej) => {
+    resolveReady = res;
+    rejectReady = rej;
+  });
+
   worker.onmessage = (event: MessageEvent<DbResponse | { kind: "ready" }>) => {
     const msg = event.data;
-    if (!("id" in msg)) return; // the { kind: "ready" } signal
+    if (!("id" in msg)) {
+      // { kind: "ready" } signal from the Worker
+      resolveReady();
+      return;
+    }
     const response = msg as DbResponse;
     const handler = pending.get(response.id);
     if (!handler) return;
@@ -103,6 +123,10 @@ function openWorker(): {
     } else {
       handler.reject(new Error(response.error));
     }
+  };
+
+  worker.onerror = (ev) => {
+    rejectReady(new Error(`[db] Worker error: ${ev.message}`));
   };
 
   function call(req: AnyCall): Promise<{ rows: unknown[][] }> {
@@ -121,7 +145,49 @@ function openWorker(): {
     worker.terminate();
   }
 
-  return { call, terminate };
+  function waitForReady(timeoutMs: number): Promise<void> {
+    return Promise.race([
+      readyPromise,
+      new Promise<void>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`[db] Worker readiness timeout after ${timeoutMs}ms`)),
+          timeoutMs,
+        ),
+      ),
+    ]);
+  }
+
+  return { call, terminate, waitForReady };
+}
+
+// ---------------------------------------------------------------------------
+// FIFO async mutex — serialises transaction() calls across both backends
+// ---------------------------------------------------------------------------
+
+/**
+ * A simple FIFO async mutex.
+ *
+ * Only one holder runs at a time; subsequent calls queue and execute in
+ * arrival order once the current holder releases the lock.
+ *
+ * This prevents "cannot start a transaction within a transaction" when two
+ * concurrent db.transaction() calls reach the Worker (or the Dexie adapter)
+ * simultaneously.
+ */
+function createMutex() {
+  let tail: Promise<void> = Promise.resolve();
+
+  return {
+    run<T>(fn: () => Promise<T>): Promise<T> {
+      const next = tail.then(() => fn());
+      // The tail must never reject — isolate errors so the queue keeps draining.
+      tail = next.then(
+        () => {},
+        () => {},
+      );
+      return next;
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +206,9 @@ type ProxyDb = ReturnType<typeof drizzle<typeof schema>>;
  * The `db` object returned here satisfies the same API as the Expo SQLite
  * drizzle instance: .select(), .insert(), .update(), .delete(), and
  * a custom .transaction() that wraps Worker BEGIN/COMMIT/ROLLBACK.
+ *
+ * transaction() is serialized through a FIFO mutex so concurrent callers
+ * never send BEGIN while another transaction is open on the Worker.
  */
 function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): ProxyDb & {
   transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T>;
@@ -159,40 +228,44 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
   const baseDb = drizzle(executor, { schema });
 
   let txIdCounter = 0;
+  const mutex = createMutex();
 
   /**
    * Transaction facade (design §"Executor + transaction flow"):
-   *   1. BEGIN (via Worker)
-   *   2. Build per-tx drizzle proxy routing through tx-exec
-   *   3. COMMIT on success; ROLLBACK + rethrow on any error (R9)
+   *   1. Acquire FIFO mutex (serializes concurrent callers)
+   *   2. BEGIN (via Worker)
+   *   3. Build per-tx drizzle proxy routing through tx-exec
+   *   4. COMMIT on success; ROLLBACK + rethrow on any error (R9)
    */
   async function transaction<T>(fn: (tx: ProxyDb) => Promise<T>): Promise<T> {
-    const txId = ++txIdCounter;
+    return mutex.run(async () => {
+      const txId = ++txIdCounter;
 
-    await call({ kind: "begin", txId });
+      await call({ kind: "begin", txId });
 
-    try {
-      const txExecutor = async (
-        sql: string,
-        params: unknown[],
-        method: string,
-      ): Promise<{ rows: unknown[][] }> =>
-        call({
-          kind: "tx-exec",
-          txId,
-          sql,
-          params,
-          method: method as "run" | "all" | "get" | "values",
-        });
+      try {
+        const txExecutor = async (
+          sql: string,
+          params: unknown[],
+          method: string,
+        ): Promise<{ rows: unknown[][] }> =>
+          call({
+            kind: "tx-exec",
+            txId,
+            sql,
+            params,
+            method: method as "run" | "all" | "get" | "values",
+          });
 
-      const txProxy = drizzle(txExecutor, { schema });
-      const result = await fn(txProxy);
-      await call({ kind: "commit", txId });
-      return result;
-    } catch (err) {
-      try { await call({ kind: "rollback", txId }); } catch { /* ignore rollback errors */ }
-      throw err; // R9: propagate to caller
-    }
+        const txProxy = drizzle(txExecutor, { schema });
+        const result = await fn(txProxy);
+        await call({ kind: "commit", txId });
+        return result;
+      } catch (err) {
+        try { await call({ kind: "rollback", txId }); } catch { /* ignore rollback errors */ }
+        throw err; // R9: propagate to caller
+      }
+    });
   }
 
   // Attach transaction to the drizzle proxy via prototype override
@@ -210,45 +283,28 @@ function buildOpfsDb(call: (req: AnyCall) => Promise<{ rows: unknown[][] }>): Pr
 
 // ---------------------------------------------------------------------------
 // Worker-based async migration runner
+// Reuses shared constants/helpers from src/db/migrate.web.ts so both migration
+// paths cannot silently diverge when a future migration is added.
 // ---------------------------------------------------------------------------
 
 /**
  * Run migrations over the Worker channel.
  * Cannot use the sync MigratorExecutor interface here — the Worker is async.
- * We replicate the migration algorithm from migrate.web.ts using Worker calls.
+ * Shares SQL_FILES, CREATE_TRACKING_TABLE, STATEMENT_BREAKPOINT, hashContent,
+ * and migrationJournal from migrate.web.ts to stay in sync with the tested path.
  */
 async function runWorkerMigrations(
   call: (req: AnyCall) => Promise<{ rows: unknown[][] }>,
 ): Promise<void> {
-  // Ensure tracking table
+  // Ensure tracking table — uses shared DDL constant
   await call({
     kind: "exec",
-    sql: `CREATE TABLE IF NOT EXISTS __drizzle_migrations (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      tag        TEXT NOT NULL UNIQUE,
-      hash       TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    )`,
+    sql: CREATE_TRACKING_TABLE,
     params: [],
     method: "run",
   });
 
-  // Bundled via Vite — these dynamic imports resolve at build time
-  const journalModule = await import("@/db/migrations/meta/_journal.json");
-  const sql0000 = (await import("@/db/migrations/0000_thick_eddie_brock.sql?raw")).default;
-
-  const SQL_FILES: Record<string, string> = {
-    "0000_thick_eddie_brock": sql0000,
-  };
-
-  function hashContent(content: string): string {
-    let h = 5381;
-    for (let i = 0; i < content.length; i++) {
-      h = ((h << 5) + h) ^ content.charCodeAt(i);
-      h = h >>> 0;
-    }
-    return h.toString(16).padStart(8, "0");
-  }
+  const journal = migrationJournal as MigrationJournal;
 
   const appliedResult = await call({
     kind: "exec",
@@ -260,12 +316,10 @@ async function runWorkerMigrations(
     appliedResult.rows.map((r) => [r[0] as string, r[1] as string]),
   );
 
-  const journal = journalModule.default as {
-    entries: Array<{ idx: number; tag: string; when: number }>;
-  };
   const entries = [...journal.entries].sort((a, b) => a.idx - b.idx);
 
   for (const { tag, when } of entries) {
+    // SQL_FILES is the shared map from migrate.web.ts — same source of truth
     const raw = SQL_FILES[tag];
     if (!raw) throw new Error(`[migrator] SQL for '${tag}' not found in bundle`);
 
@@ -280,8 +334,9 @@ async function runWorkerMigrations(
 
     // Apply in a transaction (txId -1 is used exclusively for migration)
     const migTxId = -1;
+    // STATEMENT_BREAKPOINT is the shared delimiter constant
     const statements = raw
-      .split("--> statement-breakpoint")
+      .split(STATEMENT_BREAKPOINT)
       .map((s) => s.trim())
       .filter(Boolean);
 
@@ -347,21 +402,10 @@ export const db: ProxyDb & {
 );
 
 // ---------------------------------------------------------------------------
-// Async initialisation — runs once at module load
+// Dexie fallback helper — extracted so both failure paths can reuse it
 // ---------------------------------------------------------------------------
 
-const _init = (async (): Promise<{ type: BackendType }> => {
-  const opfsAvailable = await probeOpfs();
-
-  if (opfsAvailable) {
-    // ── OPFS / wa-sqlite path ─────────────────────────────────────────
-    const { call } = openWorker();
-    await runWorkerMigrations(call);
-    _db = buildOpfsDb(call);
-    return { type: "opfs" };
-  }
-
-  // ── Dexie / IndexedDB path (iOS Safari, incognito, no COOP/COEP) ──
+async function startDexiePath(): Promise<{ type: BackendType }> {
   console.warn(
     "[vitia] OPFS not available — falling back to Dexie/IndexedDB. " +
       "Data persists via IndexedDB.",
@@ -380,6 +424,9 @@ const _init = (async (): Promise<{ type: BackendType }> => {
   };
   const shimBase = drizzle(shimExecutor, { schema });
   const shim = Object.create(shimBase) as typeof _db;
+
+  // Dexie's own transaction() is already mutex-guarded per adapter method;
+  // this shim throws if somehow called directly.
   Object.defineProperty(shim!, "transaction", {
     value: async () => {
       throw new Error("[db] Dexie backend: use dexieAdapter.mealEntries instead.");
@@ -389,6 +436,39 @@ const _init = (async (): Promise<{ type: BackendType }> => {
   });
   _db = shim;
   return { type: "dexie" };
+}
+
+// ---------------------------------------------------------------------------
+// Async initialisation — runs once at module load
+// ---------------------------------------------------------------------------
+
+const _init = (async (): Promise<{ type: BackendType }> => {
+  const opfsAvailable = await probeOpfs();
+
+  if (opfsAvailable) {
+    // ── OPFS / wa-sqlite path ─────────────────────────────────────────
+    const { call, terminate, waitForReady } = openWorker();
+
+    try {
+      // Wait for Worker WASM init + readiness signal within the probe timeout.
+      // If the Worker hangs (WASM load failure, VFS error), this rejects and
+      // we terminate the Worker and fall back to Dexie — never hang dbReady.
+      await waitForReady(OPFS_PROBE_TIMEOUT_MS);
+      await runWorkerMigrations(call);
+      _db = buildOpfsDb(call);
+      return { type: "opfs" };
+    } catch (err) {
+      console.warn(
+        "[vitia] OPFS Worker init/migration failed — falling back to Dexie.",
+        err,
+      );
+      terminate();
+      return startDexiePath();
+    }
+  }
+
+  // ── Dexie / IndexedDB path (iOS Safari, incognito, no COOP/COEP) ──
+  return startDexiePath();
 })();
 
 dbReady = _init;

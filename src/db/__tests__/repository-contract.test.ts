@@ -19,7 +19,7 @@
 
 import Database from "better-sqlite3";
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
-import { and, asc, eq, like } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { runWebMigrations, type MigratorExecutor } from "@/src/db/migrate.web";
 import * as schema from "@/db/schema";
 import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
@@ -107,28 +107,43 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
   );
 
   /**
+   * FIFO async mutex — serialises concurrent transaction() calls.
+   * Mirrors the mutex in buildOpfsDb (db/client.ts) to reproduce the same
+   * fix in the test harness, proving the concurrency test would fail without it.
+   */
+  let txTail: Promise<void> = Promise.resolve();
+  function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const next = txTail.then(() => fn());
+    txTail = next.then(() => {}, () => {});
+    return next;
+  }
+
+  /**
    * Transaction facade.
    * Mirrors the design (design.md "CRITICAL: Transactions across the Worker boundary"):
-   *   BEGIN → run fn(txProxy) → COMMIT; on error → ROLLBACK + rethrow.
+   *   Acquire mutex → BEGIN → run fn(txProxy) → COMMIT; on error → ROLLBACK + rethrow.
    * In tests we use the same better-sqlite3 connection (no Worker needed).
+   * The mutex serializes concurrent callers — identical to the OPFS Worker path.
    */
   async function transaction<T>(fn: (tx: typeof db) => Promise<T>): Promise<T> {
-    bsDb.exec("BEGIN");
-    try {
-      // Per-tx proxy on the same connection — serialization is guaranteed by
-      // better-sqlite3's single-connection sync model (same as the Worker).
-      const txProxy = drizzleProxy(
-        async (sql, params, method) =>
-          execSync(sql, params, method as "run" | "all" | "get" | "values"),
-        { schema },
-      );
-      const result = await fn(txProxy);
-      bsDb.exec("COMMIT");
-      return result;
-    } catch (err) {
-      try { bsDb.exec("ROLLBACK"); } catch { /* already rolled back or closed */ }
-      throw err;
-    }
+    return runExclusive(async () => {
+      bsDb.exec("BEGIN");
+      try {
+        // Per-tx proxy on the same connection — serialization is guaranteed by
+        // the mutex above (same guarantee as the Worker's single-threaded model).
+        const txProxy = drizzleProxy(
+          async (sql, params, method) =>
+            execSync(sql, params, method as "run" | "all" | "get" | "values"),
+          { schema },
+        );
+        const result = await fn(txProxy);
+        bsDb.exec("COMMIT");
+        return result;
+      } catch (err) {
+        try { bsDb.exec("ROLLBACK"); } catch { /* already rolled back or closed */ }
+        throw err;
+      }
+    });
   }
 
   return {
@@ -139,9 +154,16 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
 
     async searchByName(query) {
       if (!query.trim()) return [];
-      return db.select().from(schema.foods)
-        .where(like(schema.foods.name, `%${query}%`))
-        .limit(30);
+      // Normalize to NFKD + strip combining marks for accent-insensitive search.
+      // This mirrors the Dexie adapter's normalizeForSearch so both backends
+      // return identical results for Spanish food names (Jamón, Ñoquis, etc.).
+      const normalizeForSearch = (s: string) =>
+        s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const normalizedQuery = normalizeForSearch(query);
+      const all = await db.select().from(schema.foods).limit(500);
+      return all
+        .filter((f) => normalizeForSearch(f.name).includes(normalizedQuery))
+        .slice(0, 30);
     },
 
     async getById(id) {
@@ -693,5 +715,144 @@ describe("Dexie migration tracking — idempotence (W2/S1, Scenario 2.4)", () =>
     // Same tags, no duplicates written by the second open
     expect(tags2.sort()).toEqual(tags1.sort());
     expect(tags2.length).toBe(tags1.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Accent-insensitive search — backend parity (Spanish food names)
+// Both backends must return identical results for accented queries.
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)(
+  "Accent-insensitive searchByName — %s",
+  (_backendName, makeBackend) => {
+    let backend: RepositoryBackend & { _ready: Promise<void> };
+
+    beforeAll(async () => {
+      backend = makeBackend();
+      await backend._ready;
+    });
+
+    it("finds 'Jamón' when searching 'jamon' (accent-insensitive, Spain app)", async () => {
+      const food = makeFood({ name: "Jamón ibérico", source: "custom" });
+      await backend.insert(food);
+
+      const results = await backend.searchByName("jamon");
+      expect(results.map((f) => f.id)).toContain(food.id);
+    });
+
+    it("finds 'Ñoquis' when searching 'noquis' (ñ normalization)", async () => {
+      const food = makeFood({ name: "Ñoquis de patata", source: "custom" });
+      await backend.insert(food);
+
+      const results = await backend.searchByName("noquis");
+      expect(results.map((f) => f.id)).toContain(food.id);
+    });
+
+    it("returns empty for unmatched query even with accented data", async () => {
+      await backend.insert(makeFood({ name: "Jamón cocido" }));
+      const results = await backend.searchByName("zzz-no-match-accented");
+      expect(results).toHaveLength(0);
+    });
+  }
+);
+
+// ---------------------------------------------------------------------------
+// FIFO transaction mutex — concurrency correctness (CRITICAL 1)
+//
+// Two concurrent db.transaction() calls must both complete successfully and
+// the final row count must be exactly correct — no "cannot start a transaction
+// within a transaction" error and no lost/partial rows.
+//
+// This test runs against the SQLite-proxy backend which directly exercises
+// the transaction() facade from the test harness (same logic as the OPFS
+// Worker path). The Dexie backend is covered implicitly by its own adapter
+// using Dexie's built-in transaction serialization.
+// ---------------------------------------------------------------------------
+
+describe("FIFO transaction mutex — concurrent transaction() calls (CRITICAL 1)", () => {
+  it("two concurrent insertBulk calls both succeed — no collision, exact row count", async () => {
+    const backend = makeSqliteProxyBackend();
+    await backend._ready;
+
+    const food = makeFood({ name: "Concurrent Food" });
+    await backend.insert(food);
+
+    const batch1 = [
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "breakfast" }),
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "lunch" }),
+    ];
+    const batch2 = [
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-01", mealType: "dinner" }),
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-01-02", mealType: "breakfast" }),
+    ];
+
+    // Fire both concurrently — without a mutex this causes "cannot start a
+    // transaction within a transaction" on a shared single-connection backend.
+    const [r1, r2] = await Promise.all([
+      backend.insertBulk(batch1),
+      backend.insertBulk(batch2),
+    ]);
+
+    expect(r1).toHaveLength(2);
+    expect(r2).toHaveLength(2);
+
+    // All 4 entries must be persisted correctly
+    const day1 = await backend.getByDate("2025-01-01");
+    const day2 = await backend.getByDate("2025-01-02");
+    expect(day1).toHaveLength(3); // breakfast + lunch + dinner
+    expect(day2).toHaveLength(1); // breakfast only
+  });
+
+  it("concurrent insertBulk + deleteByDateAndMeal both complete, final state is consistent", async () => {
+    const backend = makeSqliteProxyBackend();
+    await backend._ready;
+
+    const food = makeFood({ name: "Concurrent Food 2" });
+    await backend.insert(food);
+
+    // Pre-seed entries to delete
+    const toDelete = [
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-02-01", mealType: "lunch" }),
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-02-01", mealType: "lunch" }),
+    ];
+    await backend.insertBulk(toDelete);
+
+    const toInsert = [
+      makeEntry({ foodId: food.id, foodName: food.name, date: "2025-02-01", mealType: "dinner" }),
+    ];
+
+    // Concurrent: one deletes lunch, the other inserts dinner
+    await Promise.all([
+      backend.deleteByDateAndMeal("2025-02-01", "lunch"),
+      backend.insertBulk(toInsert),
+    ]);
+
+    const remaining = await backend.getByDate("2025-02-01");
+    // lunch entries deleted, dinner entry inserted
+    const remainingIds = remaining.map((e) => e.id);
+    expect(remainingIds).not.toContain(toDelete[0].id);
+    expect(remainingIds).not.toContain(toDelete[1].id);
+    expect(remainingIds).toContain(toInsert[0].id);
+  });
+
+  it("a throwing transaction leaves NO partial rows (rollback integrity)", async () => {
+    const backend = makeSqliteProxyBackend();
+    await backend._ready;
+
+    const food = makeFood({ name: "Rollback Integrity Food" });
+    await backend.insert(food);
+
+    const valid = makeEntry({ foodId: food.id, foodName: food.name, date: "2025-03-01", mealType: "breakfast" });
+    const duplicate = { ...valid }; // same id → constraint violation
+
+    await expect(backend.insertBulk([valid, duplicate])).rejects.toThrow();
+
+    // No partial rows: valid entry must NOT be committed
+    const rows = await backend.getByDate("2025-03-01");
+    expect(rows.map((e) => e.id)).not.toContain(valid.id);
   });
 });

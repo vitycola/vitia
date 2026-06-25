@@ -15,6 +15,9 @@
 import sql0000 from "@/db/migrations/0000_thick_eddie_brock.sql?raw";
 import journal from "@/db/migrations/meta/_journal.json";
 
+/** Re-export the journal so runWorkerMigrations in db/client.ts can reuse it. */
+export { journal as migrationJournal };
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -43,17 +46,19 @@ interface MigrationRow {
 
 // ---------------------------------------------------------------------------
 // SQL file map — keyed by journal entry tag
+// Exported so runWorkerMigrations in db/client.ts can reuse it without drift.
 // ---------------------------------------------------------------------------
 
-const SQL_FILES: Record<string, string> = {
+export const SQL_FILES: Record<string, string> = {
   "0000_thick_eddie_brock": sql0000,
 };
 
 // ---------------------------------------------------------------------------
 // Tracking table DDL
+// Exported so both migration paths share the exact same DDL.
 // ---------------------------------------------------------------------------
 
-const CREATE_TRACKING_TABLE = `
+export const CREATE_TRACKING_TABLE = `
 CREATE TABLE IF NOT EXISTS __drizzle_migrations (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   tag        TEXT NOT NULL UNIQUE,
@@ -65,12 +70,13 @@ CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 // Helpers
 // ---------------------------------------------------------------------------
 
-const BREAKPOINT = "--> statement-breakpoint";
+/** Drizzle migration statement breakpoint delimiter. */
+export const STATEMENT_BREAKPOINT = "--> statement-breakpoint";
 
 /** Split a raw SQL migration file into individual executable statements. */
-function splitStatements(raw: string): string[] {
+export function splitStatements(raw: string): string[] {
   return raw
-    .split(BREAKPOINT)
+    .split(STATEMENT_BREAKPOINT)
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -81,7 +87,7 @@ function splitStatements(raw: string): string[] {
  * (avoids requiring SubtleCrypto async + keeps the migrator synchronous).
  * The hash is stable for drift detection; it is NOT a security primitive.
  */
-function hashContent(content: string): string {
+export function hashContent(content: string): string {
   let h = 5381;
   for (let i = 0; i < content.length; i++) {
     h = ((h << 5) + h) ^ content.charCodeAt(i);
@@ -89,6 +95,11 @@ function hashContent(content: string): string {
   }
   return h.toString(16).padStart(8, "0");
 }
+
+/** The journal module type — shared between migration paths. */
+export type MigrationJournal = {
+  entries: Array<{ idx: number; tag: string; when: number }>;
+};
 
 // ---------------------------------------------------------------------------
 // Public API
