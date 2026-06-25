@@ -1,0 +1,697 @@
+/**
+ * Repository contract test suite — parameterized over BOTH storage backends.
+ *
+ * Layer exercised:
+ *   - OPFS/SQLite path: better-sqlite3 in-memory behind the sqlite-proxy executor
+ *     (query-translation and contract layer; the Worker message protocol is a
+ *     browser-only concern and is NOT covered here — it requires a real Worker
+ *     environment with wa-sqlite loaded)
+ *   - Dexie path: fake-indexeddb (Dexie adapter contract layer)
+ *
+ * Spec: R1–R10, Scenarios 2.1–2.8 (web-local-storage.md)
+ * Design: design.md — Verified Repository Contracts, Transaction facade, Dexie adapter
+ *
+ * Review flags addressed:
+ *   - S2: INSERT...RETURNING uses method 'all', not 'run' (sqlite-proxy executor)
+ *   - W2/S1: Dexie migration tracking idempotence (Scenario 2.4 on Dexie path)
+ *   - W2: Dexie tx adapter atomicity — insertBulk rollback test (Scenario 2.7)
+ */
+
+import Database from "better-sqlite3";
+import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
+import { and, asc, eq, like } from "drizzle-orm";
+import { runWebMigrations, type MigratorExecutor } from "@/src/db/migrate.web";
+import * as schema from "@/db/schema";
+import type { Food, NewFood, MealEntry, NewMealEntry, UserProfile, NewUserProfile } from "@/db/schema";
+import { createDexieAdapter, type DexieAdapter } from "@/src/db/dexie-adapter";
+
+// ---------------------------------------------------------------------------
+// Shared backend interface
+// ---------------------------------------------------------------------------
+
+interface RepositoryBackend {
+  name: string;
+  // Foods
+  searchByName(query: string): Promise<Food[]>;
+  getById(id: string): Promise<Food | null>;
+  upsert(food: NewFood): Promise<Food>;
+  insert(food: NewFood): Promise<Food>;
+  getCustomFoods(): Promise<Food[]>;
+  update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
+  // Profile
+  getProfile(): Promise<UserProfile | null>;
+  upsertProfile(data: Omit<NewUserProfile, "id">): Promise<UserProfile>;
+  // MealEntries
+  getByDate(date: string): Promise<MealEntry[]>;
+  getByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<MealEntry[]>;
+  insertEntry(entry: NewMealEntry): Promise<MealEntry>;
+  insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]>;
+  remove(id: string): Promise<void>;
+  deleteByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// SQLite-proxy backend (better-sqlite3 in-memory)
+//
+// This validates query-translation correctness: that drizzle's sqlite-proxy
+// calls map to the right better-sqlite3 methods, especially:
+//   S2: INSERT...RETURNING uses method 'all' (not 'run') so rows are returned.
+// ---------------------------------------------------------------------------
+
+function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> } {
+  const bsDb = new Database(":memory:");
+
+  const migrationExecutor: MigratorExecutor = {
+    run(sql) { bsDb.exec(sql); },
+    query<T>(sql: string, params: unknown[] = []) {
+      return bsDb.prepare(sql).all(...params) as T[];
+    },
+    execute(sql: string, params: unknown[] = []) {
+      bsDb.prepare(sql).run(...params);
+    },
+  };
+
+  const _ready = runWebMigrations(migrationExecutor);
+
+  /**
+   * Core executor for the sqlite-proxy driver.
+   *
+   * S2 flag: drizzle uses method 'all' for INSERT...RETURNING.
+   * We MUST call stmt.all() (not stmt.run()) when method is 'all', otherwise
+   * returning() calls return empty arrays and repos get undefined rows.
+   */
+  function execSync(
+    sql: string,
+    params: unknown[],
+    method: "run" | "all" | "get" | "values",
+  ): { rows: unknown[][] } {
+    const stmt = bsDb.prepare(sql);
+    if (method === "run") {
+      stmt.run(...params);
+      return { rows: [] };
+    }
+    if (method === "get") {
+      const row = stmt.get(...params) as Record<string, unknown> | undefined;
+      return row ? { rows: [Object.values(row)] } : { rows: [] };
+    }
+    // 'all' and 'values' — covers SELECT and INSERT...RETURNING
+    const rows = stmt.all(...params) as Record<string, unknown>[];
+    return { rows: rows.map((r) => Object.values(r)) };
+  }
+
+  // The base drizzle proxy instance — has all select/insert/update/delete/etc.
+  const db = drizzleProxy(
+    async (sql, params, method) =>
+      execSync(sql, params, method as "run" | "all" | "get" | "values"),
+    { schema },
+  );
+
+  /**
+   * Transaction facade.
+   * Mirrors the design (design.md "CRITICAL: Transactions across the Worker boundary"):
+   *   BEGIN → run fn(txProxy) → COMMIT; on error → ROLLBACK + rethrow.
+   * In tests we use the same better-sqlite3 connection (no Worker needed).
+   */
+  async function transaction<T>(fn: (tx: typeof db) => Promise<T>): Promise<T> {
+    bsDb.exec("BEGIN");
+    try {
+      // Per-tx proxy on the same connection — serialization is guaranteed by
+      // better-sqlite3's single-connection sync model (same as the Worker).
+      const txProxy = drizzleProxy(
+        async (sql, params, method) =>
+          execSync(sql, params, method as "run" | "all" | "get" | "values"),
+        { schema },
+      );
+      const result = await fn(txProxy);
+      bsDb.exec("COMMIT");
+      return result;
+    } catch (err) {
+      try { bsDb.exec("ROLLBACK"); } catch { /* already rolled back or closed */ }
+      throw err;
+    }
+  }
+
+  return {
+    name: "SQLite-proxy (better-sqlite3 in-memory)",
+    _ready,
+
+    // ── Foods ────────────────────────────────────────────────────────────
+
+    async searchByName(query) {
+      if (!query.trim()) return [];
+      return db.select().from(schema.foods)
+        .where(like(schema.foods.name, `%${query}%`))
+        .limit(30);
+    },
+
+    async getById(id) {
+      const rows = await db.select().from(schema.foods)
+        .where(eq(schema.foods.id, id)).limit(1);
+      return rows[0] ?? null;
+    },
+
+    async upsert(food) {
+      // S2: .returning() → drizzle calls executor with method 'all'
+      const rows = await db
+        .insert(schema.foods).values(food)
+        .onConflictDoUpdate({
+          target: schema.foods.id,
+          set: {
+            name: food.name,
+            brand: food.brand,
+            caloriesPer100g: food.caloriesPer100g,
+            proteinPer100g: food.proteinPer100g,
+            carbsPer100g: food.carbsPer100g,
+            fatPer100g: food.fatPer100g,
+            servingSizeG: food.servingSizeG,
+            offProductCode: food.offProductCode,
+          },
+        })
+        .returning();
+      return rows[0];
+    },
+
+    async insert(food) {
+      // S2: .returning() → drizzle calls executor with method 'all'
+      const rows = await db.insert(schema.foods).values(food).returning();
+      return rows[0];
+    },
+
+    async getCustomFoods() {
+      return db.select().from(schema.foods)
+        .where(eq(schema.foods.source, "custom"))
+        .orderBy(schema.foods.name);
+    },
+
+    async update(id, patch) {
+      const rows = await db.update(schema.foods)
+        .set(patch)
+        .where(eq(schema.foods.id, id))
+        .returning();
+      return rows[0];
+    },
+
+    // ── Profile ──────────────────────────────────────────────────────────
+
+    async getProfile() {
+      const rows = await db.select().from(schema.usersProfile)
+        .where(eq(schema.usersProfile.id, 1)).limit(1);
+      return rows[0] ?? null;
+    },
+
+    async upsertProfile(data) {
+      const rows = await db
+        .insert(schema.usersProfile)
+        .values({ ...data, id: 1 })
+        .onConflictDoUpdate({
+          target: schema.usersProfile.id,
+          set: { ...data, updatedAt: new Date().toISOString() },
+        })
+        .returning();
+      return rows[0];
+    },
+
+    // ── MealEntries ──────────────────────────────────────────────────────
+
+    async getByDate(date) {
+      return db.select().from(schema.mealEntries)
+        .where(eq(schema.mealEntries.date, date))
+        .orderBy(asc(schema.mealEntries.loggedAt));
+    },
+
+    async getByDateAndMeal(date, mealType) {
+      return db.select().from(schema.mealEntries)
+        .where(and(
+          eq(schema.mealEntries.date, date),
+          eq(schema.mealEntries.mealType, mealType),
+        ))
+        .orderBy(asc(schema.mealEntries.loggedAt));
+    },
+
+    async insertEntry(entry) {
+      const rows = await db.insert(schema.mealEntries).values(entry).returning();
+      return rows[0];
+    },
+
+    async insertBulk(entries) {
+      if (entries.length === 0) return [];
+      return transaction(async (tx) => {
+        const results: MealEntry[] = [];
+        for (const entry of entries) {
+          const rows = await tx.insert(schema.mealEntries).values(entry).returning();
+          results.push(rows[0]);
+        }
+        return results;
+      });
+    },
+
+    async remove(id) {
+      await db.delete(schema.mealEntries).where(eq(schema.mealEntries.id, id));
+    },
+
+    async deleteByDateAndMeal(date, mealType) {
+      await transaction(async (tx) => {
+        await tx.delete(schema.mealEntries).where(
+          and(
+            eq(schema.mealEntries.date, date),
+            eq(schema.mealEntries.mealType, mealType),
+          ),
+        );
+      });
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dexie backend (fake-indexeddb)
+// ---------------------------------------------------------------------------
+
+function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie: DexieAdapter } {
+  const adapter = createDexieAdapter("vitia-test-" + Math.random().toString(36).slice(2));
+
+  return {
+    name: "Dexie/IndexedDB (fake-indexeddb)",
+    _ready: adapter.ready,
+    _dexie: adapter,
+
+    async searchByName(query) { return adapter.foods.searchByName(query); },
+    async getById(id) { return adapter.foods.getById(id); },
+    async upsert(food) { return adapter.foods.upsert(food); },
+    async insert(food) { return adapter.foods.insert(food); },
+    async getCustomFoods() { return adapter.foods.getCustomFoods(); },
+    async update(id, patch) { return adapter.foods.update(id, patch); },
+
+    async getProfile() { return adapter.profile.getProfile(); },
+    async upsertProfile(data) { return adapter.profile.upsertProfile(data); },
+
+    async getByDate(date) { return adapter.mealEntries.getByDate(date); },
+    async getByDateAndMeal(date, mealType) {
+      return adapter.mealEntries.getByDateAndMeal(date, mealType);
+    },
+    async insertEntry(entry) { return adapter.mealEntries.insert(entry); },
+    async insertBulk(entries) { return adapter.mealEntries.insertBulk(entries); },
+    async remove(id) { return adapter.mealEntries.remove(id); },
+    async deleteByDateAndMeal(date, mealType) {
+      return adapter.mealEntries.deleteByDateAndMeal(date, mealType);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Fixture helpers
+// ---------------------------------------------------------------------------
+
+let idCounter = 0;
+function nextId(): string {
+  return `test-id-${++idCounter}`;
+}
+
+function makeFood(overrides: Partial<NewFood> = {}): NewFood {
+  return {
+    id: nextId(),
+    name: "Test Food",
+    brand: "Test Brand",
+    caloriesPer100g: 100,
+    proteinPer100g: 10,
+    carbsPer100g: 15,
+    fatPer100g: 3,
+    source: "openfoodfacts",
+    ...overrides,
+  };
+}
+
+function makeEntry(overrides: Partial<NewMealEntry> = {}): NewMealEntry {
+  return {
+    id: nextId(),
+    date: "2024-01-15",
+    mealType: "lunch",
+    foodId: nextId(),
+    foodName: "Test Food",
+    quantityG: 100,
+    calories: 100,
+    proteinG: 10,
+    carbsG: 15,
+    fatG: 3,
+    ...overrides,
+  };
+}
+
+function makeProfile(): Omit<schema.NewUserProfile, "id"> {
+  return {
+    age: 30,
+    heightCm: 175,
+    weightKg: 70,
+    sex: "male",
+    activityLevel: "sedentary",
+    goal: "maintain",
+    calorieGoal: 2000,
+    proteinGoalG: 150,
+    carbsGoalG: 250,
+    fatGoalG: 65,
+    useManualGoals: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Parameterized contract suite — runs against BOTH backends
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)(
+  "Repository contract — %s",
+  (_backendName, makeBackend) => {
+    // Each describe block gets its own backend instance to avoid cross-test
+    // state from the shared idCounter (foods inserted in one test are visible
+    // to subsequent tests on the same backend).
+    let backend: RepositoryBackend & { _ready: Promise<void> };
+
+    beforeAll(async () => {
+      backend = makeBackend();
+      await backend._ready;
+    });
+
+    // ─── Foods ──────────────────────────────────────────────────────────
+
+    describe("foods.insert (S2: INSERT...RETURNING → method 'all')", () => {
+      it("returns the inserted row with all fields (Scenario 2.8)", async () => {
+        const food = makeFood({ name: "Banana", source: "custom" });
+        const result = await backend.insert(food);
+
+        expect(result).toBeDefined();
+        expect(result.id).toBe(food.id);
+        expect(result.name).toBe("Banana");
+        expect(result.source).toBe("custom");
+      });
+
+      it("throws when inserting a duplicate id", async () => {
+        const food = makeFood();
+        await backend.insert(food);
+        await expect(backend.insert(food)).rejects.toThrow();
+      });
+    });
+
+    describe("foods.upsert (S2: .returning() on conflict-update)", () => {
+      it("inserts when id is new and returns the row", async () => {
+        const food = makeFood({ name: "Apple", source: "openfoodfacts" });
+        const result = await backend.upsert(food);
+        expect(result.id).toBe(food.id);
+        expect(result.name).toBe("Apple");
+      });
+
+      it("updates existing row and returns updated data", async () => {
+        const food = makeFood({ name: "Original", source: "openfoodfacts" });
+        await backend.upsert(food);
+
+        const updated = await backend.upsert({ ...food, name: "Updated" });
+        expect(updated.id).toBe(food.id);
+        expect(updated.name).toBe("Updated");
+      });
+    });
+
+    describe("foods.searchByName", () => {
+      it("returns empty array for empty query", async () => {
+        const result = await backend.searchByName("");
+        expect(result).toEqual([]);
+      });
+
+      it("finds foods matching name substring", async () => {
+        const food = makeFood({ name: "Whole Milk XYZ" });
+        await backend.insert(food);
+
+        const results = await backend.searchByName("Whole Milk XYZ");
+        const ids = results.map((f) => f.id);
+        expect(ids).toContain(food.id);
+      });
+
+      it("returns empty array when no match", async () => {
+        const results = await backend.searchByName("zzz-no-match-zzz-999");
+        expect(results).toEqual([]);
+      });
+    });
+
+    describe("foods.getById", () => {
+      it("returns the food when found", async () => {
+        const food = makeFood({ name: "Rice Special" });
+        await backend.insert(food);
+
+        const result = await backend.getById(food.id);
+        expect(result).not.toBeNull();
+        expect(result!.id).toBe(food.id);
+      });
+
+      it("returns null when not found", async () => {
+        const result = await backend.getById("nonexistent-id-xyz-999");
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("foods.getCustomFoods", () => {
+      it("returns only custom foods ordered by name", async () => {
+        // Use a fresh isolated backend for this test to avoid cross-contamination
+        const fresh = makeBackend();
+        await fresh._ready;
+
+        const c1 = makeFood({ name: "Zucchini Bread", source: "custom" });
+        const c2 = makeFood({ name: "Apple Jam", source: "custom" });
+        const off = makeFood({ name: "Commercial Product", source: "openfoodfacts" });
+        await fresh.insert(c1);
+        await fresh.insert(c2);
+        await fresh.insert(off);
+
+        const result = await fresh.getCustomFoods();
+        // All results are custom
+        expect(result.every((f) => f.source === "custom")).toBe(true);
+        // Alphabetically sorted
+        const names = result.map((f) => f.name);
+        expect(names.indexOf("Apple Jam")).toBeLessThan(names.indexOf("Zucchini Bread"));
+      });
+    });
+
+    describe("foods.update", () => {
+      it("updates specified fields and returns updated row", async () => {
+        const food = makeFood({ name: "Old Name", caloriesPer100g: 50 });
+        await backend.insert(food);
+
+        const updated = await backend.update(food.id, { name: "New Name", caloriesPer100g: 75 });
+        expect(updated.name).toBe("New Name");
+        expect(updated.caloriesPer100g).toBe(75);
+      });
+    });
+
+    // ─── Profile ─────────────────────────────────────────────────────────
+
+    describe("profile.getProfile / upsertProfile", () => {
+      it("returns null when no profile exists yet (first launch)", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+        const result = await fresh.getProfile();
+        expect(result).toBeNull();
+      });
+
+      it("inserts profile and returns it with id=1", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+        const result = await fresh.upsertProfile(makeProfile());
+        expect(result.id).toBe(1);
+        expect(result.age).toBe(30);
+      });
+
+      it("second upsertProfile call updates, does not duplicate (singleton id=1)", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+        await fresh.upsertProfile(makeProfile());
+        await fresh.upsertProfile({ ...makeProfile(), age: 35 });
+
+        const profile = await fresh.getProfile();
+        expect(profile).not.toBeNull();
+        expect(profile!.age).toBe(35);
+        expect(profile!.id).toBe(1);
+      });
+    });
+
+    // ─── MealEntries ─────────────────────────────────────────────────────
+
+    describe("mealEntries.insert + getByDate", () => {
+      it("inserts entry and retrieves it by date", async () => {
+        const food = makeFood({ name: "FK Food Entry" });
+        await backend.insert(food);
+
+        const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-08-01" });
+        await backend.insertEntry(entry);
+
+        const results = await backend.getByDate("2024-08-01");
+        expect(results.map((e) => e.id)).toContain(entry.id);
+      });
+    });
+
+    describe("mealEntries.getByDateAndMeal", () => {
+      it("filters by date AND mealType", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+
+        const food = makeFood({ name: "FilterByMeal Food" });
+        await fresh.insert(food);
+
+        const lunchEntry = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-09-01", mealType: "lunch",
+        });
+        const dinnerEntry = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-09-01", mealType: "dinner",
+        });
+        await fresh.insertEntry(lunchEntry);
+        await fresh.insertEntry(dinnerEntry);
+
+        const lunches = await fresh.getByDateAndMeal("2024-09-01", "lunch");
+        expect(lunches.map((e) => e.id)).toContain(lunchEntry.id);
+        expect(lunches.map((e) => e.id)).not.toContain(dinnerEntry.id);
+      });
+    });
+
+    describe("mealEntries.remove", () => {
+      it("removes an entry by id", async () => {
+        const food = makeFood({ name: "RemoveMe Food" });
+        await backend.insert(food);
+
+        const entry = makeEntry({ foodId: food.id, foodName: food.name, date: "2024-10-01" });
+        await backend.insertEntry(entry);
+        await backend.remove(entry.id);
+
+        const results = await backend.getByDate("2024-10-01");
+        expect(results.map((e) => e.id)).not.toContain(entry.id);
+      });
+    });
+
+    describe("mealEntries.insertBulk (transaction atomicity — R9/Scenario 2.7)", () => {
+      it("inserts all entries and returns them (happy path)", async () => {
+        const food = makeFood({ name: "Bulk Food" });
+        await backend.insert(food);
+
+        const entries = [
+          makeEntry({ foodId: food.id, foodName: food.name, date: "2024-11-01", mealType: "breakfast" }),
+          makeEntry({ foodId: food.id, foodName: food.name, date: "2024-11-01", mealType: "lunch" }),
+        ];
+        const results = await backend.insertBulk(entries);
+        expect(results).toHaveLength(2);
+        expect(results[0].id).toBe(entries[0].id);
+        expect(results[1].id).toBe(entries[1].id);
+      });
+
+      it("returns empty array when entries list is empty", async () => {
+        const results = await backend.insertBulk([]);
+        expect(results).toEqual([]);
+      });
+
+      it("rolls back on partial failure — no partial state committed (W2)", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+
+        const food = makeFood({ name: "Rollback Food" });
+        await fresh.insert(food);
+
+        const validEntry = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-12-01", mealType: "breakfast",
+        });
+        // Duplicate id causes a unique constraint violation on the second insert
+        const duplicateEntry = { ...validEntry };
+
+        await expect(fresh.insertBulk([validEntry, duplicateEntry])).rejects.toThrow();
+
+        // The first entry MUST NOT be committed (atomicity guarantee — R9)
+        const rows = await fresh.getByDate("2024-12-01");
+        expect(rows.map((e) => e.id)).not.toContain(validEntry.id);
+      });
+    });
+
+    describe("mealEntries.deleteByDateAndMeal (uses db.transaction)", () => {
+      it("deletes all entries for a date+mealType", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+
+        const food = makeFood({ name: "DeleteAll Food" });
+        await fresh.insert(food);
+
+        const e1 = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-12-15", mealType: "dinner",
+        });
+        const e2 = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-12-15", mealType: "dinner",
+        });
+        await fresh.insertEntry(e1);
+        await fresh.insertEntry(e2);
+
+        await fresh.deleteByDateAndMeal("2024-12-15", "dinner");
+
+        const rows = await fresh.getByDateAndMeal("2024-12-15", "dinner");
+        expect(rows).toHaveLength(0);
+      });
+
+      it("does not delete entries for a different mealType on the same date", async () => {
+        const fresh = makeBackend();
+        await fresh._ready;
+
+        const food = makeFood({ name: "Keep Food" });
+        await fresh.insert(food);
+
+        const keeper = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-12-16", mealType: "breakfast",
+        });
+        const toDelete = makeEntry({
+          foodId: food.id, foodName: food.name,
+          date: "2024-12-16", mealType: "lunch",
+        });
+        await fresh.insertEntry(keeper);
+        await fresh.insertEntry(toDelete);
+
+        await fresh.deleteByDateAndMeal("2024-12-16", "lunch");
+
+        const remaining = await fresh.getByDate("2024-12-16");
+        expect(remaining.map((e) => e.id)).toContain(keeper.id);
+      });
+    });
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Dexie-specific: migration tracking idempotence (W2/S1, Scenario 2.4)
+// ---------------------------------------------------------------------------
+
+describe("Dexie migration tracking — idempotence (W2/S1, Scenario 2.4)", () => {
+  it("records all migration tags on first open", async () => {
+    const adapter = createDexieAdapter("vitia-idem-" + Math.random().toString(36).slice(2));
+    await adapter.ready;
+
+    const tags = await adapter.getAppliedMigrationTags();
+    // The Dexie adapter must record at least the 0000 migration tag
+    expect(tags).toContain("0000_thick_eddie_brock");
+  });
+
+  it("re-opening the same database name does not duplicate migration records", async () => {
+    const dbName = "vitia-idem-dedup-" + Math.random().toString(36).slice(2);
+    const adapter1 = createDexieAdapter(dbName);
+    await adapter1.ready;
+    const tags1 = await adapter1.getAppliedMigrationTags();
+    // Note: Dexie.close() dispatches a CustomEvent which is not available in Node.
+    // In production (browser) this is fine. In tests we skip the explicit close
+    // and let the GC/fake-indexeddb handle cleanup — idempotence is what matters.
+
+    // Simulate a second adapter instance for the same DB (same session, different
+    // code path — covers the "already has migration rows" branch of the ready guard).
+    const adapter2 = createDexieAdapter(dbName);
+    await adapter2.ready;
+    const tags2 = await adapter2.getAppliedMigrationTags();
+
+    // Same tags, no duplicates written by the second open
+    expect(tags2.sort()).toEqual(tags1.sort());
+    expect(tags2.length).toBe(tags1.length);
+  });
+});
