@@ -62,7 +62,6 @@ export function SearchRoute() {
           defaultValue={query}
           onChange={handleQueryChange}
           placeholder="Nombre del alimento..."
-          autoFocus
           className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
         />
 
@@ -75,9 +74,7 @@ export function SearchRoute() {
 
       {/* Results */}
       <div className="px-4 pt-3">
-        {isLoading && (
-          <p className="py-4 text-center text-sm text-gray-400">Buscando…</p>
-        )}
+        {isLoading && <p className="py-4 text-center text-sm text-gray-400">Buscando…</p>}
 
         {!isLoading && results.length === 0 && query.length >= 2 && (
           <p className="py-4 text-center text-sm text-gray-400">Sin resultados para "{query}"</p>

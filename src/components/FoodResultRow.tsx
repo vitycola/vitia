@@ -16,13 +16,9 @@ export function FoodResultRow({ food, onSelect }: FoodResultRowProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium text-gray-900">{food.name}</span>
-          {food.hasMissingData && (
-            <AlertTriangle size={14} className="shrink-0 text-amber-500" />
-          )}
+          {food.hasMissingData && <AlertTriangle size={14} className="shrink-0 text-amber-500" />}
         </div>
-        {food.brand && (
-          <p className="truncate text-xs text-gray-400">{food.brand}</p>
-        )}
+        {food.brand && <p className="truncate text-xs text-gray-400">{food.brand}</p>}
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -30,7 +26,8 @@ export function FoodResultRow({ food, onSelect }: FoodResultRowProps) {
           {Math.round(food.caloriesPer100g)} kcal
         </span>
         <span className="text-xs text-gray-400">
-          P {Math.round(food.proteinPer100g)}g · C {Math.round(food.carbsPer100g)}g · G {Math.round(food.fatPer100g)}g
+          P {Math.round(food.proteinPer100g)}g · C {Math.round(food.carbsPer100g)}g · G{" "}
+          {Math.round(food.fatPer100g)}g
         </span>
       </div>
     </button>

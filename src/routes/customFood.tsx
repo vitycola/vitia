@@ -11,18 +11,12 @@ const schema = z.object({
     .number({ invalid_type_error: "Ingresá las calorías" })
     .min(0, "Debe ser 0 o mayor")
     .max(9000),
-  proteinGPer100g: z.coerce
-    .number({ invalid_type_error: "Ingresá las proteínas" })
-    .min(0)
-    .max(100),
+  proteinGPer100g: z.coerce.number({ invalid_type_error: "Ingresá las proteínas" }).min(0).max(100),
   carbsGPer100g: z.coerce
     .number({ invalid_type_error: "Ingresá los carbohidratos" })
     .min(0)
     .max(100),
-  fatGPer100g: z.coerce
-    .number({ invalid_type_error: "Ingresá las grasas" })
-    .min(0)
-    .max(100),
+  fatGPer100g: z.coerce.number({ invalid_type_error: "Ingresá las grasas" }).min(0).max(100),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -85,10 +79,11 @@ export function CustomFoodRoute() {
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4" noValidate>
           {/* Name */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="foodName" className="mb-1 block text-sm font-medium text-gray-700">
               Nombre del alimento
             </label>
             <input
+              id="foodName"
               type="text"
               placeholder="Ej: Arroz integral cocido"
               {...register("foodName")}
@@ -101,10 +96,14 @@ export function CustomFoodRoute() {
 
           {/* Calories */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="caloriesPer100g"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
               Calorías (kcal / 100 g)
             </label>
             <input
+              id="caloriesPer100g"
               type="number"
               inputMode="decimal"
               placeholder="0"
@@ -118,10 +117,14 @@ export function CustomFoodRoute() {
 
           {/* Protein */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="proteinGPer100g"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
               Proteínas (g / 100 g)
             </label>
             <input
+              id="proteinGPer100g"
               type="number"
               inputMode="decimal"
               placeholder="0"
@@ -135,10 +138,11 @@ export function CustomFoodRoute() {
 
           {/* Carbs */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="carbsGPer100g" className="mb-1 block text-sm font-medium text-gray-700">
               Carbohidratos (g / 100 g)
             </label>
             <input
+              id="carbsGPer100g"
               type="number"
               inputMode="decimal"
               placeholder="0"
@@ -152,10 +156,11 @@ export function CustomFoodRoute() {
 
           {/* Fat */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="fatGPer100g" className="mb-1 block text-sm font-medium text-gray-700">
               Grasas (g / 100 g)
             </label>
             <input
+              id="fatGPer100g"
               type="number"
               inputMode="decimal"
               placeholder="0"

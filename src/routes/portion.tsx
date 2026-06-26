@@ -1,12 +1,12 @@
 import { getById } from "@/db/repositories/foods";
-import { scalePortion } from "@/lib/nutrition";
-import { generateId } from "@/lib/id";
+import type { Food } from "@/db/schema";
 import { todayISO } from "@/lib/date";
+import { generateId } from "@/lib/id";
+import { scalePortion } from "@/lib/nutrition";
 import { useDayStore } from "@/stores/useDayStore";
 import type { MealType } from "@/types";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { Food } from "@/db/schema";
 
 export function PortionRoute() {
   const { foodId } = useParams<{ foodId: string }>();
@@ -106,8 +106,16 @@ export function PortionRoute() {
           {food.brand && <p className="text-sm text-gray-400">{food.brand}</p>}
 
           <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-            <NutritionCell label="Calorías" value={`${Math.round(food.caloriesPer100g)}`} unit="kcal" />
-            <NutritionCell label="Proteínas" value={`${Math.round(food.proteinPer100g)}`} unit="g" />
+            <NutritionCell
+              label="Calorías"
+              value={`${Math.round(food.caloriesPer100g)}`}
+              unit="kcal"
+            />
+            <NutritionCell
+              label="Proteínas"
+              value={`${Math.round(food.proteinPer100g)}`}
+              unit="g"
+            />
             <NutritionCell label="Carboh." value={`${Math.round(food.carbsPer100g)}`} unit="g" />
             <NutritionCell label="Grasas" value={`${Math.round(food.fatPer100g)}`} unit="g" />
           </div>
@@ -116,10 +124,11 @@ export function PortionRoute() {
 
         {/* Quantity input */}
         <div className="mb-4 rounded-2xl bg-white px-4 py-4 shadow-sm">
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label htmlFor="quantity" className="mb-2 block text-sm font-medium text-gray-700">
             Cantidad (gramos)
           </label>
           <input
+            id="quantity"
             type="number"
             inputMode="decimal"
             value={quantityStr}
@@ -136,10 +145,30 @@ export function PortionRoute() {
               Para {grams} g
             </p>
             <div className="grid grid-cols-4 gap-2 text-center">
-              <NutritionCell label="Calorías" value={`${Math.round(portion.calories)}`} unit="kcal" highlight />
-              <NutritionCell label="Proteínas" value={`${Math.round(portion.proteinG)}`} unit="g" highlight />
-              <NutritionCell label="Carboh." value={`${Math.round(portion.carbsG)}`} unit="g" highlight />
-              <NutritionCell label="Grasas" value={`${Math.round(portion.fatG)}`} unit="g" highlight />
+              <NutritionCell
+                label="Calorías"
+                value={`${Math.round(portion.calories)}`}
+                unit="kcal"
+                highlight
+              />
+              <NutritionCell
+                label="Proteínas"
+                value={`${Math.round(portion.proteinG)}`}
+                unit="g"
+                highlight
+              />
+              <NutritionCell
+                label="Carboh."
+                value={`${Math.round(portion.carbsG)}`}
+                unit="g"
+                highlight
+              />
+              <NutritionCell
+                label="Grasas"
+                value={`${Math.round(portion.fatG)}`}
+                unit="g"
+                highlight
+              />
             </div>
           </div>
         )}

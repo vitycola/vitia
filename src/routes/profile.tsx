@@ -79,10 +79,7 @@ export function ProfileRoute() {
               label="Actividad"
               value={ACTIVITY_LABELS[profile.activityLevel] ?? profile.activityLevel}
             />
-            <ProfileRow
-              label="Objetivo"
-              value={GOAL_LABELS[profile.goal] ?? profile.goal}
-            />
+            <ProfileRow label="Objetivo" value={GOAL_LABELS[profile.goal] ?? profile.goal} />
           </div>
         </section>
 
@@ -96,14 +93,8 @@ export function ProfileRoute() {
               label="Objetivo calórico"
               value={`${Math.round(profile.calorieGoal)} kcal`}
             />
-            <ProfileRow
-              label="Proteínas"
-              value={`${Math.round(profile.proteinGoalG)} g`}
-            />
-            <ProfileRow
-              label="Carbohidratos"
-              value={`${Math.round(profile.carbsGoalG)} g`}
-            />
+            <ProfileRow label="Proteínas" value={`${Math.round(profile.proteinGoalG)} g`} />
+            <ProfileRow label="Carbohidratos" value={`${Math.round(profile.carbsGoalG)} g`} />
             <ProfileRow label="Grasas" value={`${Math.round(profile.fatGoalG)} g`} />
           </div>
 

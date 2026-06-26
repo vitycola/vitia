@@ -85,9 +85,7 @@ export function OnboardingRoute() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">
               Objetivo estimado
             </p>
-            <p className="text-2xl font-bold text-green-800">
-              {preview.calorieGoal} kcal
-            </p>
+            <p className="text-2xl font-bold text-green-800">{preview.calorieGoal} kcal</p>
             <p className="mt-1 text-xs text-green-600">
               P {preview.proteinG}g · C {preview.carbsG}g · G {preview.fatG}g
             </p>
@@ -97,10 +95,11 @@ export function OnboardingRoute() {
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4" noValidate>
           {/* Age */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="age" className="mb-1 block text-sm font-medium text-gray-700">
               Edad
             </label>
             <input
+              id="age"
               type="number"
               inputMode="numeric"
               placeholder="Años"
@@ -112,10 +111,11 @@ export function OnboardingRoute() {
 
           {/* Height */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="heightCm" className="mb-1 block text-sm font-medium text-gray-700">
               Altura (cm)
             </label>
             <input
+              id="heightCm"
               type="number"
               inputMode="decimal"
               placeholder="Centímetros"
@@ -129,10 +129,11 @@ export function OnboardingRoute() {
 
           {/* Weight */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="weightKg" className="mb-1 block text-sm font-medium text-gray-700">
               Peso (kg)
             </label>
             <input
+              id="weightKg"
               type="number"
               inputMode="decimal"
               placeholder="Kilogramos"
@@ -146,8 +147,10 @@ export function OnboardingRoute() {
 
           {/* Sex */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Sexo</label>
-            <select {...register("sex")} className={fieldClass(!!errors.sex)}>
+            <label htmlFor="sex" className="mb-1 block text-sm font-medium text-gray-700">
+              Sexo
+            </label>
+            <select id="sex" {...register("sex")} className={fieldClass(!!errors.sex)}>
               <option value="">Seleccioná...</option>
               <option value="male">Masculino</option>
               <option value="female">Femenino</option>
@@ -157,10 +160,14 @@ export function OnboardingRoute() {
 
           {/* Activity level */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="activityLevel" className="mb-1 block text-sm font-medium text-gray-700">
               Nivel de actividad
             </label>
-            <select {...register("activityLevel")} className={fieldClass(!!errors.activityLevel)}>
+            <select
+              id="activityLevel"
+              {...register("activityLevel")}
+              className={fieldClass(!!errors.activityLevel)}
+            >
               <option value="">Seleccioná...</option>
               <option value="sedentary">Sedentario (sin ejercicio)</option>
               <option value="lightly_active">Ligeramente activo (1–3 días/semana)</option>
@@ -175,8 +182,10 @@ export function OnboardingRoute() {
 
           {/* Goal */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Objetivo</label>
-            <select {...register("goal")} className={fieldClass(!!errors.goal)}>
+            <label htmlFor="goal" className="mb-1 block text-sm font-medium text-gray-700">
+              Objetivo
+            </label>
+            <select id="goal" {...register("goal")} className={fieldClass(!!errors.goal)}>
               <option value="">Seleccioná...</option>
               <option value="lose_weight">Perder peso</option>
               <option value="maintain">Mantener peso</option>
