@@ -1,4 +1,4 @@
-import { db } from "@/db/client";
+import { db, dexieAdapter } from "@/db/client";
 import { foods, mealEntries } from "@/db/schema";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -9,6 +9,10 @@ export type MealEntryView = MealEntry & { brand: string | null };
  * Get all meal entries for a given date with brand from foods, ordered by logged_at ascending.
  */
 export async function getByDate(date: string): Promise<MealEntryView[]> {
+  if (dexieAdapter) {
+    const entries = await dexieAdapter.mealEntries.getByDate(date);
+    return entries.map((e) => ({ ...e, brand: null }));
+  }
   const rows = await db
     .select({ entry: mealEntries, brand: foods.brand })
     .from(mealEntries)
@@ -25,6 +29,7 @@ export async function getByDateAndMeal(
   date: string,
   mealType: MealEntry["mealType"]
 ): Promise<MealEntry[]> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.getByDateAndMeal(date, mealType);
   return db
     .select()
     .from(mealEntries)
@@ -36,6 +41,7 @@ export async function getByDateAndMeal(
  * Insert a new meal entry and return the inserted row.
  */
 export async function insert(entry: NewMealEntry): Promise<MealEntry> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.insert(entry);
   const rows = await db.insert(mealEntries).values(entry).returning();
   return rows[0];
 }
@@ -44,6 +50,7 @@ export async function insert(entry: NewMealEntry): Promise<MealEntry> {
  * Delete a meal entry by its UUID primary key.
  */
 export async function remove(id: string): Promise<void> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.remove(id);
   await db.delete(mealEntries).where(eq(mealEntries.id, id));
 }
 
@@ -53,6 +60,7 @@ export async function remove(id: string): Promise<void> {
  */
 export async function insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]> {
   if (entries.length === 0) return [];
+  if (dexieAdapter) return dexieAdapter.mealEntries.insertBulk(entries);
 
   return db.transaction(async (tx) => {
     const results: MealEntry[] = [];
@@ -71,6 +79,7 @@ export async function deleteByDateAndMeal(
   date: string,
   mealType: MealEntry["mealType"]
 ): Promise<void> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.deleteByDateAndMeal(date, mealType);
   await db.transaction(async (tx) => {
     await tx
       .delete(mealEntries)
