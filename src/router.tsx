@@ -1,10 +1,10 @@
 import { TabLayout } from "@/src/layouts/TabLayout";
+import { CustomFoodRoute } from "@/src/routes/customFood";
 import { DayScreen } from "@/src/routes/day";
-import { SearchRoute } from "@/src/routes/search";
-import { ProfileRoute } from "@/src/routes/profile";
 import { OnboardingRoute } from "@/src/routes/onboarding";
 import { PortionRoute } from "@/src/routes/portion";
-import { CustomFoodRoute } from "@/src/routes/customFood";
+import { ProfileRoute } from "@/src/routes/profile";
+import { SearchRoute } from "@/src/routes/search";
 import { createBrowserRouter } from "react-router-dom";
 
 export const router = createBrowserRouter([
