@@ -182,10 +182,11 @@ async function init(): Promise<{ sqlite3: SQLiteAny; db: number }> {
     // OPFSCoopSyncVFS.js ships as plain JS with no TypeScript types; `as any` suppresses TS2307.
     const opfsVfsModule = await import(
       // biome-ignore lint/suspicious/noExplicitAny: JS-only wa-sqlite file with no TS types; suppresses TS2307
-      /* @vite-ignore */ "wa-sqlite/src/examples/OPFSCoopSyncVFS.js" as any
+      /* @vite-ignore */ "wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js" as any
     );
-    const OPFSCoopSyncVFS: new (name: string) => SQLiteVFS = opfsVfsModule.OPFSCoopSyncVFS;
-    const vfs = new OPFSCoopSyncVFS("vitia");
+    const OriginPrivateFileSystemVFS: new (name: string) => SQLiteVFS =
+      opfsVfsModule.OriginPrivateFileSystemVFS;
+    const vfs = new OriginPrivateFileSystemVFS("vitia");
     await sqlite3.vfs_register(vfs, true /* as default */);
     db = await sqlite3.open_v2(
       "vitia.db",
