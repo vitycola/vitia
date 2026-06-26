@@ -1,8 +1,8 @@
 import { getByDateAndMeal } from "@/db/repositories/mealEntries";
+import type { MealEntryView } from "@/db/repositories/mealEntries";
 import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanner";
 import { MealEntryRow } from "@/src/components/MealEntryRow";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
-import type { MealEntry } from "@/types";
 import type { MealType } from "@/types";
 import { ChevronDown, ChevronRight, MoreVertical, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +16,7 @@ const MEAL_LABELS: Record<MealType, string> = {
 
 interface MealSectionProps {
   mealType: MealType;
-  entries: MealEntry[];
+  entries: MealEntryView[];
   onAddFood: (mealType: MealType) => void;
   onDeleteEntry: (id: string) => void;
   selectedDate: string;
@@ -43,7 +43,7 @@ export function MealSection({
   const [menuOpen, setMenuOpen] = useState(false);
   const [inFlight, setInFlight] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [previousDayEntries, setPreviousDayEntries] = useState<MealEntry[]>([]);
+  const [previousDayEntries, setPreviousDayEntries] = useState<MealEntryView[]>([]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const clipboardMeal = useMealClipboardStore((s) => s.clipboardMeal);
@@ -75,7 +75,7 @@ export function MealSection({
     const prevDate = `${y}-${m}-${d}`;
 
     getByDateAndMeal(prevDate, mealType)
-      .then(setPreviousDayEntries)
+      .then((rows) => setPreviousDayEntries(rows.map((e) => ({ ...e, brand: null }))))
       .catch(() => setPreviousDayEntries([]));
   }, [selectedDate, mealType, isToday, entries.length]);
 
@@ -121,12 +121,13 @@ export function MealSection({
           ) : (
             <ChevronRight size={18} className="text-gray-400" />
           )}
-          <span className="text-sm font-semibold text-gray-800">{label}</span>
-          {entries.length > 0 && (
-            <span className="ml-auto mr-2 text-xs text-gray-400">
-              {Math.round(mealProtein)}p · {Math.round(mealCarbs)}c · {Math.round(mealFat)}g
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-800">{label}</span>
+            <span className="text-xs text-gray-400">
+              🔥 {Math.round(mealCalories)} kcal · {Math.round(mealProtein)}P |{" "}
+              {Math.round(mealCarbs)}C | {Math.round(mealFat)}G
             </span>
-          )}
+          </div>
         </button>
 
         <div className="flex items-center gap-2">
@@ -220,7 +221,12 @@ export function MealSection({
           {entries.length > 0 && (
             <div className="border-t border-gray-100">
               {entries.map((entry) => (
-                <MealEntryRow key={entry.id} entry={entry} onDelete={onDeleteEntry} />
+                <MealEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  mealType={mealType}
+                  onDelete={onDeleteEntry}
+                />
               ))}
             </div>
           )}
