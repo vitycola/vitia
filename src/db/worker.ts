@@ -120,41 +120,37 @@ async function execStatement(
   const { SQLITE_ROW, SQLITE_INTEGER, SQLITE_FLOAT, SQLITE_TEXT, SQLITE_BLOB } = sqlite3;
   const rows: unknown[][] = [];
 
-  const str = sqlite3.str_new(db, sql);
-  try {
-    const sqlPtr = sqlite3.str_value(str);
-    for await (const stmt of sqlite3.statements(db, sqlPtr)) {
-      bindParams(sqlite3, stmt, params);
+  // In wa-sqlite v1.0.0 statements() accepts a JS string directly and manages
+  // WASM memory internally — passing a raw pointer (str_value) broke all queries.
+  for await (const stmt of sqlite3.statements(db, sql)) {
+    bindParams(sqlite3, stmt, params);
 
-      if (method === "run") {
-        while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
-          // Drain implicit result rows (e.g. ON CONFLICT DO UPDATE side effects)
-        }
-      } else {
-        while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
-          const row: unknown[] = [];
-          const colCount = sqlite3.column_count(stmt);
-          for (let i = 0; i < colCount; i++) {
-            const colType = sqlite3.column_type(stmt, i);
-            if (colType === SQLITE_INTEGER) {
-              row.push(sqlite3.column_int(stmt, i));
-            } else if (colType === SQLITE_FLOAT) {
-              row.push(sqlite3.column_double(stmt, i));
-            } else if (colType === SQLITE_TEXT) {
-              row.push(sqlite3.column_text(stmt, i));
-            } else if (colType === SQLITE_BLOB) {
-              row.push(sqlite3.column_blob(stmt, i));
-            } else {
-              row.push(null);
-            }
+    if (method === "run") {
+      while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
+        // Drain implicit result rows (e.g. ON CONFLICT DO UPDATE side effects)
+      }
+    } else {
+      while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
+        const row: unknown[] = [];
+        const colCount = sqlite3.column_count(stmt);
+        for (let i = 0; i < colCount; i++) {
+          const colType = sqlite3.column_type(stmt, i);
+          if (colType === SQLITE_INTEGER) {
+            row.push(sqlite3.column_int(stmt, i));
+          } else if (colType === SQLITE_FLOAT) {
+            row.push(sqlite3.column_double(stmt, i));
+          } else if (colType === SQLITE_TEXT) {
+            row.push(sqlite3.column_text(stmt, i));
+          } else if (colType === SQLITE_BLOB) {
+            row.push(sqlite3.column_blob(stmt, i));
+          } else {
+            row.push(null);
           }
-          rows.push(row);
-          if (method === "get") break; // first row only
         }
+        rows.push(row);
+        if (method === "get") break; // first row only
       }
     }
-  } finally {
-    sqlite3.str_finish(str);
   }
 
   return rows;
@@ -177,15 +173,20 @@ async function init(): Promise<{ sqlite3: SQLiteAny; db: number }> {
 
   let db: number;
   try {
-    // OPFSCoopSyncVFS requires crossOriginIsolated (COOP/COEP headers).
-    // The file is JavaScript-only inside wa-sqlite with no TypeScript types.
-    // OPFSCoopSyncVFS.js ships as plain JS with no TypeScript types; `as any` suppresses TS2307.
+    // AccessHandlePoolVFS is the synchronous OPFS VFS — works with wa-sqlite.mjs
+    // (no Asyncify needed). Requires crossOriginIsolated (COOP/COEP headers).
+    // JS-only file with no TypeScript types; `as any` suppresses TS2307.
     const opfsVfsModule = await import(
       // biome-ignore lint/suspicious/noExplicitAny: JS-only wa-sqlite file with no TS types; suppresses TS2307
-      /* @vite-ignore */ "wa-sqlite/src/examples/OPFSCoopSyncVFS.js" as any
+      /* @vite-ignore */ "wa-sqlite/src/examples/AccessHandlePoolVFS.js" as any
     );
-    const OPFSCoopSyncVFS: new (name: string) => SQLiteVFS = opfsVfsModule.OPFSCoopSyncVFS;
-    const vfs = new OPFSCoopSyncVFS("vitia");
+    const AccessHandlePoolVFS: new (
+      directoryPath: string
+    ) => SQLiteVFS & {
+      isReady: Promise<void>;
+    } = opfsVfsModule.AccessHandlePoolVFS;
+    const vfs = new AccessHandlePoolVFS("vitia");
+    await vfs.isReady;
     await sqlite3.vfs_register(vfs, true /* as default */);
     db = await sqlite3.open_v2(
       "vitia.db",

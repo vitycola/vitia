@@ -60,14 +60,21 @@ export function OnboardingRoute() {
   const preview = computePreview(values);
 
   async function onSubmit(data: FormValues) {
-    await saveProfile({
-      age: data.age,
-      heightCm: data.heightCm,
-      weightKg: data.weightKg,
-      sex: data.sex as Sex,
-      activityLevel: data.activityLevel as ActivityLevel,
-      goal: data.goal as Goal,
-    });
+    console.log("[onboarding] onSubmit called", data);
+    try {
+      await saveProfile({
+        age: data.age,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        sex: data.sex as Sex,
+        activityLevel: data.activityLevel as ActivityLevel,
+        goal: data.goal as Goal,
+      });
+      console.log("[onboarding] saveProfile OK — navigating to /");
+    } catch (err) {
+      console.error("[onboarding] saveProfile FAILED", err);
+      throw err;
+    }
     void navigate("/", { replace: true });
   }
 
