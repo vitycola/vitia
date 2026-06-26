@@ -18,8 +18,7 @@ export function UpdateToast() {
   if (!needRefresh) return null;
 
   return (
-    <div
-      role="status"
+    <output
       aria-live="polite"
       className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-sm text-white shadow-lg"
     >
@@ -39,6 +38,6 @@ export function UpdateToast() {
       >
         ✕
       </button>
-    </div>
+    </output>
   );
 }
