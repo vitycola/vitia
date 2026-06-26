@@ -82,13 +82,13 @@ describe("(a) OnboardingRoute — live TDEE preview updates on field change", ()
   it("preview changes when activityLevel changes", () => {
     const sedentary = computePreview({ ...baseValues, activityLevel: "sedentary" });
     const veryActive = computePreview({ ...baseValues, activityLevel: "very_active" });
-    expect(sedentary?.calorieGoal).toBeLessThan(veryActive!.calorieGoal);
+    expect(sedentary?.calorieGoal).toBeLessThan(veryActive?.calorieGoal);
   });
 
   it("preview changes when goal changes", () => {
     const lose = computePreview({ ...baseValues, goal: "lose_weight" });
     const gain = computePreview({ ...baseValues, goal: "gain_muscle" });
-    expect(lose?.calorieGoal).toBeLessThan(gain!.calorieGoal);
+    expect(lose?.calorieGoal).toBeLessThan(gain?.calorieGoal);
   });
 
   it("preview includes proteinG, carbsG, fatG macros", () => {
