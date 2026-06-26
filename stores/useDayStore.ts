@@ -1,5 +1,6 @@
 import { deleteByDateAndMeal, getByDateAndMeal, insertBulk } from "@/db/repositories/mealEntries";
 import * as mealEntriesRepo from "@/db/repositories/mealEntries";
+import type { MealEntryView } from "@/db/repositories/mealEntries";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { addDays, todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
@@ -28,7 +29,7 @@ function retarget(source: MealEntry[], date: string, destMealType: MealType): Ne
 // ── Store shape ────────────────────────────────────────────────────────
 interface DayState {
   selectedDate: string; // YYYY-MM-DD, device-local
-  entries: MealEntry[]; // entries for selectedDate
+  entries: MealEntryView[]; // entries for selectedDate, enriched with brand
   isLoading: boolean;
 }
 
@@ -116,8 +117,8 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
 
   addEntry: async (input: NewMealEntry) => {
     const inserted = await mealEntriesRepo.insert(input);
-    // Optimistic update: append to current entries without a round-trip.
-    set((state) => ({ entries: [...state.entries, inserted] }));
+    // Optimistic update: brand unknown at insert time — set null; loadEntries will correct it.
+    set((state) => ({ entries: [...state.entries, { ...inserted, brand: null }] }));
   },
 
   deleteEntry: async (id: string) => {
@@ -134,7 +135,7 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     const toInsert = retarget(source, destDate, mealType);
     const inserted = await insertBulk(toInsert);
     if (get().selectedDate === destDate) {
-      set((s) => ({ entries: [...s.entries, ...inserted] }));
+      set((s) => ({ entries: [...s.entries, ...inserted.map((e) => ({ ...e, brand: null }))] }));
     }
     return inserted.length;
   },
@@ -144,7 +145,7 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     if (!clip || clip.entries.length === 0) return 0;
     const toInsert = retarget(clip.entries, get().selectedDate, mealType);
     const inserted = await insertBulk(toInsert);
-    set((s) => ({ entries: [...s.entries, ...inserted] }));
+    set((s) => ({ entries: [...s.entries, ...inserted.map((e) => ({ ...e, brand: null }))] }));
     return inserted.length;
   },
 
