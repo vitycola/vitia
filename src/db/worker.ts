@@ -177,16 +177,20 @@ async function init(): Promise<{ sqlite3: SQLiteAny; db: number }> {
 
   let db: number;
   try {
-    // OPFSCoopSyncVFS requires crossOriginIsolated (COOP/COEP headers).
-    // The file is JavaScript-only inside wa-sqlite with no TypeScript types.
-    // OPFSCoopSyncVFS.js ships as plain JS with no TypeScript types; `as any` suppresses TS2307.
+    // AccessHandlePoolVFS is the synchronous OPFS VFS — works with wa-sqlite.mjs
+    // (no Asyncify needed). Requires crossOriginIsolated (COOP/COEP headers).
+    // JS-only file with no TypeScript types; `as any` suppresses TS2307.
     const opfsVfsModule = await import(
       // biome-ignore lint/suspicious/noExplicitAny: JS-only wa-sqlite file with no TS types; suppresses TS2307
-      /* @vite-ignore */ "wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js" as any
+      /* @vite-ignore */ "wa-sqlite/src/examples/AccessHandlePoolVFS.js" as any
     );
-    const OriginPrivateFileSystemVFS: new (name: string) => SQLiteVFS =
-      opfsVfsModule.OriginPrivateFileSystemVFS;
-    const vfs = new OriginPrivateFileSystemVFS("vitia");
+    const AccessHandlePoolVFS: new (
+      directoryPath: string
+    ) => SQLiteVFS & {
+      isReady: Promise<void>;
+    } = opfsVfsModule.AccessHandlePoolVFS;
+    const vfs = new AccessHandlePoolVFS("vitia");
+    await vfs.isReady;
     await sqlite3.vfs_register(vfs, true /* as default */);
     db = await sqlite3.open_v2(
       "vitia.db",
