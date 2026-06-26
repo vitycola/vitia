@@ -10,6 +10,8 @@ export type {
   NewMealEntry,
 } from "@/db/schema";
 
+export type { MealEntryView } from "@/db/repositories/mealEntries";
+
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 export type Sex = "male" | "female";
 export type ActivityLevel =
