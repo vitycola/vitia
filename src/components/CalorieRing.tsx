@@ -1,3 +1,5 @@
+import { Colors } from "@/lib/tokens";
+
 interface CalorieRingProps {
   consumed: number;
   goal: number;
@@ -25,7 +27,7 @@ export function CalorieRing({ consumed, goal, size = 160, strokeWidth = 14 }: Ca
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e5e7eb"
+          stroke={Colors.border}
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -34,7 +36,7 @@ export function CalorieRing({ consumed, goal, size = 160, strokeWidth = 14 }: Ca
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#22c55e"
+          stroke={Colors.accent}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -45,9 +47,9 @@ export function CalorieRing({ consumed, goal, size = 160, strokeWidth = 14 }: Ca
 
       {/* Text labels centered over the SVG */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-gray-900">{Math.round(consumed)}</span>
-        <span className="text-xs text-gray-400">de {Math.round(goal)} kcal</span>
-        <span className="text-sm font-semibold text-green-600">{percentage}%</span>
+        <span className="text-3xl font-bold text-primary">{Math.round(consumed)}</span>
+        <span className="text-xs text-disabled">de {Math.round(goal)} kcal</span>
+        <span className="text-sm font-semibold text-accent">{percentage}%</span>
       </div>
     </div>
   );

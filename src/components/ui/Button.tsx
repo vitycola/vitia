@@ -8,10 +8,10 @@ interface ButtonProps {
 }
 
 const VARIANT_CLASSES: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-green-600 text-white hover:bg-green-700 active:bg-green-800 disabled:bg-green-300",
+  primary: "bg-accent text-white hover:bg-accent/90 active:bg-accent/80 disabled:bg-accent/50",
   secondary:
-    "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400",
-  danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
+    "bg-surface text-primary hover:bg-gray-200 active:bg-gray-300 disabled:bg-surface disabled:text-disabled",
+  danger: "bg-destructive text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
 };
 
 export function Button({
