@@ -14,10 +14,10 @@ export function CopyFromYesterdayBanner({
   onDismiss,
 }: CopyFromYesterdayBannerProps) {
   return (
-    <div className="mx-4 mb-2 flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+    <div className="mx-4 mb-2 flex items-center justify-between rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
       <div>
-        <p className="text-sm font-semibold text-green-800">¿Copiar de ayer?</p>
-        <p className="text-xs text-green-600">
+        <p className="text-sm font-semibold text-accent">¿Copiar de ayer?</p>
+        <p className="text-xs text-accent">
           {count} alimento{count !== 1 ? "s" : ""}
         </p>
       </div>
@@ -27,10 +27,10 @@ export function CopyFromYesterdayBanner({
           onClick={onAccept}
           disabled={busy}
           aria-label="Aceptar"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-50"
         >
           {busy ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           ) : (
             <Check size={16} />
           )}
@@ -40,7 +40,7 @@ export function CopyFromYesterdayBanner({
           onClick={onDismiss}
           disabled={busy}
           aria-label="Descartar"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-50"
         >
           <X size={16} />
         </button>

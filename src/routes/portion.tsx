@@ -44,7 +44,7 @@ export function PortionRoute() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-gray-400">Cargando…</p>
+        <p className="text-sm text-disabled">Cargando…</p>
       </div>
     );
   }
@@ -52,11 +52,11 @@ export function PortionRoute() {
   if (notFound || !food) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
-        <p className="text-center text-sm text-gray-500">Alimento no encontrado.</p>
+        <p className="text-center text-sm text-secondary">Alimento no encontrado.</p>
         <button
           type="button"
           onClick={() => void navigate(-1)}
-          className="text-sm font-medium text-green-600"
+          className="text-sm font-medium text-accent"
         >
           Volver
         </button>
@@ -91,14 +91,14 @@ export function PortionRoute() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <button
             type="button"
             onClick={() => void navigate(-1)}
-            className="text-sm font-medium text-gray-500 hover:text-gray-700"
+            className="text-sm font-medium text-secondary hover:text-primary"
           >
             ← Cancelar
           </button>
@@ -106,8 +106,8 @@ export function PortionRoute() {
 
         {/* Food info */}
         <div className="mb-6 rounded-2xl bg-white px-4 py-4 shadow-sm">
-          <h1 className="text-lg font-bold text-gray-900">{food.name}</h1>
-          {food.brand && <p className="text-sm text-gray-400">{food.brand}</p>}
+          <h1 className="text-lg font-bold text-primary">{food.name}</h1>
+          {food.brand && <p className="text-sm text-disabled">{food.brand}</p>}
 
           <div className="mt-3 grid grid-cols-4 gap-2 text-center">
             <NutritionCell
@@ -123,12 +123,12 @@ export function PortionRoute() {
             <NutritionCell label="Carboh." value={`${Math.round(food.carbsPer100g)}`} unit="g" />
             <NutritionCell label="Grasas" value={`${Math.round(food.fatPer100g)}`} unit="g" />
           </div>
-          <p className="mt-1 text-center text-xs text-gray-400">por 100 g</p>
+          <p className="mt-1 text-center text-xs text-disabled">por 100 g</p>
         </div>
 
         {/* Quantity input */}
         <div className="mb-4 rounded-2xl bg-white px-4 py-4 shadow-sm">
-          <label htmlFor="quantity" className="mb-2 block text-sm font-medium text-gray-700">
+          <label htmlFor="quantity" className="mb-2 block text-sm font-medium text-primary">
             Cantidad (gramos)
           </label>
           <input
@@ -138,14 +138,14 @@ export function PortionRoute() {
             value={quantityStr}
             onChange={(e) => setQuantityStr(e.target.value)}
             min={1}
-            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+            className="w-full rounded-xl border border-default px-3 py-2.5 text-sm text-primary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
         </div>
 
         {/* Live nutrition preview */}
         {portion && grams > 0 && (
-          <div className="mb-6 rounded-2xl bg-green-50 px-4 py-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-green-700">
+          <div className="mb-6 rounded-2xl bg-accent/5 px-4 py-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-accent">
               Para {grams} g
             </p>
             <div className="grid grid-cols-4 gap-2 text-center">
@@ -183,7 +183,7 @@ export function PortionRoute() {
             type="button"
             onClick={() => void handleConfirm()}
             disabled={saving || grams <= 0}
-            className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
             {saving ? "Guardando…" : "Agregar al diario"}
           </button>
@@ -191,7 +191,7 @@ export function PortionRoute() {
           <button
             type="button"
             onClick={() => void navigate(-1)}
-            className="flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex w-full items-center justify-center rounded-xl border border-default bg-white px-4 py-3 text-sm font-semibold text-secondary transition-colors hover:bg-surface"
           >
             Cancelar
           </button>
@@ -214,11 +214,11 @@ function NutritionCell({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <span className={`text-base font-bold ${highlight ? "text-green-800" : "text-gray-800"}`}>
+      <span className={`text-base font-bold ${highlight ? "text-accent" : "text-primary"}`}>
         {value}
       </span>
-      <span className={`text-xs ${highlight ? "text-green-600" : "text-gray-400"}`}>{unit}</span>
-      <span className={`text-xs ${highlight ? "text-green-600" : "text-gray-400"}`}>{label}</span>
+      <span className={`text-xs ${highlight ? "text-accent" : "text-disabled"}`}>{unit}</span>
+      <span className={`text-xs ${highlight ? "text-accent" : "text-disabled"}`}>{label}</span>
     </div>
   );
 }

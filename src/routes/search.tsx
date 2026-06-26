@@ -52,17 +52,17 @@ export function SearchRoute() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-surface pb-20">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white px-4 pb-3 pt-4 shadow-sm">
-        <h1 className="mb-3 text-lg font-bold text-gray-900">Buscar alimento</h1>
+        <h1 className="mb-3 text-lg font-bold text-primary">Buscar alimento</h1>
 
         <input
           type="search"
           defaultValue={query}
           onChange={handleQueryChange}
           placeholder="Nombre del alimento..."
-          className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+          className="w-full rounded-xl border border-default px-3 py-2.5 text-sm text-primary placeholder-disabled outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
 
         {isOffline && (
@@ -74,10 +74,10 @@ export function SearchRoute() {
 
       {/* Results */}
       <div className="px-4 pt-3">
-        {isLoading && <p className="py-4 text-center text-sm text-gray-400">Buscando…</p>}
+        {isLoading && <p className="py-4 text-center text-sm text-disabled">Buscando…</p>}
 
         {!isLoading && results.length === 0 && query.length >= 2 && (
-          <p className="py-4 text-center text-sm text-gray-400">Sin resultados para "{query}"</p>
+          <p className="py-4 text-center text-sm text-disabled">Sin resultados para "{query}"</p>
         )}
 
         <div className="flex flex-col gap-2">
@@ -92,7 +92,7 @@ export function SearchRoute() {
         <button
           type="button"
           onClick={handleCustomFood}
-          className="flex w-full items-center justify-center rounded-xl border border-green-600 bg-white px-4 py-3 text-sm font-semibold text-green-600 transition-colors hover:bg-green-50"
+          className="flex w-full items-center justify-center rounded-xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/5"
         >
           + Crear alimento personalizado
         </button>

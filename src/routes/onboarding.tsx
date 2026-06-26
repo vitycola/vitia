@@ -72,21 +72,21 @@ export function OnboardingRoute() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="mx-auto max-w-md px-4 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">Tu perfil</h1>
-        <p className="mb-6 text-sm text-gray-500">
+        <h1 className="mb-2 text-2xl font-bold text-primary">Tu perfil</h1>
+        <p className="mb-6 text-sm text-secondary">
           Completá tus datos para calcular tus objetivos calóricos.
         </p>
 
         {/* Live TDEE preview */}
         {preview && (
-          <div className="mb-6 rounded-2xl bg-green-50 px-4 py-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">
+          <div className="mb-6 rounded-2xl bg-accent/5 px-4 py-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-accent">
               Objetivo estimado
             </p>
-            <p className="text-2xl font-bold text-green-800">{preview.calorieGoal} kcal</p>
-            <p className="mt-1 text-xs text-green-600">
+            <p className="text-2xl font-bold text-accent">{preview.calorieGoal} kcal</p>
+            <p className="mt-1 text-xs text-accent">
               P {preview.proteinG}g · C {preview.carbsG}g · G {preview.fatG}g
             </p>
           </div>
@@ -95,7 +95,7 @@ export function OnboardingRoute() {
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4" noValidate>
           {/* Age */}
           <div>
-            <label htmlFor="age" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="age" className="mb-1 block text-sm font-medium text-primary">
               Edad
             </label>
             <input
@@ -111,7 +111,7 @@ export function OnboardingRoute() {
 
           {/* Height */}
           <div>
-            <label htmlFor="heightCm" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="heightCm" className="mb-1 block text-sm font-medium text-primary">
               Altura (cm)
             </label>
             <input
@@ -129,7 +129,7 @@ export function OnboardingRoute() {
 
           {/* Weight */}
           <div>
-            <label htmlFor="weightKg" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="weightKg" className="mb-1 block text-sm font-medium text-primary">
               Peso (kg)
             </label>
             <input
@@ -147,7 +147,7 @@ export function OnboardingRoute() {
 
           {/* Sex */}
           <div>
-            <label htmlFor="sex" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="sex" className="mb-1 block text-sm font-medium text-primary">
               Sexo
             </label>
             <select id="sex" {...register("sex")} className={fieldClass(!!errors.sex)}>
@@ -160,7 +160,7 @@ export function OnboardingRoute() {
 
           {/* Activity level */}
           <div>
-            <label htmlFor="activityLevel" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="activityLevel" className="mb-1 block text-sm font-medium text-primary">
               Nivel de actividad
             </label>
             <select
@@ -182,7 +182,7 @@ export function OnboardingRoute() {
 
           {/* Goal */}
           <div>
-            <label htmlFor="goal" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="goal" className="mb-1 block text-sm font-medium text-primary">
               Objetivo
             </label>
             <select id="goal" {...register("goal")} className={fieldClass(!!errors.goal)}>
@@ -197,7 +197,7 @@ export function OnboardingRoute() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
             {isSubmitting ? "Guardando…" : "Guardar perfil"}
           </button>
@@ -208,7 +208,7 @@ export function OnboardingRoute() {
 }
 
 function fieldClass(hasError: boolean) {
-  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white ${
-    hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-300"
+  return `w-full rounded-xl border px-3 py-2.5 text-sm text-primary placeholder-disabled outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 bg-white ${
+    hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-default"
   }`;
 }

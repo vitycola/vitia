@@ -52,22 +52,22 @@ export function ProfileRoute() {
   if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-gray-400">Cargando perfil…</p>
+        <p className="text-sm text-disabled">Cargando perfil…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-surface pb-20">
       {/* Header */}
       <div className="bg-white px-4 pb-4 pt-5 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-900">Perfil</h1>
+        <h1 className="text-xl font-bold text-primary">Perfil</h1>
       </div>
 
       <div className="px-4 pt-4 space-y-3">
         {/* Personal data */}
         <section className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-secondary">
             Datos personales
           </h2>
           <div className="space-y-2">
@@ -85,7 +85,7 @@ export function ProfileRoute() {
 
         {/* Goals */}
         <section className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-secondary">
             Objetivos diarios
           </h2>
           <div className="space-y-2">
@@ -103,7 +103,7 @@ export function ProfileRoute() {
               type="button"
               onClick={() => void handleRecalc()}
               disabled={recalcing}
-              className="mt-4 flex w-full items-center justify-center rounded-xl border border-green-600 bg-white px-4 py-2.5 text-sm font-semibold text-green-600 transition-colors hover:bg-green-50 disabled:opacity-50"
+              className="mt-4 flex w-full items-center justify-center rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-semibold text-accent transition-colors hover:bg-accent/5 disabled:opacity-50"
             >
               {recalcing ? "Recalculando…" : "Recalcular objetivos"}
             </button>
@@ -114,7 +114,7 @@ export function ProfileRoute() {
         <button
           type="button"
           onClick={() => void navigate("/onboarding")}
-          className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+          className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90"
         >
           Editar perfil
         </button>
@@ -126,8 +126,8 @@ export function ProfileRoute() {
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-900">{value}</span>
+      <span className="text-sm text-secondary">{label}</span>
+      <span className="text-sm font-medium text-primary">{value}</span>
     </div>
   );
 }

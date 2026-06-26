@@ -69,7 +69,7 @@ export function DayScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-surface pb-20">
       {/* Date navigator */}
       <DateNavigator
         selectedDate={selectedDate}
@@ -81,11 +81,11 @@ export function DayScreen() {
       <div className="mx-4 mb-3 flex flex-col items-center rounded-2xl bg-white px-4 py-5 shadow-sm">
         <CalorieRing consumed={totals.calories} goal={profile?.calorieGoal ?? 2000} />
 
-        {!isToday && <p className="mt-2 text-xs text-gray-400">Día anterior — solo lectura</p>}
+        {!isToday && <p className="mt-2 text-xs text-disabled">Día anterior — solo lectura</p>}
 
         {/* Daily totals summary */}
-        <p className="mt-3 text-xs text-gray-500">
-          <span className="font-semibold text-gray-700">{Math.round(totals.calories)}</span>
+        <p className="mt-3 text-xs text-secondary">
+          <span className="font-semibold text-primary">{Math.round(totals.calories)}</span>
           {" / "}
           {Math.round(profile?.calorieGoal ?? 2000)} kcal consumidas
         </p>

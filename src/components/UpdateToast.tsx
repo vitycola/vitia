@@ -26,7 +26,7 @@ export function UpdateToast() {
       <button
         type="button"
         onClick={() => void updateServiceWorker(true)}
-        className="rounded-lg bg-green-500 px-3 py-1 font-medium text-white hover:bg-green-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+        className="rounded-lg bg-accent px-3 py-1 font-medium text-white hover:bg-accent/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         Actualizar
       </button>

@@ -58,28 +58,28 @@ export function CustomFoodRoute() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <button
             type="button"
             onClick={handleCancel}
-            className="text-sm font-medium text-gray-500 hover:text-gray-700"
+            className="text-sm font-medium text-secondary hover:text-primary"
           >
             ← Cancelar
           </button>
         </div>
 
-        <h1 className="mb-2 text-xl font-bold text-gray-900">Alimento personalizado</h1>
-        <p className="mb-6 text-sm text-gray-500">
+        <h1 className="mb-2 text-xl font-bold text-primary">Alimento personalizado</h1>
+        <p className="mb-6 text-sm text-secondary">
           Ingresá los datos nutricionales por cada 100 g.
         </p>
 
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4" noValidate>
           {/* Name */}
           <div>
-            <label htmlFor="foodName" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="foodName" className="mb-1 block text-sm font-medium text-primary">
               Nombre del alimento
             </label>
             <input
@@ -98,7 +98,7 @@ export function CustomFoodRoute() {
           <div>
             <label
               htmlFor="caloriesPer100g"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-primary"
             >
               Calorías (kcal / 100 g)
             </label>
@@ -119,7 +119,7 @@ export function CustomFoodRoute() {
           <div>
             <label
               htmlFor="proteinGPer100g"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-primary"
             >
               Proteínas (g / 100 g)
             </label>
@@ -138,7 +138,7 @@ export function CustomFoodRoute() {
 
           {/* Carbs */}
           <div>
-            <label htmlFor="carbsGPer100g" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="carbsGPer100g" className="mb-1 block text-sm font-medium text-primary">
               Carbohidratos (g / 100 g)
             </label>
             <input
@@ -156,7 +156,7 @@ export function CustomFoodRoute() {
 
           {/* Fat */}
           <div>
-            <label htmlFor="fatGPer100g" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="fatGPer100g" className="mb-1 block text-sm font-medium text-primary">
               Grasas (g / 100 g)
             </label>
             <input
@@ -176,7 +176,7 @@ export function CustomFoodRoute() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+              className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
             >
               {isSubmitting ? "Guardando…" : "Guardar y porcionar"}
             </button>
@@ -184,7 +184,7 @@ export function CustomFoodRoute() {
             <button
               type="button"
               onClick={handleCancel}
-              className="flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-center rounded-xl border border-default bg-white px-4 py-3 text-sm font-semibold text-secondary transition-colors hover:bg-surface"
             >
               Cancelar
             </button>
@@ -196,7 +196,7 @@ export function CustomFoodRoute() {
 }
 
 function fieldClass(hasError: boolean) {
-  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white ${
-    hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-300"
+  return `w-full rounded-xl border px-3 py-2.5 text-sm text-primary placeholder-disabled outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 bg-white ${
+    hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-default"
   }`;
 }

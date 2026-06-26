@@ -117,20 +117,20 @@ export function MealSection({
           aria-expanded={expanded}
         >
           {expanded ? (
-            <ChevronDown size={18} className="text-gray-400" />
+            <ChevronDown size={18} className="text-disabled" />
           ) : (
-            <ChevronRight size={18} className="text-gray-400" />
+            <ChevronRight size={18} className="text-disabled" />
           )}
-          <span className="text-sm font-semibold text-gray-800">{label}</span>
+          <span className="text-sm font-semibold text-primary">{label}</span>
           {entries.length > 0 && (
-            <span className="ml-auto mr-2 text-xs text-gray-400">
+            <span className="ml-auto mr-2 text-xs text-disabled">
               {Math.round(mealProtein)}p · {Math.round(mealCarbs)}c · {Math.round(mealFat)}g
             </span>
           )}
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-700">
+          <span className="text-sm font-semibold text-primary">
             {Math.round(mealCalories)} kcal
           </span>
 
@@ -140,13 +140,13 @@ export function MealSection({
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={`Opciones para ${label}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-disabled hover:bg-surface"
             >
               <MoreVertical size={17} />
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+              <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-lg border border-default bg-white shadow-lg">
                 <button
                   type="button"
                   onClick={() =>
@@ -155,7 +155,7 @@ export function MealSection({
                       return Promise.resolve();
                     })
                   }
-                  className="flex w-full items-center px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  className="flex w-full items-center px-4 py-2.5 text-left text-sm text-primary hover:bg-surface"
                 >
                   Copiar
                 </button>
@@ -164,7 +164,7 @@ export function MealSection({
                   <button
                     type="button"
                     onClick={() => runAction(() => onPasteMeal(mealType))}
-                    className="flex w-full items-center px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex w-full items-center px-4 py-2.5 text-left text-sm text-primary hover:bg-surface"
                   >
                     Pegar
                   </button>
@@ -175,7 +175,7 @@ export function MealSection({
                   onClick={() =>
                     runAction(() => onRepeatMeal(mealType, isToday ? undefined : selectedDate))
                   }
-                  className="flex w-full items-center px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  className="flex w-full items-center px-4 py-2.5 text-left text-sm text-primary hover:bg-surface"
                 >
                   Repetir comida
                 </button>
@@ -218,7 +218,7 @@ export function MealSection({
 
           {/* Entry rows */}
           {entries.length > 0 && (
-            <div className="border-t border-gray-100">
+            <div className="border-t border-default">
               {entries.map((entry) => (
                 <MealEntryRow key={entry.id} entry={entry} onDelete={onDeleteEntry} />
               ))}
@@ -226,11 +226,11 @@ export function MealSection({
           )}
 
           {/* Add food button */}
-          <div className="border-t border-gray-100">
+          <div className="border-t border-default">
             <button
               type="button"
               onClick={() => onAddFood(mealType)}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 active:bg-green-100"
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-accent hover:bg-accent/5 active:bg-accent/10"
             >
               <Plus size={16} />
               <span>Agregar alimento</span>
