@@ -17,19 +17,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        surface,                                       // bg-surface
-        card,                                          // bg-card
+        surface, // bg-surface
+        card, // bg-card
         accent: {
-          DEFAULT: accent,                             // bg-accent, text-accent
-          foreground: "#FFFFFF",                       // text-accent-foreground
+          DEFAULT: accent, // bg-accent, text-accent
+          foreground: "#FFFFFF", // text-accent-foreground
         },
-        primary: textPrimary,                          // text-primary (body text)
-        secondary: textSecondary,                      // text-secondary
-        disabled: textDisabled,                        // text-disabled
-        default: border,                               // border-default
-        destructive,                                   // bg-destructive, text-destructive
-        "macro-amber": macroAmber,                     // bg-macro-amber, text-macro-amber
-        "macro-ontarget-green": macroOntargetGreen,    // bg-macro-ontarget-green, text-macro-ontarget-green
+        primary: textPrimary, // text-primary (body text)
+        secondary: textSecondary, // text-secondary
+        disabled: textDisabled, // text-disabled
+        default: border, // border-default
+        destructive, // bg-destructive, text-destructive
+        "macro-amber": macroAmber, // bg-macro-amber, text-macro-amber
+        "macro-ontarget-green": macroOntargetGreen, // bg-macro-ontarget-green, text-macro-ontarget-green
       },
     },
   },

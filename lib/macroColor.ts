@@ -9,7 +9,5 @@ import { Colors } from "./tokens";
 export function getMacroBarColor(consumed: number, goal: number): string {
   if (goal <= 0) return Colors.macroAmber;
   const ratio = consumed / goal;
-  return ratio >= 0.8 && ratio <= 1.1
-    ? Colors.macroOntargetGreen
-    : Colors.macroAmber;
+  return ratio >= 0.8 && ratio <= 1.1 ? Colors.macroOntargetGreen : Colors.macroAmber;
 }
