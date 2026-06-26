@@ -36,14 +36,16 @@ export function DayScreen() {
     void loadEntries();
   }, [loadEntries]);
 
-  // Load profile once on mount (also fires for users who have no profile yet)
   const profileLoadAttempted = useRef(false);
   useEffect(() => {
     if (!profileLoadAttempted.current) {
       profileLoadAttempted.current = true;
-      void load();
+      void load().then(() => {
+        const current = useProfileStore.getState().profile;
+        if (!current) navigate("/onboarding", { replace: true });
+      });
     }
-  }, [load]);
+  }, [load, navigate]);
 
   function handleAddFood(mealType: MealType) {
     void navigate(`/search?meal=${mealType}`);

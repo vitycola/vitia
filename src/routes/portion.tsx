@@ -30,8 +30,12 @@ export function PortionRoute() {
     }
     getById(foodId)
       .then((f) => {
-        if (!f) setNotFound(true);
-        else setFood(f);
+        if (!f) {
+          setNotFound(true);
+        } else {
+          setFood(f);
+          setQuantityStr(String(f.servingSizeG ?? 100));
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));

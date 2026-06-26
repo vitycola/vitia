@@ -15,11 +15,11 @@ const schema = z.object({
   heightCm: z.coerce
     .number({ invalid_type_error: "Ingresá tu altura" })
     .min(50, "Mínimo 50 cm")
-    .max(300, "Máximo 300 cm"),
+    .max(280, "Máximo 280 cm"),
   weightKg: z.coerce
     .number({ invalid_type_error: "Ingresá tu peso" })
-    .min(20, "Mínimo 20 kg")
-    .max(500, "Máximo 500 kg"),
+    .min(10, "Mínimo 10 kg")
+    .max(600, "Máximo 600 kg"),
   sex: z.enum(["male", "female"], { required_error: "Seleccioná el sexo" }),
   activityLevel: z.enum(
     ["sedentary", "lightly_active", "moderately_active", "very_active", "extra_active"],

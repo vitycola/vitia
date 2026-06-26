@@ -1,4 +1,4 @@
-import { insert } from "@/db/repositories/foods";
+import { upsert } from "@/db/repositories/foods";
 import { generateId } from "@/lib/id";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -41,7 +41,7 @@ export function CustomFoodRoute() {
   });
 
   async function onSubmit(data: FormValues) {
-    const newFood = await insert({
+    const newFood = await upsert({
       id: generateId(),
       name: data.foodName,
       caloriesPer100g: data.caloriesPer100g,
