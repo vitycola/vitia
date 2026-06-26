@@ -1,18 +1,25 @@
 import { db, dexieAdapter } from "@/db/client";
-import { mealEntries } from "@/db/schema";
+import { foods, mealEntries } from "@/db/schema";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 
+export type MealEntryView = MealEntry & { brand: string | null };
+
 /**
- * Get all meal entries for a given date, ordered by logged_at ascending.
+ * Get all meal entries for a given date with brand from foods, ordered by logged_at ascending.
  */
-export async function getByDate(date: string): Promise<MealEntry[]> {
-  if (dexieAdapter) return dexieAdapter.mealEntries.getByDate(date);
-  return db
-    .select()
+export async function getByDate(date: string): Promise<MealEntryView[]> {
+  if (dexieAdapter) {
+    const entries = await dexieAdapter.mealEntries.getByDate(date);
+    return entries.map((e) => ({ ...e, brand: null }));
+  }
+  const rows = await db
+    .select({ entry: mealEntries, brand: foods.brand })
     .from(mealEntries)
+    .leftJoin(foods, eq(mealEntries.foodId, foods.id))
     .where(eq(mealEntries.date, date))
     .orderBy(asc(mealEntries.loggedAt));
+  return rows.map((r) => ({ ...r.entry, brand: r.brand ?? null }));
 }
 
 /**
