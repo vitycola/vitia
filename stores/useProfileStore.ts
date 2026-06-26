@@ -60,8 +60,10 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
     set({ isLoading: true });
     try {
       const profile = await profileRepo.getProfile();
+      console.log("[profileStore] load() getProfile result:", profile);
       set({ profile, hasProfile: profile !== null, isLoading: false });
-    } catch {
+    } catch (err) {
+      console.error("[profileStore] load() getProfile FAILED", err);
       set({ isLoading: false });
     }
   },

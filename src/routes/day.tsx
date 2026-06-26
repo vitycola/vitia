@@ -41,7 +41,11 @@ export function DayScreen() {
       profileLoadAttempted.current = true;
       void load().then(() => {
         const current = useProfileStore.getState().profile;
-        if (!current) navigate("/onboarding", { replace: true });
+        console.log("[DayScreen] load() resolved — profile:", current);
+        if (!current) {
+          console.warn("[DayScreen] no profile found — redirecting to /onboarding");
+          navigate("/onboarding", { replace: true });
+        }
       });
     }
   }, [load, navigate]);
