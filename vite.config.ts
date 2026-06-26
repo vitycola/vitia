@@ -10,6 +10,8 @@ export default defineConfig({
     tsconfigPaths(),
     VitePWA({
       registerType: "prompt",
+      // Inject the SW registration script into index.html
+      injectRegister: "auto",
       manifest: {
         name: "Vitia",
         short_name: "Vitia",
@@ -27,6 +29,28 @@ export default defineConfig({
             src: "/icons/icon-512.png",
             sizes: "512x512",
             type: "image/png",
+          },
+        ],
+      },
+      workbox: {
+        // Precache all static assets produced by Vite (app shell)
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
+        runtimeCaching: [
+          {
+            // Open Food Facts API — network-first, fall back to cache for offline
+            urlPattern: /^https:\/\/world\.openfoodfacts\.org\//,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "off-api-cache",
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
           },
         ],
       },

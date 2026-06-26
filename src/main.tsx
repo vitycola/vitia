@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { dbReady } from "@/db/client";
+import { UpdateToast } from "@/src/components/UpdateToast";
 import { router } from "./router";
 
 const rootEl = document.getElementById("root");
@@ -18,6 +19,7 @@ dbReady
     createRoot(rootEl).render(
       <StrictMode>
         <RouterProvider router={router} />
+        <UpdateToast />
       </StrictMode>
     );
   })
