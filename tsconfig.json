@@ -27,5 +27,17 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src", "lib", "db", "types", "hooks", "stores", "vite.config.ts"]
+  "include": [
+    "src",
+    "lib",
+    "db/client.ts",
+    "db/schema.ts",
+    "db/repositories",
+    "db/migrations",
+    "types",
+    "hooks/useDailyTotals.ts",
+    "hooks/useDebouncedValue.ts",
+    "stores",
+    "vite.config.ts"
+  ]
 }
