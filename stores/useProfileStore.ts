@@ -1,4 +1,4 @@
-import * as profileRepo from "@/db/repositories/profile";
+import * as profileRepo from "@/db/repos/profile";
 import type { UserProfile } from "@/db/schema";
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
 import type { ActivityLevel, Goal, Sex } from "@/types";

@@ -1,4 +1,4 @@
-import * as foodsRepo from "@/db/repositories/foods";
+import * as foodsRepo from "@/db/repos/foods";
 import type { Food } from "@/db/schema";
 import { search as offSearch } from "@/lib/openFoodFacts";
 import { create } from "zustand";

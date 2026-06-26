@@ -1,4 +1,4 @@
-import type { MealEntryView } from "@/db/repositories/mealEntries";
+import type { MealEntryView } from "@/db/repos/mealEntries";
 import { MEAL_EMOJI } from "@/lib/constants";
 import type { MealType } from "@/types";
 import { Trash2 } from "lucide-react";

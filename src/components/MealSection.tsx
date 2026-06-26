@@ -1,5 +1,5 @@
-import { getByDateAndMeal } from "@/db/repositories/mealEntries";
-import type { MealEntryView } from "@/db/repositories/mealEntries";
+import { getByDateAndMeal } from "@/db/repos/mealEntries";
+import type { MealEntryView } from "@/db/repos/mealEntries";
 import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanner";
 import { MealEntryRow } from "@/src/components/MealEntryRow";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";

@@ -1,4 +1,4 @@
-import { upsert } from "@/db/repositories/foods";
+import { upsert } from "@/db/repos/foods";
 import { generateId } from "@/lib/id";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
