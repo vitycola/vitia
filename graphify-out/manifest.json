@@ -1,0 +1,297 @@
+{
+  "biome.json": {
+    "mtime": 1782396901.8900394,
+    "ast_hash": "96da17cd4829b972596fe8ceec9a0bd0",
+    "semantic_hash": "96da17cd4829b972596fe8ceec9a0bd0"
+  },
+  "db/client.ts": {
+    "mtime": 1782427790.9300168,
+    "ast_hash": "c091f20316e9670fc7c6354afb3b0edb",
+    "semantic_hash": "c091f20316e9670fc7c6354afb3b0edb"
+  },
+  "db/migrations/0000_thick_eddie_brock.sql": {
+    "mtime": 1782404533.1306508,
+    "ast_hash": "4e5de6dc3b586cafb4d3617498fdcb05",
+    "semantic_hash": "4e5de6dc3b586cafb4d3617498fdcb05"
+  },
+  "db/migrations/0001_name_normalized.sql": {
+    "mtime": 1782404533.1310363,
+    "ast_hash": "593770a2290583e1ed87b4d03a754ce4",
+    "semantic_hash": "593770a2290583e1ed87b4d03a754ce4"
+  },
+  "db/migrations/meta/_journal.json": {
+    "mtime": 1782404533.131568,
+    "ast_hash": "5cde4a69544ac89f650b11503f12d831",
+    "semantic_hash": "5cde4a69544ac89f650b11503f12d831"
+  },
+  "db/repositories/foods.ts": {
+    "mtime": 1782427790.9303222,
+    "ast_hash": "0b76172a9ffab22b3ab9da93da89ad82",
+    "semantic_hash": "0b76172a9ffab22b3ab9da93da89ad82"
+  },
+  "db/repositories/mealEntries.ts": {
+    "mtime": 1782404533.1328256,
+    "ast_hash": "b7f635eaf62830dd9d8b3d43288b2620",
+    "semantic_hash": "b7f635eaf62830dd9d8b3d43288b2620"
+  },
+  "db/repositories/profile.ts": {
+    "mtime": 1782404533.133175,
+    "ast_hash": "b2b160279ea0794e662a7994c487f021",
+    "semantic_hash": "b2b160279ea0794e662a7994c487f021"
+  },
+  "db/schema.ts": {
+    "mtime": 1782404533.1334205,
+    "ast_hash": "0c9a256c91909e1d0d1ea60a6b7aa05d",
+    "semantic_hash": "0c9a256c91909e1d0d1ea60a6b7aa05d"
+  },
+  "hooks/useDailyTotals.ts": {
+    "mtime": 1782404533.1338322,
+    "ast_hash": "8ba83dc2f8e6c9aabcf344e2a9e43dc1",
+    "semantic_hash": "8ba83dc2f8e6c9aabcf344e2a9e43dc1"
+  },
+  "hooks/useDebouncedValue.ts": {
+    "mtime": 1782404533.1344945,
+    "ast_hash": "b19e1632ac8dcc17aef8854587466d0b",
+    "semantic_hash": "b19e1632ac8dcc17aef8854587466d0b"
+  },
+  "jest.setup.ts": {
+    "mtime": 1782404533.1348763,
+    "ast_hash": "7acd32d4617ba30ed60b8c7750d927c4",
+    "semantic_hash": "7acd32d4617ba30ed60b8c7750d927c4"
+  },
+  "jest.sql-transform.js": {
+    "mtime": 1782427790.930537,
+    "ast_hash": "ead46acc741fb3c750cc64540018f961",
+    "semantic_hash": "ead46acc741fb3c750cc64540018f961"
+  },
+  "lib/date.ts": {
+    "mtime": 1782404533.13547,
+    "ast_hash": "aed8de87f2363b5e5cd07e9e7955389e",
+    "semantic_hash": "aed8de87f2363b5e5cd07e9e7955389e"
+  },
+  "lib/id.ts": {
+    "mtime": 1782404533.1357234,
+    "ast_hash": "42c64120590181dc07ec6e394cf46781",
+    "semantic_hash": "42c64120590181dc07ec6e394cf46781"
+  },
+  "lib/nutrition.ts": {
+    "mtime": 1782404533.1359487,
+    "ast_hash": "ba5636dc8207d51c4dfbb6c7c625ac79",
+    "semantic_hash": "ba5636dc8207d51c4dfbb6c7c625ac79"
+  },
+  "lib/openFoodFacts.ts": {
+    "mtime": 1782404533.1362104,
+    "ast_hash": "b628512ccf585ce725510fe889b977a1",
+    "semantic_hash": "b628512ccf585ce725510fe889b977a1"
+  },
+  "lib/search.ts": {
+    "mtime": 1782427790.9307575,
+    "ast_hash": "6a37a9b81c77be54d4c31e756b24a60a",
+    "semantic_hash": "6a37a9b81c77be54d4c31e756b24a60a"
+  },
+  "package.json": {
+    "mtime": 1782427790.9309747,
+    "ast_hash": "ed130df53ea6c1e7da1b1de6bb5250cf",
+    "semantic_hash": "ed130df53ea6c1e7da1b1de6bb5250cf"
+  },
+  "postcss.config.ts": {
+    "mtime": 1782396893.5591264,
+    "ast_hash": "c735540bb63936a123bc867d950c9f69",
+    "semantic_hash": "c735540bb63936a123bc867d950c9f69"
+  },
+  "src/App.tsx": {
+    "mtime": 1782396933.6748168,
+    "ast_hash": "2321fa162370f535a7b567c128f32303",
+    "semantic_hash": "2321fa162370f535a7b567c128f32303"
+  },
+  "src/components/CalorieRing.tsx": {
+    "mtime": 1782427840.635133,
+    "ast_hash": "01ce9a7b811fe25392e0d55a02b8a593",
+    "semantic_hash": "01ce9a7b811fe25392e0d55a02b8a593"
+  },
+  "src/components/CopyFromYesterdayBanner.tsx": {
+    "mtime": 1782427840.635461,
+    "ast_hash": "1e1b45b2c5482e1d3c661eaea07a7961",
+    "semantic_hash": "1e1b45b2c5482e1d3c661eaea07a7961"
+  },
+  "src/components/DateNavigator.tsx": {
+    "mtime": 1782427840.6358097,
+    "ast_hash": "b3acd8c301f7c0e12d425fe5defd5de8",
+    "semantic_hash": "b3acd8c301f7c0e12d425fe5defd5de8"
+  },
+  "src/components/MacroBar.tsx": {
+    "mtime": 1782427790.9435682,
+    "ast_hash": "e1e1af6b22e8c874ad81259c55972b38",
+    "semantic_hash": "e1e1af6b22e8c874ad81259c55972b38"
+  },
+  "src/components/MealEntryRow.tsx": {
+    "mtime": 1782427840.6361535,
+    "ast_hash": "13ac459becfe7ebef74702652afb0b2d",
+    "semantic_hash": "13ac459becfe7ebef74702652afb0b2d"
+  },
+  "src/components/MealSection.tsx": {
+    "mtime": 1782427840.6366832,
+    "ast_hash": "91056a4d467ba6ccf076892a5f28e45e",
+    "semantic_hash": "91056a4d467ba6ccf076892a5f28e45e"
+  },
+  "src/components/ui/Button.tsx": {
+    "mtime": 1782427840.6370134,
+    "ast_hash": "0ec88aae668e0dac169398ef8b99dff4",
+    "semantic_hash": "0ec88aae668e0dac169398ef8b99dff4"
+  },
+  "src/components/ui/Input.tsx": {
+    "mtime": 1782427790.9445117,
+    "ast_hash": "4362852223a7856922fc2c6e3a3a6656",
+    "semantic_hash": "4362852223a7856922fc2c6e3a3a6656"
+  },
+  "src/db/__tests__/id.test.ts": {
+    "mtime": 1782404533.1394079,
+    "ast_hash": "74f28d68f4edddef5db45ed9c68bf8dd",
+    "semantic_hash": "74f28d68f4edddef5db45ed9c68bf8dd"
+  },
+  "src/db/__tests__/migrator.test.ts": {
+    "mtime": 1782427790.9312727,
+    "ast_hash": "7e85a03a87dd935768a1a49b7f12d20e",
+    "semantic_hash": "7e85a03a87dd935768a1a49b7f12d20e"
+  },
+  "src/db/__tests__/repository-contract.test.ts": {
+    "mtime": 1782427790.93155,
+    "ast_hash": "cfe7908e99cd570295a22a291f8a15ef",
+    "semantic_hash": "cfe7908e99cd570295a22a291f8a15ef"
+  },
+  "src/db/dexie-adapter.ts": {
+    "mtime": 1782427790.9318345,
+    "ast_hash": "6862f12956b3f6a1c53cdd47c67066eb",
+    "semantic_hash": "6862f12956b3f6a1c53cdd47c67066eb"
+  },
+  "src/db/migrate.web.ts": {
+    "mtime": 1782427790.9321039,
+    "ast_hash": "3423a5e2028ed1d71ad986d7966daa8e",
+    "semantic_hash": "3423a5e2028ed1d71ad986d7966daa8e"
+  },
+  "src/db/worker.ts": {
+    "mtime": 1782427790.932357,
+    "ast_hash": "7ed0be519d82f8bff9b187776c9ee365",
+    "semantic_hash": "7ed0be519d82f8bff9b187776c9ee365"
+  },
+  "src/layouts/TabLayout.tsx": {
+    "mtime": 1782427790.944744,
+    "ast_hash": "2e168053dad542878a92d3e0e18e7e9e",
+    "semantic_hash": "2e168053dad542878a92d3e0e18e7e9e"
+  },
+  "src/main.tsx": {
+    "mtime": 1782427840.6373563,
+    "ast_hash": "d89165e53c05db70606561275c41cfad",
+    "semantic_hash": "d89165e53c05db70606561275c41cfad"
+  },
+  "src/router.tsx": {
+    "mtime": 1782427840.637677,
+    "ast_hash": "35e47af305b73b6e0f0affa39fe14cb9",
+    "semantic_hash": "35e47af305b73b6e0f0affa39fe14cb9"
+  },
+  "src/routes/day.tsx": {
+    "mtime": 1782427840.6379764,
+    "ast_hash": "8f3d62fb2883516021113d93a403d4e0",
+    "semantic_hash": "8f3d62fb2883516021113d93a403d4e0"
+  },
+  "src/vite-env.d.ts": {
+    "mtime": 1782396923.6195154,
+    "ast_hash": "0352474ba2918efe13895edbc3780d94",
+    "semantic_hash": "0352474ba2918efe13895edbc3780d94"
+  },
+  "stores/useDayStore.ts": {
+    "mtime": 1782427840.6383357,
+    "ast_hash": "bfe61f9aecc46b8e7c71e4193de941dc",
+    "semantic_hash": "bfe61f9aecc46b8e7c71e4193de941dc"
+  },
+  "stores/useFoodSearchStore.ts": {
+    "mtime": 1782404533.1418777,
+    "ast_hash": "da2471455d1ccd6be57ecd42fdd77d43",
+    "semantic_hash": "da2471455d1ccd6be57ecd42fdd77d43"
+  },
+  "stores/useMealClipboardStore.ts": {
+    "mtime": 1782404533.1421514,
+    "ast_hash": "7ca8e38318b66b588da6d5d5682f1d65",
+    "semantic_hash": "7ca8e38318b66b588da6d5d5682f1d65"
+  },
+  "stores/useProfileStore.ts": {
+    "mtime": 1782404533.142502,
+    "ast_hash": "f2b0b65b7aa0a560f055709404dfc382",
+    "semantic_hash": "f2b0b65b7aa0a560f055709404dfc382"
+  },
+  "tailwind.config.ts": {
+    "mtime": 1782396888.0662286,
+    "ast_hash": "684464aff8def86a984c52ff51a19709",
+    "semantic_hash": "684464aff8def86a984c52ff51a19709"
+  },
+  "tsconfig.json": {
+    "mtime": 1782404533.1428308,
+    "ast_hash": "e26f954205f4b636ea65b5a2f80db7ed",
+    "semantic_hash": "e26f954205f4b636ea65b5a2f80db7ed"
+  },
+  "tsconfig.node.json": {
+    "mtime": 1782396873.7432253,
+    "ast_hash": "b1ba1c27ffdd70dd504fdf9efe4ddbff",
+    "semantic_hash": "b1ba1c27ffdd70dd504fdf9efe4ddbff"
+  },
+  "types/index.ts": {
+    "mtime": 1782404533.1430967,
+    "ast_hash": "bf38d4a8e536073a77f584593ab7e43c",
+    "semantic_hash": "bf38d4a8e536073a77f584593ab7e43c"
+  },
+  "vite.config.ts": {
+    "mtime": 1782427790.9332843,
+    "ast_hash": "ea6551da4693d0b98248059ccb5b5b35",
+    "semantic_hash": "ea6551da4693d0b98248059ccb5b5b35"
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1782427790.9296975,
+    "ast_hash": "63b7ef191d4abd3314497ef5e5bfbb8d",
+    "semantic_hash": "63b7ef191d4abd3314497ef5e5bfbb8d"
+  },
+  "README.md": {
+    "mtime": 1782396960.1566908,
+    "ast_hash": "bea3147ba704d6e57c967305b6fc5012",
+    "semantic_hash": "bea3147ba704d6e57c967305b6fc5012"
+  },
+  "index.html": {
+    "mtime": 1782396907.648037,
+    "ast_hash": "e59d5b8f920db580cbe06b9f9ff0ef9a",
+    "semantic_hash": "e59d5b8f920db580cbe06b9f9ff0ef9a"
+  },
+  "openspec/changes/web-pwa-migration/design.md": {
+    "mtime": 1782396945.3025231,
+    "ast_hash": "5da53dd54f93816551ba0f49883b55a9",
+    "semantic_hash": "5da53dd54f93816551ba0f49883b55a9"
+  },
+  "openspec/changes/web-pwa-migration/proposal.md": {
+    "mtime": 1782396945.3031096,
+    "ast_hash": "05782f865a86de3108053d486f4606ba",
+    "semantic_hash": "05782f865a86de3108053d486f4606ba"
+  },
+  "openspec/changes/web-pwa-migration/specs/pwa-shell.md": {
+    "mtime": 1782396945.2995815,
+    "ast_hash": "ec9443a038b110b885c31b1f2a40df25",
+    "semantic_hash": "ec9443a038b110b885c31b1f2a40df25"
+  },
+  "openspec/changes/web-pwa-migration/specs/web-local-storage.md": {
+    "mtime": 1782396945.30033,
+    "ast_hash": "d88c2efa151e8553b85f347c18036dba",
+    "semantic_hash": "d88c2efa151e8553b85f347c18036dba"
+  },
+  "openspec/changes/web-pwa-migration/specs/web-tracker-ui.md": {
+    "mtime": 1782396945.301116,
+    "ast_hash": "390efb5c28ff7b28d9b668de55bf565d",
+    "semantic_hash": "390efb5c28ff7b28d9b668de55bf565d"
+  },
+  "openspec/changes/web-pwa-migration/tasks.md": {
+    "mtime": 1782396945.3017983,
+    "ast_hash": "bdeeaea66d66ee15263af4d9759f0fe4",
+    "semantic_hash": "bdeeaea66d66ee15263af4d9759f0fe4"
+  },
+  "openspec/config.yaml": {
+    "mtime": 1782396945.303714,
+    "ast_hash": "a3a5266d9ee9814f3aa6d44e0765b402",
+    "semantic_hash": "a3a5266d9ee9814f3aa6d44e0765b402"
+  }
+}
