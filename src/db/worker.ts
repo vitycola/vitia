@@ -120,41 +120,37 @@ async function execStatement(
   const { SQLITE_ROW, SQLITE_INTEGER, SQLITE_FLOAT, SQLITE_TEXT, SQLITE_BLOB } = sqlite3;
   const rows: unknown[][] = [];
 
-  const str = sqlite3.str_new(db, sql);
-  try {
-    const sqlPtr = sqlite3.str_value(str);
-    for await (const stmt of sqlite3.statements(db, sqlPtr)) {
-      bindParams(sqlite3, stmt, params);
+  // In wa-sqlite v1.0.0 statements() accepts a JS string directly and manages
+  // WASM memory internally — passing a raw pointer (str_value) broke all queries.
+  for await (const stmt of sqlite3.statements(db, sql)) {
+    bindParams(sqlite3, stmt, params);
 
-      if (method === "run") {
-        while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
-          // Drain implicit result rows (e.g. ON CONFLICT DO UPDATE side effects)
-        }
-      } else {
-        while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
-          const row: unknown[] = [];
-          const colCount = sqlite3.column_count(stmt);
-          for (let i = 0; i < colCount; i++) {
-            const colType = sqlite3.column_type(stmt, i);
-            if (colType === SQLITE_INTEGER) {
-              row.push(sqlite3.column_int(stmt, i));
-            } else if (colType === SQLITE_FLOAT) {
-              row.push(sqlite3.column_double(stmt, i));
-            } else if (colType === SQLITE_TEXT) {
-              row.push(sqlite3.column_text(stmt, i));
-            } else if (colType === SQLITE_BLOB) {
-              row.push(sqlite3.column_blob(stmt, i));
-            } else {
-              row.push(null);
-            }
+    if (method === "run") {
+      while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
+        // Drain implicit result rows (e.g. ON CONFLICT DO UPDATE side effects)
+      }
+    } else {
+      while ((await sqlite3.step(stmt)) === SQLITE_ROW) {
+        const row: unknown[] = [];
+        const colCount = sqlite3.column_count(stmt);
+        for (let i = 0; i < colCount; i++) {
+          const colType = sqlite3.column_type(stmt, i);
+          if (colType === SQLITE_INTEGER) {
+            row.push(sqlite3.column_int(stmt, i));
+          } else if (colType === SQLITE_FLOAT) {
+            row.push(sqlite3.column_double(stmt, i));
+          } else if (colType === SQLITE_TEXT) {
+            row.push(sqlite3.column_text(stmt, i));
+          } else if (colType === SQLITE_BLOB) {
+            row.push(sqlite3.column_blob(stmt, i));
+          } else {
+            row.push(null);
           }
-          rows.push(row);
-          if (method === "get") break; // first row only
         }
+        rows.push(row);
+        if (method === "get") break; // first row only
       }
     }
-  } finally {
-    sqlite3.str_finish(str);
   }
 
   return rows;
