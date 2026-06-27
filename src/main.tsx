@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { dbReady } from "@/db/client";
 import { UpdateToast } from "@/src/components/UpdateToast";
+import { useAuthStore } from "@/src/stores/useAuthStore";
 import { router } from "./router";
 
 const rootEl = document.getElementById("root");
@@ -14,7 +15,9 @@ rootEl.innerHTML =
   '<div style="display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:sans-serif;color:#6b7280;">Cargando…</div>';
 
 dbReady
-  .then(() => {
+  .then(async () => {
+    // Init auth session after DB is ready so repos can read userId synchronously
+    await useAuthStore.getState().initFromSession();
     rootEl.innerHTML = "";
     createRoot(rootEl).render(
       <StrictMode>

@@ -36,6 +36,11 @@ interface DayState {
 interface DayActions {
   /** Load (or reload) entries for the currently selected date. */
   loadEntries: () => Promise<void>;
+  /**
+   * Reload entries from the local DB.
+   * Alias for loadEntries(); called by SyncService after cloud reconcile.
+   */
+  reload: () => Promise<void>;
   /** Change the selected date and immediately load entries for it. */
   setDate: (date: string) => Promise<void>;
   /** Navigate to the previous day. */
@@ -90,6 +95,11 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     } catch {
       set({ isLoading: false });
     }
+  },
+
+  reload: async () => {
+    // Alias for loadEntries() — called by SyncService after cloud reconcile
+    await get().loadEntries();
   },
 
   setDate: async (date: string) => {

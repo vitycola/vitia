@@ -33,6 +33,11 @@ interface ProfileActions {
   /** Hydrate store from SQLite. Call at app boot. */
   load: () => Promise<void>;
   /**
+   * Reload the profile from the local DB.
+   * Alias for load(); called by SyncService after reconcile.
+   */
+  reload: () => Promise<void>;
+  /**
    * Compute TDEE + macros from the input, persist to SQLite, and
    * update in-memory state. Clears any manual goal override.
    */
@@ -66,6 +71,12 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       console.error("[profileStore] load() getProfile FAILED", err);
       set({ isLoading: false });
     }
+  },
+
+  reload: async () => {
+    // Alias for load() — called by SyncService after cloud reconcile
+    const store = useProfileStore.getState();
+    await store.load();
   },
 
   saveProfile: async (input: ProfileInput) => {

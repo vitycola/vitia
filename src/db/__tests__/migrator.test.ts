@@ -62,10 +62,11 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Two migrations: 0000 and 0001
-    expect(rows).toHaveLength(2);
+    // Three migrations: 0000, 0001, and 0002
+    expect(rows).toHaveLength(3);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
+    expect(rows[2].tag).toBe("0002_user_session_persistence");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -73,11 +74,11 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly two migration rows — no duplicate inserts
+    // Still exactly three migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(2);
+    expect(rows.c).toBe(3);
   });
 
   it("applies migrations in journal idx order (multi-migration ordered apply)", async () => {
