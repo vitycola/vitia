@@ -176,7 +176,7 @@ export function CustomFoodRoute() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+              className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting ? "Guardando…" : "Guardar y porcionar"}
             </button>
@@ -196,7 +196,7 @@ export function CustomFoodRoute() {
 }
 
 function fieldClass(hasError: boolean) {
-  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white ${
+  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 bg-white ${
     hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-300"
   }`;
 }

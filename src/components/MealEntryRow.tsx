@@ -33,7 +33,7 @@ export function MealEntryRow({ entry, mealType, onDelete }: MealEntryRowProps) {
       onPointerUp={handlePointerUp}
     >
       {/* Emoji square */}
-      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg">
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center text-lg">
         {MEAL_EMOJI[mealType]}
       </span>
 

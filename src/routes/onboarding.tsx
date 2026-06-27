@@ -120,12 +120,12 @@ export function OnboardingRoute() {
 
         {/* Live TDEE preview */}
         {preview && (
-          <div className="mb-6 rounded-2xl bg-green-50 px-4 py-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">
+          <div className="mb-6 rounded-2xl bg-surface px-4 py-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#8E8E93]">
               Objetivo estimado
             </p>
-            <p className="text-2xl font-bold text-green-800">{preview.calorieGoal} kcal</p>
-            <p className="mt-1 text-xs text-green-600">
+            <p className="text-2xl font-bold text-[#1C1C1E]">{preview.calorieGoal} kcal</p>
+            <p className="mt-1 text-xs text-[#8E8E93]">
               P {preview.proteinG}g · C {preview.carbsG}g · G {preview.fatG}g
             </p>
           </div>
@@ -236,7 +236,7 @@ export function OnboardingRoute() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {isSubmitting ? "Guardando…" : "Guardar perfil"}
           </button>
@@ -247,7 +247,7 @@ export function OnboardingRoute() {
 }
 
 function fieldClass(hasError: boolean) {
-  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white ${
+  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 bg-white ${
     hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-300"
   }`;
 }

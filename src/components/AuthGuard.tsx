@@ -30,7 +30,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (status === "loading") {
     return (
       <section className="flex min-h-screen items-center justify-center" aria-label="Loading">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
       </section>
     );
   }

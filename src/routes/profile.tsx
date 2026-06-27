@@ -117,7 +117,7 @@ export function ProfileRoute() {
               type="button"
               onClick={() => void handleRecalc()}
               disabled={recalcing}
-              className="mt-4 flex w-full items-center justify-center rounded-xl border border-green-600 bg-white px-4 py-2.5 text-sm font-semibold text-green-600 transition-colors hover:bg-green-50 disabled:opacity-50"
+              className="mt-4 flex w-full items-center justify-center rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-semibold text-accent transition-colors hover:opacity-90 disabled:opacity-50"
             >
               {recalcing ? "Recalculando…" : "Recalcular objetivos"}
             </button>
@@ -128,7 +128,7 @@ export function ProfileRoute() {
         <button
           type="button"
           onClick={() => void navigate("/onboarding")}
-          className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+          className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
         >
           Editar perfil
         </button>

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vitia-dev",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": ["/Users/victor/Documents/CodeProjects/vitia-web/node_modules/.bin/vite"],
+      "port": 5199,
+      "autoPort": true
+    }
+  ]
+}

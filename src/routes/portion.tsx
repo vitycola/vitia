@@ -56,7 +56,7 @@ export function PortionRoute() {
         <button
           type="button"
           onClick={() => void navigate(-1)}
-          className="text-sm font-medium text-green-600"
+          className="text-sm font-medium text-accent"
         >
           Volver
         </button>
@@ -138,14 +138,14 @@ export function PortionRoute() {
             value={quantityStr}
             onChange={(e) => setQuantityStr(e.target.value)}
             min={1}
-            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
         </div>
 
         {/* Live nutrition preview */}
         {portion && grams > 0 && (
-          <div className="mb-6 rounded-2xl bg-green-50 px-4 py-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-green-700">
+          <div className="mb-6 rounded-2xl bg-surface px-4 py-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#8E8E93]">
               Para {grams} g
             </p>
             <div className="grid grid-cols-4 gap-2 text-center">
@@ -183,7 +183,7 @@ export function PortionRoute() {
             type="button"
             onClick={() => void handleConfirm()}
             disabled={saving || grams <= 0}
-            className="flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "Guardando…" : "Agregar al diario"}
           </button>
@@ -214,11 +214,11 @@ function NutritionCell({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <span className={`text-base font-bold ${highlight ? "text-green-800" : "text-gray-800"}`}>
+      <span className={`text-base font-bold ${highlight ? "text-accent" : "text-gray-800"}`}>
         {value}
       </span>
-      <span className={`text-xs ${highlight ? "text-green-600" : "text-gray-400"}`}>{unit}</span>
-      <span className={`text-xs ${highlight ? "text-green-600" : "text-gray-400"}`}>{label}</span>
+      <span className={`text-xs ${highlight ? "text-accent" : "text-gray-400"}`}>{unit}</span>
+      <span className={`text-xs ${highlight ? "text-[#8E8E93]" : "text-gray-400"}`}>{label}</span>
     </div>
   );
 }
