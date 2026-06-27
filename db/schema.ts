@@ -1,9 +1,10 @@
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// ── users_profile (single row, id = 1) ───────────────────────────────
+// ── users_profile (single row per user) ───────────────────────────────
 export const usersProfile = sqliteTable("users_profile", {
-  id: integer("id").primaryKey(), // always 1
+  id: integer("id").primaryKey(), // always 1 in local DB (keyed to userId on cloud)
+  userId: text("user_id"), // null when sync is disabled; Supabase auth.uid() when enabled
   age: integer("age").notNull(),
   heightCm: real("height_cm").notNull(),
   weightKg: real("weight_kg").notNull(),
@@ -50,6 +51,7 @@ export const mealEntries = sqliteTable(
   "meal_entries",
   {
     id: text("id").primaryKey(), // UUID
+    userId: text("user_id"), // null when sync is disabled; Supabase auth.uid() when enabled
     date: text("date").notNull(), // YYYY-MM-DD device-local
     mealType: text("meal_type", {
       enum: ["breakfast", "lunch", "dinner", "snack"],
@@ -64,12 +66,25 @@ export const mealEntries = sqliteTable(
     carbsG: real("carbs_g").notNull(),
     fatG: real("fat_g").notNull(),
     loggedAt: text("logged_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at"), // null when sync is disabled; ISO string when enabled
   },
   (t) => ({
     dateIdx: index("meal_entries_date_idx").on(t.date),
     dateMealIdx: index("meal_entries_date_meal_idx").on(t.date, t.mealType),
   })
 );
+
+// ── sync_queue (durable outbound operation queue) ─────────────────────
+// Shared by both OPFS and Dexie backends (backed by IndexedDB on Dexie path,
+// SQLite on OPFS path). Survives browser restarts and offline periods.
+export const syncQueue = sqliteTable("sync_queue", {
+  id: text("id").primaryKey(), // UUID — idempotent re-enqueue guard
+  table: text("table", { enum: ["users_profile", "meal_entries"] }).notNull(),
+  op: text("op", { enum: ["upsert", "delete"] }).notNull(),
+  row: text("row").notNull(), // JSON-serialised payload
+  userId: text("user_id").notNull(),
+  updatedAt: text("updated_at").notNull(), // ISO string; used for LWW ordering
+});
 
 // Inferred types (single source of truth for the app)
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -78,3 +93,5 @@ export type Food = typeof foods.$inferSelect;
 export type NewFood = typeof foods.$inferInsert;
 export type MealEntry = typeof mealEntries.$inferSelect;
 export type NewMealEntry = typeof mealEntries.$inferInsert;
+export type SyncQueueRow = typeof syncQueue.$inferSelect;
+export type NewSyncQueueRow = typeof syncQueue.$inferInsert;

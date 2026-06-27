@@ -19,7 +19,9 @@ import type {
   MealEntry,
   NewFood,
   NewMealEntry,
+  NewSyncQueueRow,
   NewUserProfile,
+  SyncQueueRow,
   UserProfile,
 } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
@@ -37,6 +39,7 @@ import Dexie, { type Table } from "dexie";
 interface FoodRow extends Food {}
 interface MealEntryRow extends MealEntry {}
 interface UserProfileRow extends UserProfile {}
+interface SyncQueueDexieRow extends SyncQueueRow {}
 
 /**
  * Migration tracking row — same semantic as __drizzle_migrations in SQLite.
@@ -53,7 +56,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -63,12 +66,14 @@ const DB_VERSION = 2;
 const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0000_thick_eddie_brock", when: 1782165949458 },
   { tag: "0001_name_normalized", when: 1782200000000 },
+  { tag: "0002_user_session_persistence", when: 1751000000000 },
 ];
 
 class VitiaDb extends Dexie {
   foods!: Table<FoodRow, string>;
   meal_entries!: Table<MealEntryRow, string>;
   users_profile!: Table<UserProfileRow, number>;
+  sync_queue!: Table<SyncQueueDexieRow, string>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -83,14 +88,11 @@ class VitiaDb extends Dexie {
     });
 
     // Version 2: adds nameNormalized index (0001_name_normalized migration)
-    this.version(DB_VERSION)
+    this.version(2)
       .stores({
-        // Dexie index syntax: first entry is the keyPath, subsequent are indexes
-        // Primary keys + indexes mirror the SQLite schema exactly
         foods: "id, name, nameNormalized, source, offProductCode",
         meal_entries: "id, date, [date+mealType], foodId",
         users_profile: "id",
-        // Migration tracking table
         __drizzle_migrations: "++id, &tag",
       })
       .upgrade(async (trans) => {
@@ -102,6 +104,18 @@ class VitiaDb extends Dexie {
             food.nameNormalized = normalizeForSearch(food.name as string);
           });
       });
+
+    // Version 3: adds userId + updatedAt to meal_entries and users_profile;
+    // adds sync_queue table (0002_user_session_persistence migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: userId and updatedAt are optional columns.
+    // Existing rows without them will have undefined values, which is fine.
   }
 }
 
@@ -125,6 +139,13 @@ export interface ProfileRepo {
   upsertProfile(data: Omit<NewUserProfile, "id">): Promise<UserProfile>;
 }
 
+/** SyncQueue repository surface — durable outbound operation queue */
+export interface SyncQueueRepo {
+  enqueue(op: NewSyncQueueRow): Promise<void>;
+  drain(): Promise<SyncQueueRow[]>;
+  remove(id: string): Promise<void>;
+}
+
 /** MealEntries repository surface — mirrors db/repositories/mealEntries.ts exactly */
 export interface MealEntriesRepo {
   getByDate(date: string): Promise<MealEntry[]>;
@@ -142,6 +163,7 @@ export interface DexieAdapter {
   readonly foods: FoodsRepo;
   readonly profile: ProfileRepo;
   readonly mealEntries: MealEntriesRepo;
+  readonly syncQueue: SyncQueueRepo;
   /** Exposed for testing: returns the list of applied migration tags (W2/S1). */
   getAppliedMigrationTags(): Promise<string[]>;
   /** Close the underlying Dexie connection (useful in tests). */
@@ -278,6 +300,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     async upsertProfile(data) {
       const row: UserProfileRow = {
         id: PROFILE_ID,
+        userId: data.userId ?? null,
         age: data.age,
         heightCm: data.heightCm,
         weightKg: data.weightKg,
@@ -317,6 +340,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     async insert(entry) {
       const row: MealEntryRow = {
         id: entry.id,
+        userId: entry.userId ?? null,
         date: entry.date,
         mealType: entry.mealType,
         foodId: entry.foodId,
@@ -327,6 +351,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         carbsG: entry.carbsG,
         fatG: entry.fatG,
         loggedAt: entry.loggedAt ?? now(),
+        updatedAt: entry.updatedAt ?? null,
       };
       await db.meal_entries.add(row);
       return row;
@@ -343,6 +368,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         for (const entry of entries) {
           const row: MealEntryRow = {
             id: entry.id,
+            userId: entry.userId ?? null,
             date: entry.date,
             mealType: entry.mealType,
             foodId: entry.foodId,
@@ -353,6 +379,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
             carbsG: entry.carbsG,
             fatG: entry.fatG,
             loggedAt: entry.loggedAt ?? now(),
+            updatedAt: entry.updatedAt ?? null,
           };
           await db.meal_entries.add(row); // throws ConstraintError on duplicate
           results.push(row);
@@ -377,6 +404,22 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
   };
 
+  // ── SyncQueue ────────────────────────────────────────────────────────────
+
+  const syncQueue: SyncQueueRepo = {
+    async enqueue(op) {
+      await db.sync_queue.put(op as SyncQueueDexieRow);
+    },
+
+    async drain() {
+      return db.sync_queue.toArray();
+    },
+
+    async remove(id) {
+      await db.sync_queue.delete(id);
+    },
+  };
+
   // ── Public adapter ────────────────────────────────────────────────────────
 
   return {
@@ -384,6 +427,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     foods,
     profile,
     mealEntries,
+    syncQueue,
 
     async getAppliedMigrationTags() {
       const rows = await db.__drizzle_migrations.toArray();

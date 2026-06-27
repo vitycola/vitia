@@ -1,7 +1,10 @@
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
+import { isSyncEnabled, getSupabaseClient } from "@/src/lib/supabase";
+import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { ActivityLevel, Goal, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -45,6 +48,35 @@ function computePreview(values: Partial<FormValues>) {
 export function OnboardingRoute() {
   const navigate = useNavigate();
   const { saveProfile } = useProfileStore();
+  const { userId } = useAuthStore();
+
+  // On mount, check if the user already has a cloud profile.
+  // If yes, skip onboarding and go to the main app.
+  useEffect(() => {
+    if (!isSyncEnabled() || !userId) return;
+
+    const checkCloudProfile = async () => {
+      try {
+        const supabase = getSupabaseClient();
+        const { data } = await supabase
+          .from("users_profile")
+          .select("user_id")
+          .eq("user_id", userId)
+          .single();
+
+        if (data) {
+          // Profile exists in the cloud — pull it and skip onboarding
+          const { sync } = await import("@/src/services/syncService");
+          await sync(userId);
+          void navigate("/", { replace: true });
+        }
+      } catch {
+        // No cloud profile found — continue with onboarding
+      }
+    };
+
+    void checkCloudProfile();
+  }, [userId, navigate]);
 
   const {
     register,

@@ -1,4 +1,6 @@
 import { useProfileStore } from "@/stores/useProfileStore";
+import { isSyncEnabled } from "@/src/lib/supabase";
+import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,8 +26,20 @@ const SEX_LABELS: Record<string, string> = {
 export function ProfileRoute() {
   const navigate = useNavigate();
   const { profile, hasProfile, load, recalcFromProfile } = useProfileStore();
+  const { signOut } = useAuthStore();
   const loadAttempted = useRef(false);
   const [recalcing, setRecalcing] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+      void navigate("/login", { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   useEffect(() => {
     if (!loadAttempted.current) {
@@ -118,6 +132,18 @@ export function ProfileRoute() {
         >
           Editar perfil
         </button>
+
+        {/* Sign out — only shown when cloud sync is enabled */}
+        {isSyncEnabled() && (
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            disabled={signingOut}
+            className="flex w-full items-center justify-center rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        )}
       </div>
     </div>
   );
