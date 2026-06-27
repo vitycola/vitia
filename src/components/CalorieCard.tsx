@@ -146,7 +146,6 @@ export function CalorieCard({
           <MacroRow label="Carbs" consumed={carbsG} goal={carbsGoalG} color="#F5A623" />
           <MacroRow label="Grasas" consumed={fatG} goal={fatGoalG} color="#F5A623" />
         </div>
-
       </div>
     </div>
   );

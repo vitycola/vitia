@@ -68,7 +68,9 @@ export function LoginRoute() {
               setError(null);
             }}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              tab === "login" ? "bg-accent text-accent-foreground" : "text-gray-500 hover:text-gray-900"
+              tab === "login"
+                ? "bg-accent text-accent-foreground"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Sign in
@@ -80,7 +82,9 @@ export function LoginRoute() {
               setError(null);
             }}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              tab === "register" ? "bg-accent text-accent-foreground" : "text-gray-500 hover:text-gray-900"
+              tab === "register"
+                ? "bg-accent text-accent-foreground"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Create account

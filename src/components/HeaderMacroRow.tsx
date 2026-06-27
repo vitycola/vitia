@@ -58,7 +58,13 @@ export function HeaderMacroRow({
         color="#F5A623"
       />
       <div className="h-6 w-px bg-gray-200" />
-      <MacroChip label="Proteínas" consumed={proteinG} goal={proteinGoalG} unit="g" color="#F5A623" />
+      <MacroChip
+        label="Proteínas"
+        consumed={proteinG}
+        goal={proteinGoalG}
+        unit="g"
+        color="#F5A623"
+      />
       <div className="h-6 w-px bg-gray-200" />
       <MacroChip label="Carbs" consumed={carbsG} goal={carbsGoalG} unit="g" color="#F5A623" />
       <div className="h-6 w-px bg-gray-200" />
