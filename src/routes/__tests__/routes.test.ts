@@ -80,8 +80,10 @@ describe("(a) OnboardingRoute — live TDEE preview updates on field change", ()
   });
 
   it("preview changes when activityLevel changes", () => {
-    const sedentaryGoal = computePreview({ ...baseValues, activityLevel: "sedentary" })?.calorieGoal ?? 0;
-    const veryActiveGoal = computePreview({ ...baseValues, activityLevel: "very_active" })?.calorieGoal ?? 0;
+    const sedentaryGoal =
+      computePreview({ ...baseValues, activityLevel: "sedentary" })?.calorieGoal ?? 0;
+    const veryActiveGoal =
+      computePreview({ ...baseValues, activityLevel: "very_active" })?.calorieGoal ?? 0;
     expect(sedentaryGoal).toBeLessThan(veryActiveGoal);
   });
 
