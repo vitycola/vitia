@@ -14,7 +14,7 @@ type Tab = "login" | "register";
 
 export function LoginRoute() {
   const navigate = useNavigate();
-  const { signInWithGoogle, signInWithPassword, signUp, status } = useAuthStore();
+  const { signInWithPassword, signUp, status } = useAuthStore();
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
