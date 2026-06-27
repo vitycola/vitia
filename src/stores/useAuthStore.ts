@@ -9,7 +9,7 @@
  * and userId remains null — the app behaves as a fully local-only PWA.
  */
 
-import { isSyncEnabled, getSupabaseClient } from "@/src/lib/supabase";
+import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { create } from "zustand";
 
 // ── Auth status ────────────────────────────────────────────────────────

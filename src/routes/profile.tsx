@@ -1,6 +1,6 @@
-import { useProfileStore } from "@/stores/useProfileStore";
 import { isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
+import { useProfileStore } from "@/stores/useProfileStore";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 

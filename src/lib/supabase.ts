@@ -8,7 +8,7 @@
  * Design: sdd/user-session-persistence/design — Architecture Decision 1
  */
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { type SupabaseClient, createClient } from "@supabase/supabase-js";
 
 let _client: SupabaseClient | null = null;
 
@@ -18,9 +18,7 @@ let _client: SupabaseClient | null = null;
  */
 export function getSupabaseClient(): SupabaseClient {
   if (import.meta.env.VITE_SYNC_ENABLED !== "true") {
-    throw new Error(
-      "[supabase] VITE_SYNC_ENABLED is not set to true. Cloud sync is disabled."
-    );
+    throw new Error("[supabase] VITE_SYNC_ENABLED is not set to true. Cloud sync is disabled.");
   }
 
   if (!_client) {

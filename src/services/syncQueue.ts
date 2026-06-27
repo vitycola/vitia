@@ -24,9 +24,7 @@ export type { SyncQueueRow as SyncOp };
  * Safe to call when offline — the op is persisted locally and will be
  * sent to Supabase when connectivity is restored.
  */
-export async function enqueue(
-  op: Omit<NewSyncQueueRow, "id">
-): Promise<void> {
+export async function enqueue(op: Omit<NewSyncQueueRow, "id">): Promise<void> {
   const row: NewSyncQueueRow = { ...op, id: generateId() };
 
   try {

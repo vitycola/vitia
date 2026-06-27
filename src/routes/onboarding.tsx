@@ -1,5 +1,5 @@
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
-import { isSyncEnabled, getSupabaseClient } from "@/src/lib/supabase";
+import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { ActivityLevel, Goal, Sex } from "@/types";
