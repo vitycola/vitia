@@ -62,7 +62,7 @@ export function SearchRoute() {
           defaultValue={query}
           onChange={handleQueryChange}
           placeholder="Nombre del alimento..."
-          className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+          className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
 
         {isOffline && (
@@ -92,7 +92,7 @@ export function SearchRoute() {
         <button
           type="button"
           onClick={handleCustomFood}
-          className="flex w-full items-center justify-center rounded-xl border border-green-600 bg-white px-4 py-3 text-sm font-semibold text-green-600 transition-colors hover:bg-green-50"
+          className="flex w-full items-center justify-center rounded-xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:opacity-90"
         >
           + Crear alimento personalizado
         </button>

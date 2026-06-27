@@ -76,9 +76,9 @@ export function DayScreen() {
   const fatGoalG = profile?.fatGoalG ?? 70;
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-gray-50">
+    <div className="flex h-[100dvh] flex-col bg-surface">
       {/* Sticky header — sibling above scroll container */}
-      <div className="sticky top-0 z-10 bg-gray-50">
+      <div className="sticky top-0 z-10 bg-surface">
         <DateNavigator
           selectedDate={selectedDate}
           onPrevious={() => void goPreviousDay()}

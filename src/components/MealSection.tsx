@@ -4,7 +4,7 @@ import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanne
 import { MealEntryRow } from "@/src/components/MealEntryRow";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
 import type { MealType } from "@/types";
-import { ChevronDown, ChevronRight, MoreVertical, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const MEAL_LABELS: Record<MealType, string> = {
@@ -107,7 +107,7 @@ export function MealSection({
   const hasClipboard = clipboardMeal !== null && clipboardMeal.entries.length > 0;
 
   return (
-    <div className="mb-3 overflow-hidden rounded-xl bg-white shadow-sm">
+    <div className="mb-3 overflow-hidden rounded-3xl bg-white shadow-sm">
       {/* Section header */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
@@ -117,13 +117,13 @@ export function MealSection({
           aria-expanded={expanded}
         >
           {expanded ? (
-            <ChevronDown size={18} className="text-gray-400" />
+            <ChevronDown size={18} className="text-[#8E8E93]" />
           ) : (
-            <ChevronRight size={18} className="text-gray-400" />
+            <ChevronRight size={18} className="text-[#8E8E93]" />
           )}
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-800">{label}</span>
-            <span className="text-xs text-gray-400">
+            <span className="text-base font-bold text-[#1C1C1E]">{label}</span>
+            <span className="text-xs text-[#8E8E93]">
               🔥 {Math.round(mealCalories)} kcal · {Math.round(mealProtein)}P |{" "}
               {Math.round(mealCarbs)}C | {Math.round(mealFat)}G
             </span>
@@ -131,17 +131,13 @@ export function MealSection({
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-700">
-            {Math.round(mealCalories)} kcal
-          </span>
-
           {/* Context menu trigger */}
           <div className="relative" ref={menuRef}>
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={`Opciones para ${label}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#8E8E93]"
             >
               <MoreVertical size={17} />
             </button>
@@ -219,7 +215,7 @@ export function MealSection({
 
           {/* Entry rows */}
           {entries.length > 0 && (
-            <div className="border-t border-gray-100">
+            <div className="border-t border-[#E5E5EA]">
               {entries.map((entry) => (
                 <MealEntryRow
                   key={entry.id}
@@ -232,14 +228,13 @@ export function MealSection({
           )}
 
           {/* Add food button */}
-          <div className="border-t border-gray-100">
+          <div className="border-t border-[#E5E5EA]">
             <button
               type="button"
               onClick={() => onAddFood(mealType)}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 active:bg-green-100"
+              className="flex w-full items-center justify-center px-4 py-2.5 text-[#8E8E93]"
             >
-              <Plus size={16} />
-              <span>Agregar alimento</span>
+              <span className="text-2xl font-light leading-none">+</span>
             </button>
           </div>
         </>

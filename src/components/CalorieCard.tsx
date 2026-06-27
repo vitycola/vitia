@@ -6,9 +6,9 @@ const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CENTER = SIZE / 2;
 const TICK_LEN = 10;
 
-const TRACK_COLOR = "#e5e7eb";
-const NORMAL_COLOR = "#22c55e";
-const OVER_TARGET_COLOR = "#f59e0b";
+const TRACK_COLOR = "#E5E5EA";
+const NORMAL_COLOR = "#F5A623";
+const OVER_TARGET_COLOR = "#F5A623";
 
 export function polarToCartesian(
   cx: number,
@@ -65,13 +65,13 @@ function MacroRow({
   const pct = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
   return (
     <div className="mb-2 w-full">
-      <div className="mb-1 flex justify-between text-xs text-gray-600">
+      <div className="mb-1 flex justify-between text-xs text-[#8E8E93]">
         <span>{label}</span>
         <span>
           {Math.round(consumed)}g / {Math.round(goal)}g
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-gray-200">
+      <div className="h-1.5 w-full rounded-full bg-[#E5E5EA]">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </div>
@@ -100,7 +100,7 @@ export function CalorieCard({
     fraction > 0 ? describeArc(CENTER, CENTER, RADIUS, START_ANGLE, progressEndAngle) : null;
 
   return (
-    <div className="mx-4 mb-3 rounded-2xl bg-white px-4 py-5 shadow-sm">
+    <div className="mx-4 mb-3 rounded-3xl bg-white px-4 py-5 shadow-sm">
       <div className="flex flex-col items-center">
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
@@ -142,17 +142,11 @@ export function CalorieCard({
         </div>
 
         <div className="mt-4 w-full">
-          <MacroRow label="Proteínas" consumed={proteinG} goal={proteinGoalG} color="#3b82f6" />
-          <MacroRow label="Carbs" consumed={carbsG} goal={carbsGoalG} color="#f97316" />
-          <MacroRow label="Grasas" consumed={fatG} goal={fatGoalG} color="#eab308" />
+          <MacroRow label="Proteínas" consumed={proteinG} goal={proteinGoalG} color="#F5A623" />
+          <MacroRow label="Carbs" consumed={carbsG} goal={carbsGoalG} color="#F5A623" />
+          <MacroRow label="Grasas" consumed={fatG} goal={fatGoalG} color="#F5A623" />
         </div>
 
-        <button
-          type="button"
-          className="mt-4 rounded-xl bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700"
-        >
-          Terminar Día
-        </button>
       </div>
     </div>
   );

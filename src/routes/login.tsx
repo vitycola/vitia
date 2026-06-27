@@ -68,7 +68,7 @@ export function LoginRoute() {
               setError(null);
             }}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              tab === "login" ? "bg-green-600 text-white" : "text-gray-500 hover:text-gray-900"
+              tab === "login" ? "bg-accent text-accent-foreground" : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Sign in
@@ -80,7 +80,7 @@ export function LoginRoute() {
               setError(null);
             }}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-              tab === "register" ? "bg-green-600 text-white" : "text-gray-500 hover:text-gray-900"
+              tab === "register" ? "bg-accent text-accent-foreground" : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Create account
@@ -100,7 +100,7 @@ export function LoginRoute() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
               placeholder="you@example.com"
             />
           </div>
@@ -117,7 +117,7 @@ export function LoginRoute() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
               placeholder="At least 8 characters"
             />
           </div>
@@ -127,7 +127,7 @@ export function LoginRoute() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-1 flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="mt-1 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {isSubmitting ? "Please wait…" : tab === "login" ? "Sign in" : "Create account"}
           </button>
