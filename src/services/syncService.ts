@@ -222,14 +222,15 @@ export async function reconcile(userId: string): Promise<void> {
       .slice(0, 10);
 
     let localEntries: Array<Record<string, unknown>> = [];
-    if (dexieAdapter) {
+    const dexie = dexieAdapter;
+    if (dexie) {
       // Collect last 30 days for efficiency
       const dates: string[] = [];
       for (let i = 0; i < 30; i++) {
         const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         dates.push(d);
       }
-      const allEntries = await Promise.all(dates.map((d) => dexieAdapter.mealEntries.getByDate(d)));
+      const allEntries = await Promise.all(dates.map((d) => dexie.mealEntries.getByDate(d)));
       localEntries = allEntries.flat() as Array<Record<string, unknown>>;
     } else {
       const { and, gte, lte } = await import("drizzle-orm");
