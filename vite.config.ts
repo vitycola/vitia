@@ -34,7 +34,7 @@ export default defineConfig({
       },
       workbox: {
         // Precache all static assets produced by Vite (app shell)
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm,webmanifest}"],
         runtimeCaching: [
           {
             // Open Food Facts API — network-first, fall back to cache for offline

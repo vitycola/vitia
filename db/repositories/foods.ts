@@ -1,4 +1,4 @@
-import { db, dexieAdapter } from "@/db/client";
+import { db } from "@/db/client";
 import { foods } from "@/db/schema";
 import type { Food, NewFood } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
@@ -13,7 +13,6 @@ const MAX_SEARCH_RESULTS = 30;
  */
 export async function searchByName(query: string): Promise<Food[]> {
   if (!query.trim()) return [];
-  if (dexieAdapter) return dexieAdapter.foods.searchByName(query);
   const normalizedQuery = normalizeForSearch(query);
   return db
     .select()
@@ -27,7 +26,6 @@ export async function searchByName(query: string): Promise<Food[]> {
  * Returns null when no row exists with that id.
  */
 export async function getById(id: string): Promise<Food | null> {
-  if (dexieAdapter) return dexieAdapter.foods.getById(id);
   const rows = await db.select().from(foods).where(eq(foods.id, id)).limit(1);
   return rows[0] ?? null;
 }
@@ -38,7 +36,6 @@ export async function getById(id: string): Promise<Food | null> {
  * Always keeps name_normalized in sync with name.
  */
 export async function upsert(food: NewFood): Promise<Food> {
-  if (dexieAdapter) return dexieAdapter.foods.upsert(food);
   const nameNormalized = normalizeForSearch(food.name);
   const rows = await db
     .insert(foods)
@@ -68,7 +65,6 @@ export async function upsert(food: NewFood): Promise<Food> {
  * Always computes name_normalized from name via the shared helper.
  */
 export async function insert(food: NewFood): Promise<Food> {
-  if (dexieAdapter) return dexieAdapter.foods.insert(food);
   const nameNormalized = normalizeForSearch(food.name);
   const rows = await db
     .insert(foods)
@@ -82,7 +78,6 @@ export async function insert(food: NewFood): Promise<Food> {
  * Used by the Profile screen to list foods the user has created.
  */
 export async function getCustomFoods(): Promise<Food[]> {
-  if (dexieAdapter) return dexieAdapter.foods.getCustomFoods();
   return db.select().from(foods).where(eq(foods.source, "custom")).orderBy(foods.name);
 }
 
@@ -95,7 +90,6 @@ export async function update(
   id: string,
   patch: Partial<Omit<NewFood, "id" | "createdAt">>
 ): Promise<Food> {
-  if (dexieAdapter) return dexieAdapter.foods.update(id, patch);
   const fullPatch: Partial<Omit<NewFood, "id" | "createdAt">> & { nameNormalized?: string } = {
     ...patch,
   };

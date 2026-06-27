@@ -1,6 +1,6 @@
-import { deleteByDateAndMeal, getByDateAndMeal, insertBulk } from "@/db/repositories/mealEntries";
-import * as mealEntriesRepo from "@/db/repositories/mealEntries";
-import type { MealEntryView } from "@/db/repositories/mealEntries";
+import { deleteByDateAndMeal, getByDateAndMeal, insertBulk } from "@/db/repos/mealEntries";
+import * as mealEntriesRepo from "@/db/repos/mealEntries";
+import type { MealEntryView } from "@/db/repos/mealEntries";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { addDays, todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";

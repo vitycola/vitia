@@ -33,6 +33,7 @@
     "db/client.ts",
     "db/schema.ts",
     "db/repositories",
+    "db/repos",
     "db/migrations",
     "types",
     "hooks/useDailyTotals.ts",

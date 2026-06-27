@@ -1,4 +1,4 @@
-import { db, dexieAdapter } from "@/db/client";
+import { db } from "@/db/client";
 import { usersProfile } from "@/db/schema";
 import type { NewUserProfile, UserProfile } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -11,7 +11,6 @@ const PROFILE_ID = 1;
  * Returns null if no profile has been saved yet (first launch).
  */
 export async function getProfile(): Promise<UserProfile | null> {
-  if (dexieAdapter) return dexieAdapter.profile.getProfile();
   const rows = await db.select().from(usersProfile).where(eq(usersProfile.id, PROFILE_ID)).limit(1);
   return rows[0] ?? null;
 }
@@ -21,7 +20,6 @@ export async function getProfile(): Promise<UserProfile | null> {
  * A second call updates rather than creating a second row.
  */
 export async function upsertProfile(data: Omit<NewUserProfile, "id">): Promise<UserProfile> {
-  if (dexieAdapter) return dexieAdapter.profile.upsertProfile(data);
   const rows = await db
     .insert(usersProfile)
     .values({ ...data, id: PROFILE_ID })

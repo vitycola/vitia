@@ -1,4 +1,4 @@
-import { getById } from "@/db/repositories/foods";
+import { getById } from "@/db/repos/foods";
 import type { Food } from "@/db/schema";
 import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
