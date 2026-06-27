@@ -14,14 +14,14 @@
  *   4. stores reload() to rehydrate UI
  */
 
-import { dexieAdapter, db } from "@/db/client";
+import { db, dexieAdapter } from "@/db/client";
+import * as profileRepo from "@/db/repos/profile";
 import { mealEntries as mealEntriesTable } from "@/db/schema";
 import type { NewMealEntry } from "@/db/schema";
-import { isSyncEnabled, getSupabaseClient } from "@/src/lib/supabase";
+import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { drain, remove } from "@/src/services/syncQueue";
-import { useProfileStore } from "@/stores/useProfileStore";
 import { useDayStore } from "@/stores/useDayStore";
-import * as profileRepo from "@/db/repos/profile";
+import { useProfileStore } from "@/stores/useProfileStore";
 import { eq } from "drizzle-orm";
 
 let _cleanupFns: Array<() => void> = [];
@@ -79,13 +79,11 @@ export async function flush(): Promise<void> {
       const payload = JSON.parse(op.row as string) as Record<string, unknown>;
 
       if (op.op === "upsert") {
-        const { error } = await supabase
-          .from(op.table)
-          .upsert(payload, {
-            // meal_entries: insert-if-not-exists by id (UUID); profile: LWW by updated_at
-            onConflict: op.table === "meal_entries" ? "id" : "user_id",
-            ignoreDuplicates: op.table === "meal_entries",
-          });
+        const { error } = await supabase.from(op.table).upsert(payload, {
+          // meal_entries: insert-if-not-exists by id (UUID); profile: LWW by updated_at
+          onConflict: op.table === "meal_entries" ? "id" : "user_id",
+          ignoreDuplicates: op.table === "meal_entries",
+        });
 
         if (error) throw error;
       } else if (op.op === "delete") {
@@ -150,15 +148,21 @@ export async function reconcile(userId: string): Promise<void> {
       } else if (remoteProfile && !localProfile) {
         // Pull remote profile to local
         const { user_id: _, ...profileData } = remoteProfile as Record<string, unknown>;
-        void profileRepo.upsertProfile(profileData as Parameters<typeof profileRepo.upsertProfile>[0]);
+        void profileRepo.upsertProfile(
+          profileData as Parameters<typeof profileRepo.upsertProfile>[0]
+        );
       } else if (localProfile && remoteProfile) {
         // LWW: keep whichever has the newer updatedAt
         const localTs = new Date(localProfile.updatedAt).getTime();
-        const remoteTs = new Date((remoteProfile as Record<string, unknown>).updated_at as string).getTime();
+        const remoteTs = new Date(
+          (remoteProfile as Record<string, unknown>).updated_at as string
+        ).getTime();
 
         if (remoteTs > localTs) {
           const { user_id: _, ...profileData } = remoteProfile as Record<string, unknown>;
-          void profileRepo.upsertProfile(profileData as Parameters<typeof profileRepo.upsertProfile>[0]);
+          void profileRepo.upsertProfile(
+            profileData as Parameters<typeof profileRepo.upsertProfile>[0]
+          );
         } else if (localTs > remoteTs) {
           await supabase.from("users_profile").upsert({
             ...localProfile,
@@ -225,7 +229,7 @@ export async function reconcile(userId: string): Promise<void> {
         const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         dates.push(d);
       }
-      const allEntries = await Promise.all(dates.map((d) => dexieAdapter!.mealEntries.getByDate(d)));
+      const allEntries = await Promise.all(dates.map((d) => dexieAdapter.mealEntries.getByDate(d)));
       localEntries = allEntries.flat() as Array<Record<string, unknown>>;
     } else {
       const { and, gte, lte } = await import("drizzle-orm");
@@ -236,14 +240,15 @@ export async function reconcile(userId: string): Promise<void> {
       localEntries = rows as Array<Record<string, unknown>>;
     }
 
-    const remoteIds = new Set((remoteEntries ?? []).map((e) => (e as Record<string, unknown>).id as string));
+    const remoteIds = new Set(
+      (remoteEntries ?? []).map((e) => (e as Record<string, unknown>).id as string)
+    );
 
     for (const local of localEntries) {
       if (!remoteIds.has(local.id as string)) {
-        await supabase.from("meal_entries").upsert(
-          { ...local, user_id: userId },
-          { onConflict: "id", ignoreDuplicates: true }
-        );
+        await supabase
+          .from("meal_entries")
+          .upsert({ ...local, user_id: userId }, { onConflict: "id", ignoreDuplicates: true });
       }
     }
 

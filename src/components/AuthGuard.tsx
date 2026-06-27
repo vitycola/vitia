@@ -10,8 +10,8 @@
  * but we skip the redirect so local-only mode works without an account.
  */
 
-import { useAuthStore } from "@/src/stores/useAuthStore";
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { useAuthStore } from "@/src/stores/useAuthStore";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -29,13 +29,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (status === "loading") {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center"
-        role="status"
-        aria-label="Loading"
-      >
+      <section className="flex min-h-screen items-center justify-center" aria-label="Loading">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-      </div>
+      </section>
     );
   }
 
