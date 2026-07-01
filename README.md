@@ -39,11 +39,13 @@ Path alias `@/*` resolves to the project root (wired via `vite-tsconfig-paths`).
 
 Local-first: all user data lives in the browser (OPFS → IndexedDB fallback). The app works offline after the first load. Cloud features are opt-in and arrive in a later slice.
 
-## Plan
+## Development workflow
 
-The full spec-driven migration plan lives under `openspec/changes/web-pwa-migration/`. Read the proposal and specs there to understand what each PR slice delivers.
+Changes follow a spec-driven cycle — explore → propose → spec → design → tasks → apply → verify — before code lands. Planning artifacts (proposals, specs, design decisions) aren't committed as files; they're persisted in a local memory store (Engram) and queried on demand, so the repo stays focused on shipped code rather than process scaffolding. Each PR corresponds to one slice of that cycle, verified against the running app before merge.
 
-## Project structure (genesis)
+Manual review after an automated verify pass follows its own triage loop, documented in [`.claude/skills/review-loop`](.claude/skills/review-loop/SKILL.md).
+
+## Project structure
 
 ```
 src/
@@ -51,7 +53,6 @@ src/
   App.tsx         — placeholder shell
   index.css       — Tailwind directives
   vite-env.d.ts   — Vite type shims
-openspec/         — SDD planning artifacts
 vite.config.ts
 tailwind.config.ts
 tsconfig.json
