@@ -62,5 +62,17 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
+    proxy: {
+      "/api/off-search": {
+        target: "https://search.openfoodfacts.org",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/off-search/, ""),
+      },
+      "/api/off": {
+        target: "https://world.openfoodfacts.org",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/off/, ""),
+      },
+    },
   },
 });
