@@ -8,12 +8,15 @@ export interface SearchResult extends Food {
   hasMissingData: boolean;
 }
 
+// ── Status state machine ───────────────────────────────────────────────
+export type SearchStatus = "idle" | "loading" | "results" | "empty" | "error";
+
 // ── Store shape ────────────────────────────────────────────────────────
 interface FoodSearchState {
   query: string;
   results: SearchResult[];
-  isLoading: boolean;
-  error: string | null; // internal only; never surfaced as an offline banner
+  status: SearchStatus;
+  error: string | null;
 }
 
 interface FoodSearchActions {
@@ -21,7 +24,7 @@ interface FoodSearchActions {
    * Run a cache-first search:
    * 1. Query local SQLite immediately for instant offline results.
    * 2. Concurrently fetch Open Food Facts (Spain); upsert + merge on response.
-   * `isLoading` is true only during the OFF network call.
+   * `status` reflects the OFF network call lifecycle.
    */
   search: (query: string) => Promise<void>;
   /** Reset all state to initial values. */
@@ -31,7 +34,7 @@ interface FoodSearchActions {
 const INITIAL_STATE: FoodSearchState = {
   query: "",
   results: [],
-  isLoading: false,
+  status: "idle",
   error: null,
 };
 
@@ -42,7 +45,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
     set({ query, error: null });
 
     if (!query.trim() || query.length < 2) {
-      set({ results: [], isLoading: false });
+      set({ results: [], status: "idle" });
       return;
     }
 
@@ -56,8 +59,8 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
       // Cache miss is non-fatal — OFF may still return results.
     }
 
-    // 2. OFF network call — isLoading true only for the async phase.
-    set({ isLoading: true });
+    // 2. OFF network call — status transitions reflect async phase.
+    set({ status: "loading" });
     try {
       const offResults = await offSearch(query);
 
@@ -67,17 +70,17 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
 
       const newItems = offResults
         .filter((r) => !existingIds.has(r.id))
-        .map((r) => {
-          // offResults include hasMissingData from normalizeOffProduct.
-          // We need a full Food shape — pull from the local cache post-upsert.
-          return r as SearchResult;
-        });
+        .map((r) => r as SearchResult);
 
-      set({ results: [...currentResults, ...newItems], isLoading: false });
-    } catch (err) {
-      // OFF failure is silent — FR-063: no offline error banner.
+      const merged = [...currentResults, ...newItems];
       set({
-        isLoading: false,
+        results: merged,
+        status: merged.length > 0 ? "results" : "empty",
+      });
+    } catch (err) {
+      // OFF threw — surface error state; keep any cached results visible.
+      set({
+        status: "error",
         error: err instanceof Error ? err.message : "OFF search failed",
       });
     }
