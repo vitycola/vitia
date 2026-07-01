@@ -1,3 +1,4 @@
+import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
 import { todayISO } from "@/lib/date";
 import { CalorieCard } from "@/src/components/CalorieCard";
@@ -52,6 +53,10 @@ export function DayScreen() {
 
   function handleAddFood(mealType: MealType) {
     void navigate(`/search?meal=${mealType}`);
+  }
+
+  function handleEditEntry(entry: MealEntryView) {
+    void navigate(`/portion/${entry.foodId}?meal=${entry.mealType}&entryId=${entry.id}`);
   }
 
   async function handleRepeatMeal(mealType: MealType, sourceDate?: string): Promise<number> {
@@ -121,6 +126,7 @@ export function DayScreen() {
               entries={entries.filter((e) => e.mealType === mealType)}
               onAddFood={handleAddFood}
               onDeleteEntry={(id) => void deleteEntry(id)}
+              onEditEntry={handleEditEntry}
               selectedDate={selectedDate}
               isToday={isToday}
               onRepeatMeal={handleRepeatMeal}

@@ -10,20 +10,33 @@ interface MealEntryRowProps {
   entry: MealEntryView;
   mealType: MealType;
   onDelete: (id: string) => void;
+  onEdit?: (entry: MealEntryView) => void;
 }
 
-export function MealEntryRow({ entry, mealType, onDelete }: MealEntryRowProps) {
+export function MealEntryRow({ entry, mealType, onDelete, onEdit }: MealEntryRowProps) {
   const startX = useRef<number | null>(null);
+  const didSwipe = useRef(false);
 
   function handlePointerDown(e: React.PointerEvent) {
     startX.current = e.clientX;
+    didSwipe.current = false;
   }
 
   function handlePointerUp(e: React.PointerEvent) {
     if (startX.current !== null && Math.abs(e.clientX - startX.current) >= SWIPE_THRESHOLD) {
+      didSwipe.current = true;
       onDelete(entry.id);
     }
     startX.current = null;
+  }
+
+  function handleTap() {
+    // A swipe already triggered delete — don't also open edit mode.
+    if (didSwipe.current) {
+      didSwipe.current = false;
+      return;
+    }
+    onEdit?.(entry);
   }
 
   return (
@@ -37,11 +50,16 @@ export function MealEntryRow({ entry, mealType, onDelete }: MealEntryRowProps) {
         {MEAL_EMOJI[mealType]}
       </span>
 
-      {/* Name + brand */}
-      <div className="min-w-0 flex-1">
+      {/* Name + brand — tap to edit (distinct from the delete control) */}
+      <button
+        type="button"
+        onClick={handleTap}
+        className="min-w-0 flex-1 text-left"
+        aria-label={`Editar ${entry.foodName}`}
+      >
         <p className="truncate text-sm font-medium text-gray-900">{entry.foodName}</p>
         {entry.brand && <p className="truncate text-xs text-gray-400">{entry.brand}</p>}
-      </div>
+      </button>
 
       {/* Qty + kcal + delete */}
       <div className="flex flex-shrink-0 items-center gap-3">

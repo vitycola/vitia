@@ -39,6 +39,45 @@ export interface PortionMacros {
   fatG: number;
 }
 
+export interface MacroCalorieShares {
+  proteinShare: number;
+  carbsShare: number;
+  fatShare: number;
+}
+
+/**
+ * Compute each macro's share of total macro-calories (protein-kcal +
+ * carbs-kcal + fat-kcal), using the 4/4/9 kcal-per-gram constants.
+ * Shares are fractions in [0, 1] and sum to 1 (rounding aside).
+ *
+ * Guard: when total macro-calories is 0 (e.g. all-zero macros), returns an
+ * all-zero share object instead of dividing by zero.
+ *
+ * This is intentionally separate from the goal-based MacroBar/HeaderMacroRow
+ * math (value/goal fill) — this is a share-of-total-macro-calories
+ * distribution, unrelated to any user goal.
+ */
+export function macroCalorieShares(macros: {
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}): MacroCalorieShares {
+  const proteinKcal = macros.proteinG * PROTEIN_KCAL_PER_G;
+  const carbsKcal = macros.carbsG * CARBS_KCAL_PER_G;
+  const fatKcal = macros.fatG * FAT_KCAL_PER_G;
+  const total = proteinKcal + carbsKcal + fatKcal;
+
+  if (total <= 0) {
+    return { proteinShare: 0, carbsShare: 0, fatShare: 0 };
+  }
+
+  return {
+    proteinShare: proteinKcal / total,
+    carbsShare: carbsKcal / total,
+    fatShare: fatKcal / total,
+  };
+}
+
 /**
  * Compute Basal Metabolic Rate using Mifflin-St Jeor formula.
  *

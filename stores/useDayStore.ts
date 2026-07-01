@@ -61,6 +61,14 @@ interface DayActions {
    */
   deleteEntry: (id: string) => Promise<void>;
   /**
+   * Update an existing meal entry (quantity, denormalized macros, and/or
+   * meal type) and reflect the change optimistically in the in-memory
+   * entries list. If the entry no longer belongs to the selected date it
+   * is dropped from the list (mirrors the optimistic-update pattern used
+   * elsewhere in this store).
+   */
+  updateEntry: (id: string, patch: Partial<Omit<NewMealEntry, "id">>) => Promise<void>;
+  /**
    * Repeat a meal: copy entries from a source date's meal into today.
    * Source defaults to the day before the selected date when sourceDate is omitted.
    * Returns the number of entries added (0 if the source meal was empty).
@@ -135,6 +143,20 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     await mealEntriesRepo.remove(id);
     // Optimistic update: filter out the deleted entry immediately.
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }));
+  },
+
+  updateEntry: async (id: string, patch: Partial<Omit<NewMealEntry, "id">>) => {
+    const updated = await mealEntriesRepo.update(id, patch);
+    set((state) => {
+      // If the entry moved off the currently selected date, drop it from
+      // the list — it belongs to a different day's view now.
+      if (updated.date !== state.selectedDate) {
+        return { entries: state.entries.filter((e) => e.id !== id) };
+      }
+      return {
+        entries: state.entries.map((e) => (e.id === id ? { ...e, ...updated, brand: e.brand } : e)),
+      };
+    });
   },
 
   repeatMeal: async (mealType: MealType, sourceDate?: string) => {
