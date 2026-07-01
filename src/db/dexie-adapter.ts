@@ -22,6 +22,7 @@ import type {
   NewSyncQueueRow,
   NewUserProfile,
   SyncQueueRow,
+  UserFavoriteFood,
   UserProfile,
 } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
@@ -40,6 +41,7 @@ interface FoodRow extends Food {}
 interface MealEntryRow extends MealEntry {}
 interface UserProfileRow extends UserProfile {}
 interface SyncQueueDexieRow extends SyncQueueRow {}
+interface UserFavoriteFoodRow extends UserFavoriteFood {}
 
 /**
  * Migration tracking row — same semantic as __drizzle_migrations in SQLite.
@@ -56,7 +58,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -67,6 +69,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0000_thick_eddie_brock", when: 1782165949458 },
   { tag: "0001_name_normalized", when: 1782200000000 },
   { tag: "0002_user_session_persistence", when: 1751000000000 },
+  { tag: "0003_food_detail", when: 1793000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -74,6 +77,7 @@ class VitiaDb extends Dexie {
   meal_entries!: Table<MealEntryRow, string>;
   users_profile!: Table<UserProfileRow, number>;
   sync_queue!: Table<SyncQueueDexieRow, string>;
+  user_favorite_foods!: Table<UserFavoriteFoodRow, string>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -116,6 +120,19 @@ class VitiaDb extends Dexie {
     });
     // No upgrade() needed: userId and updatedAt are optional columns.
     // Existing rows without them will have undefined values, which is fine.
+
+    // Version 4: adds imageUrl to foods + user_favorite_foods table
+    // (0003_food_detail migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId]",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: imageUrl is an optional column and
+    // user_favorite_foods is a brand-new store.
   }
 }
 
@@ -131,6 +148,13 @@ export interface FoodsRepo {
   insert(food: NewFood): Promise<Food>;
   getCustomFoods(): Promise<Food[]>;
   update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
+}
+
+/** Favorites repository surface — mirrors db/repositories/favorites.ts exactly */
+export interface FavoritesRepo {
+  isFavorite(foodId: string, userId: string | null): Promise<boolean>;
+  toggle(foodId: string, userId: string | null): Promise<boolean>;
+  listFoodIds(userId: string | null): Promise<string[]>;
 }
 
 /** Profile repository surface — mirrors db/repositories/profile.ts exactly */
@@ -152,6 +176,7 @@ export interface MealEntriesRepo {
   getByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<MealEntry[]>;
   insert(entry: NewMealEntry): Promise<MealEntry>;
   insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]>;
+  update(id: string, patch: Partial<Omit<NewMealEntry, "id">>): Promise<MealEntry>;
   remove(id: string): Promise<void>;
   deleteByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<void>;
 }
@@ -164,6 +189,7 @@ export interface DexieAdapter {
   readonly profile: ProfileRepo;
   readonly mealEntries: MealEntriesRepo;
   readonly syncQueue: SyncQueueRepo;
+  readonly favorites: FavoritesRepo;
   /** Exposed for testing: returns the list of applied migration tags (W2/S1). */
   getAppliedMigrationTags(): Promise<string[]>;
   /** Close the underlying Dexie connection (useful in tests). */
@@ -241,6 +267,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         servingSizeG: food.servingSizeG ?? null,
         source: food.source,
         offProductCode: food.offProductCode ?? null,
+        imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
         createdAt: existing?.createdAt ?? food.createdAt ?? now(),
       };
       await db.foods.put(row);
@@ -260,6 +287,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         servingSizeG: food.servingSizeG ?? null,
         source: food.source,
         offProductCode: food.offProductCode ?? null,
+        imageUrl: food.imageUrl ?? null,
         createdAt: food.createdAt ?? now(),
       };
       // Dexie .add() throws ConstraintError on duplicate key, matching SQL behaviour
@@ -388,6 +416,13 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       });
     },
 
+    async update(id, patch) {
+      await db.meal_entries.update(id, patch as Partial<MealEntryRow>);
+      // Matches the SQLite/proxy path: returns the updated row, or undefined
+      // (cast as MealEntry) when the id does not exist.
+      return (await db.meal_entries.get(id)) as MealEntry;
+    },
+
     async remove(id) {
       await db.meal_entries.delete(id);
     },
@@ -420,6 +455,49 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
   };
 
+  // ── Favorites ────────────────────────────────────────────────────────────
+
+  // IndexedDB does not treat `null` as an indexable key, so records with a
+  // null userId are invisible to a `.where("userId").equals(...)` (or
+  // compound-index) query. We index on foodId only and filter userId in JS
+  // to correctly support the "null = local anonymous owner" convention.
+  function sameOwner(rowUserId: string | null, userId: string | null): boolean {
+    return (rowUserId ?? null) === (userId ?? null);
+  }
+
+  const favorites: FavoritesRepo = {
+    async isFavorite(foodId, userId) {
+      const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+      return rows.some((r) => sameOwner(r.userId, userId));
+    },
+
+    async toggle(foodId, userId) {
+      return db.transaction("rw", db.user_favorite_foods, async () => {
+        const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+        const existing = rows.find((r) => sameOwner(r.userId, userId));
+
+        if (existing) {
+          await db.user_favorite_foods.delete(existing.id);
+          return false;
+        }
+
+        const row: UserFavoriteFoodRow = {
+          id: globalThis.crypto.randomUUID(),
+          userId: userId ?? null,
+          foodId,
+          createdAt: now(),
+        };
+        await db.user_favorite_foods.add(row);
+        return true;
+      });
+    },
+
+    async listFoodIds(userId) {
+      const rows = await db.user_favorite_foods.toArray();
+      return rows.filter((r) => sameOwner(r.userId, userId)).map((r) => r.foodId);
+    },
+  };
+
   // ── Public adapter ────────────────────────────────────────────────────────
 
   return {
@@ -428,6 +506,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     profile,
     mealEntries,
     syncQueue,
+    favorites,
 
     async getAppliedMigrationTags() {
       const rows = await db.__drizzle_migrations.toArray();

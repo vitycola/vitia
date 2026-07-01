@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // ── users_profile (single row per user) ───────────────────────────────
 export const usersProfile = sqliteTable("users_profile", {
@@ -37,6 +37,7 @@ export const foods = sqliteTable(
     source: text("source", { enum: ["openfoodfacts", "custom"] }).notNull(),
     offProductCode: text("off_product_code"),
     nameNormalized: text("name_normalized").notNull().default(""),
+    imageUrl: text("image_url"),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
@@ -74,6 +75,24 @@ export const mealEntries = sqliteTable(
   })
 );
 
+// ── user_favorite_foods (user-scoped favorite join table) ─────────────
+// Never a boolean on `foods` — that table is a SHARED OFF/custom cache and
+// a boolean there would leak favorite state across users.
+export const userFavoriteFoods = sqliteTable(
+  "user_favorite_foods",
+  {
+    id: text("id").primaryKey(), // UUID
+    userId: text("user_id"), // null when sync is disabled (local anonymous owner)
+    foodId: text("food_id")
+      .notNull()
+      .references(() => foods.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    userFoodIdx: uniqueIndex("user_favorite_foods_user_food_idx").on(t.userId, t.foodId),
+  })
+);
+
 // ── sync_queue (durable outbound operation queue) ─────────────────────
 // Shared by both OPFS and Dexie backends (backed by IndexedDB on Dexie path,
 // SQLite on OPFS path). Survives browser restarts and offline periods.
@@ -93,5 +112,7 @@ export type Food = typeof foods.$inferSelect;
 export type NewFood = typeof foods.$inferInsert;
 export type MealEntry = typeof mealEntries.$inferSelect;
 export type NewMealEntry = typeof mealEntries.$inferInsert;
+export type UserFavoriteFood = typeof userFavoriteFoods.$inferSelect;
+export type NewUserFavoriteFood = typeof userFavoriteFoods.$inferInsert;
 export type SyncQueueRow = typeof syncQueue.$inferSelect;
 export type NewSyncQueueRow = typeof syncQueue.$inferInsert;

@@ -41,6 +41,18 @@ export async function insert(entry: NewMealEntry): Promise<MealEntry> {
 }
 
 /**
+ * Update an existing meal entry (quantity, denormalized macros, and/or
+ * meal type) and return the updated row.
+ */
+export async function update(
+  id: string,
+  patch: Partial<Omit<NewMealEntry, "id">>
+): Promise<MealEntry> {
+  const rows = await db.update(mealEntries).set(patch).where(eq(mealEntries.id, id)).returning();
+  return rows[0];
+}
+
+/**
  * Delete a meal entry by its UUID primary key.
  */
 export async function remove(id: string): Promise<void> {

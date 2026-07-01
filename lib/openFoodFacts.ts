@@ -10,7 +10,8 @@ const OFF_SEARCH_PAGE_SIZE = 20;
 const OFF_REQUEST_TIMEOUT_MS = 15000;
 
 // Required fields to avoid fetching the full product blob.
-const OFF_FIELDS = "code,product_name,brands,nutriments,serving_quantity";
+const OFF_FIELDS =
+  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url";
 
 // ── OFF response types ─────────────────────────────────────────────────
 interface OffNutriments {
@@ -26,6 +27,8 @@ interface OffProduct {
   brands?: string | string[];
   nutriments?: OffNutriments;
   serving_quantity?: number; // grams
+  image_front_small_url?: string;
+  image_url?: string;
 }
 
 interface OffCgiResponse {
@@ -126,6 +129,7 @@ export function normalizeOffProduct(p: OffProduct): (NewFood & { hasMissingData:
     servingSizeG: p.serving_quantity ?? null,
     source: "openfoodfacts",
     offProductCode: p.code,
+    imageUrl: p.image_front_small_url ?? p.image_url ?? null,
     hasMissingData,
   };
 }

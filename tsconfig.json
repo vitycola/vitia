@@ -38,6 +38,7 @@
     "types",
     "hooks/useDailyTotals.ts",
     "hooks/useDebouncedValue.ts",
+    "hooks/useFavorite.ts",
     "stores",
     "vite.config.ts"
   ]

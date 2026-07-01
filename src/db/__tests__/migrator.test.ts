@@ -62,11 +62,12 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Three migrations: 0000, 0001, and 0002
-    expect(rows).toHaveLength(3);
+    // Four migrations: 0000, 0001, 0002, and 0003
+    expect(rows).toHaveLength(4);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
     expect(rows[2].tag).toBe("0002_user_session_persistence");
+    expect(rows[3].tag).toBe("0003_food_detail");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -74,11 +75,11 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly three migration rows — no duplicate inserts
+    // Still exactly four migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(3);
+    expect(rows.c).toBe(4);
   });
 
   it("applies migrations in journal idx order (multi-migration ordered apply)", async () => {
@@ -98,10 +99,11 @@ describe("runWebMigrations", () => {
     expect(indexNames).toContain("foods_name_normalized_idx");
   });
 
-  it("statement count — 0000 has 4 indexes, 0001 adds 1 more (5 total)", async () => {
+  it("statement count — 0000 has 4 indexes, 0001 adds 1, 0003 adds 1 more (6 total)", async () => {
     // 0000: CREATE INDEX foods_name_idx, foods_off_code_idx,
     //       meal_entries_date_idx, meal_entries_date_meal_idx = 4
-    // 0001: CREATE INDEX foods_name_normalized_idx = 1 more → 5 total
+    // 0001: CREATE INDEX foods_name_normalized_idx = 1 more → 5
+    // 0003: CREATE UNIQUE INDEX user_favorite_foods_user_food_idx = 1 more → 6 total
     const { executor, db } = makeInMemoryExecutor();
     await runWebMigrations(executor);
 
@@ -109,7 +111,7 @@ describe("runWebMigrations", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")
       .all() as { name: string }[];
 
-    expect(indexes.length).toBe(5);
+    expect(indexes.length).toBe(6);
   });
 
   it("throws on hash drift — modified SQL content after migration applied", async () => {

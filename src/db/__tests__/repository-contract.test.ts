@@ -30,7 +30,7 @@ import { normalizeForSearch } from "@/lib/search";
 import { type DexieAdapter, createDexieAdapter } from "@/src/db/dexie-adapter";
 import { type MigratorExecutor, runWebMigrations } from "@/src/db/migrate.web";
 import Database from "better-sqlite3";
-import { and, asc, eq, like } from "drizzle-orm";
+import { and, asc, eq, isNull, like } from "drizzle-orm";
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
 
 // ---------------------------------------------------------------------------
@@ -54,8 +54,13 @@ interface RepositoryBackend {
   getByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<MealEntry[]>;
   insertEntry(entry: NewMealEntry): Promise<MealEntry>;
   insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]>;
+  updateEntry(id: string, patch: Partial<Omit<NewMealEntry, "id">>): Promise<MealEntry>;
   remove(id: string): Promise<void>;
   deleteByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<void>;
+  // Favorites
+  isFavorite(foodId: string, userId: string | null): Promise<boolean>;
+  toggleFavorite(foodId: string, userId: string | null): Promise<boolean>;
+  listFavoriteFoodIds(userId: string | null): Promise<string[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +306,15 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
       });
     },
 
+    async updateEntry(id, patch) {
+      const rows = await db
+        .update(schema.mealEntries)
+        .set(patch)
+        .where(eq(schema.mealEntries.id, id))
+        .returning();
+      return rows[0];
+    },
+
     async remove(id) {
       await db.delete(schema.mealEntries).where(eq(schema.mealEntries.id, id));
     },
@@ -311,6 +325,55 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
           .delete(schema.mealEntries)
           .where(and(eq(schema.mealEntries.date, date), eq(schema.mealEntries.mealType, mealType)));
       });
+    },
+
+    // ── Favorites ──────────────────────────────────────────────────────────
+
+    async isFavorite(foodId, userId) {
+      const owner =
+        userId === null
+          ? isNull(schema.userFavoriteFoods.userId)
+          : eq(schema.userFavoriteFoods.userId, userId);
+      const rows = await db
+        .select()
+        .from(schema.userFavoriteFoods)
+        .where(and(eq(schema.userFavoriteFoods.foodId, foodId), owner))
+        .limit(1);
+      return rows.length > 0;
+    },
+
+    async toggleFavorite(foodId, userId) {
+      const owner =
+        userId === null
+          ? isNull(schema.userFavoriteFoods.userId)
+          : eq(schema.userFavoriteFoods.userId, userId);
+      const rows = await db
+        .select()
+        .from(schema.userFavoriteFoods)
+        .where(and(eq(schema.userFavoriteFoods.foodId, foodId), owner))
+        .limit(1);
+
+      if (rows.length > 0) {
+        await db
+          .delete(schema.userFavoriteFoods)
+          .where(eq(schema.userFavoriteFoods.id, rows[0].id));
+        return false;
+      }
+
+      await db.insert(schema.userFavoriteFoods).values({ id: nextId(), userId, foodId });
+      return true;
+    },
+
+    async listFavoriteFoodIds(userId) {
+      const owner =
+        userId === null
+          ? isNull(schema.userFavoriteFoods.userId)
+          : eq(schema.userFavoriteFoods.userId, userId);
+      const rows = await db
+        .select({ foodId: schema.userFavoriteFoods.foodId })
+        .from(schema.userFavoriteFoods)
+        .where(owner);
+      return rows.map((r) => r.foodId);
     },
   };
 }
@@ -365,11 +428,24 @@ function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie
     async insertBulk(entries) {
       return adapter.mealEntries.insertBulk(entries);
     },
+    async updateEntry(id, patch) {
+      return adapter.mealEntries.update(id, patch);
+    },
     async remove(id) {
       return adapter.mealEntries.remove(id);
     },
     async deleteByDateAndMeal(date, mealType) {
       return adapter.mealEntries.deleteByDateAndMeal(date, mealType);
+    },
+
+    async isFavorite(foodId, userId) {
+      return adapter.favorites.isFavorite(foodId, userId);
+    },
+    async toggleFavorite(foodId, userId) {
+      return adapter.favorites.toggle(foodId, userId);
+    },
+    async listFavoriteFoodIds(userId) {
+      return adapter.favorites.listFoodIds(userId);
     },
   };
 }
@@ -750,6 +826,138 @@ describe.each([
 
       const remaining = await fresh.getByDate("2024-12-16");
       expect(remaining.map((e) => e.id)).toContain(keeper.id);
+    });
+  });
+
+  // ─── mealEntries.update (edit mode) ────────────────────────────────
+
+  describe("mealEntries.updateEntry", () => {
+    it("recalculates and persists a new quantity/macros in place (no duplicate row)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Update Food" });
+      await fresh.insert(food);
+
+      const entry = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2025-04-01",
+        mealType: "lunch",
+        quantityG: 100,
+        calories: 100,
+      });
+      await fresh.insertEntry(entry);
+
+      const updated = await fresh.updateEntry(entry.id, {
+        quantityG: 200,
+        calories: 200,
+        proteinG: 20,
+        carbsG: 30,
+        fatG: 6,
+      });
+      expect(updated.quantityG).toBe(200);
+      expect(updated.calories).toBe(200);
+
+      const rows = await fresh.getByDateAndMeal("2025-04-01", "lunch");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].quantityG).toBe(200);
+    });
+
+    it("moves the entry to a different meal section when mealType changes", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Move Food" });
+      await fresh.insert(food);
+
+      const entry = makeEntry({
+        foodId: food.id,
+        foodName: food.name,
+        date: "2025-04-02",
+        mealType: "lunch",
+      });
+      await fresh.insertEntry(entry);
+
+      await fresh.updateEntry(entry.id, { mealType: "dinner" });
+
+      const lunch = await fresh.getByDateAndMeal("2025-04-02", "lunch");
+      const dinner = await fresh.getByDateAndMeal("2025-04-02", "dinner");
+      expect(lunch.map((e) => e.id)).not.toContain(entry.id);
+      expect(dinner.map((e) => e.id)).toContain(entry.id);
+    });
+  });
+
+  // ─── Favorites ──────────────────────────────────────────────────────
+
+  describe("favorites.toggle / isFavorite / listFoodIds", () => {
+    it("toggling an unfavorited food favorites it and persists", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Fav Food A" });
+      await fresh.insert(food);
+
+      expect(await fresh.isFavorite(food.id, "user-1")).toBe(false);
+
+      const newState = await fresh.toggleFavorite(food.id, "user-1");
+      expect(newState).toBe(true);
+      expect(await fresh.isFavorite(food.id, "user-1")).toBe(true);
+    });
+
+    it("toggling an already-favorited food unfavorites it (removes the row)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Fav Food B" });
+      await fresh.insert(food);
+
+      await fresh.toggleFavorite(food.id, "user-1");
+      const newState = await fresh.toggleFavorite(food.id, "user-1");
+      expect(newState).toBe(false);
+      expect(await fresh.isFavorite(food.id, "user-1")).toBe(false);
+    });
+
+    it("does not leak favorite state across users (user isolation)", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Fav Food C" });
+      await fresh.insert(food);
+
+      await fresh.toggleFavorite(food.id, "user-A");
+
+      expect(await fresh.isFavorite(food.id, "user-A")).toBe(true);
+      expect(await fresh.isFavorite(food.id, "user-B")).toBe(false);
+    });
+
+    it("supports null userId as the local/anonymous owner", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Fav Food D" });
+      await fresh.insert(food);
+
+      await fresh.toggleFavorite(food.id, null);
+      expect(await fresh.isFavorite(food.id, null)).toBe(true);
+      expect(await fresh.isFavorite(food.id, "some-user")).toBe(false);
+    });
+
+    it("listFoodIds returns only the given user's favorited foods", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const foodA = makeFood({ name: "List Fav A" });
+      const foodB = makeFood({ name: "List Fav B" });
+      await fresh.insert(foodA);
+      await fresh.insert(foodB);
+
+      await fresh.toggleFavorite(foodA.id, "user-list");
+      await fresh.toggleFavorite(foodB.id, "other-user");
+
+      const ids = await fresh.listFavoriteFoodIds("user-list");
+      expect(ids).toContain(foodA.id);
+      expect(ids).not.toContain(foodB.id);
     });
   });
 });

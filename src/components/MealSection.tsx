@@ -19,6 +19,7 @@ interface MealSectionProps {
   entries: MealEntryView[];
   onAddFood: (mealType: MealType) => void;
   onDeleteEntry: (id: string) => void;
+  onEditEntry: (entry: MealEntryView) => void;
   selectedDate: string;
   isToday: boolean;
   onRepeatMeal: (mealType: MealType, sourceDate?: string) => Promise<number>;
@@ -32,6 +33,7 @@ export function MealSection({
   entries,
   onAddFood,
   onDeleteEntry,
+  onEditEntry,
   selectedDate,
   isToday,
   onRepeatMeal,
@@ -222,6 +224,7 @@ export function MealSection({
                   entry={entry}
                   mealType={mealType}
                   onDelete={onDeleteEntry}
+                  onEdit={onEditEntry}
                 />
               ))}
             </div>

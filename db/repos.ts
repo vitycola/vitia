@@ -20,6 +20,7 @@
  *   import { getByDate, insertBulk } from "@/db/repos/mealEntries";
  */
 
+export * as favorites from "@/db/repos/favorites";
 export * as foods from "@/db/repos/foods";
 export * as mealEntries from "@/db/repos/mealEntries";
 export * as profile from "@/db/repos/profile";

@@ -15,6 +15,7 @@
 import sql0000 from "@/db/migrations/0000_thick_eddie_brock.sql?raw";
 import sql0001 from "@/db/migrations/0001_name_normalized.sql?raw";
 import sql0002 from "@/db/migrations/0002_user_session_persistence.sql?raw";
+import sql0003 from "@/db/migrations/0003_food_detail.sql?raw";
 import journal from "@/db/migrations/meta/_journal.json";
 
 /** Re-export the journal so runWorkerMigrations in db/client.ts can reuse it. */
@@ -55,6 +56,7 @@ export const SQL_FILES: Record<string, string> = {
   "0000_thick_eddie_brock": sql0000,
   "0001_name_normalized": sql0001,
   "0002_user_session_persistence": sql0002,
+  "0003_food_detail": sql0003,
 };
 
 // ---------------------------------------------------------------------------

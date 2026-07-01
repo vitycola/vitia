@@ -43,6 +43,18 @@ export async function insert(entry: NewMealEntry): Promise<MealEntry> {
   return inserted;
 }
 
+export async function update(
+  id: string,
+  patch: Partial<Omit<NewMealEntry, "id">>
+): Promise<MealEntry> {
+  const updated = dexieAdapter
+    ? await dexieAdapter.mealEntries.update(id, patch)
+    : await _impl.update(id, patch);
+
+  _enqueueMealOp(updated, "upsert");
+  return updated;
+}
+
 export async function remove(id: string): Promise<void> {
   const { userId } = useAuthStore.getState();
 
