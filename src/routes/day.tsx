@@ -46,7 +46,10 @@ export function DayScreen() {
     if (!container || !card) return;
     const cardHeight = card.offsetHeight;
     const scrollTop = container.scrollTop;
-    const progress = Math.min(Math.max((scrollTop - cardHeight * 0.75) / (cardHeight * 0.25), 0), 1);
+    const progress = Math.min(
+      Math.max((scrollTop - cardHeight * 0.75) / (cardHeight * 0.25), 0),
+      1
+    );
     setHeaderProgress(progress);
   }
 
@@ -123,16 +126,16 @@ export function DayScreen() {
         className="flex-1 overflow-y-auto pb-20 pt-2"
       >
         <div ref={calorieCardRef} className="px-4">
-        <CalorieCard
-          consumed={totals.calories}
-          goal={calorieGoal}
-          proteinG={totals.proteinG}
-          proteinGoalG={proteinGoalG}
-          carbsG={totals.carbsG}
-          carbsGoalG={carbsGoalG}
-          fatG={totals.fatG}
-          fatGoalG={fatGoalG}
-        />
+          <CalorieCard
+            consumed={totals.calories}
+            goal={calorieGoal}
+            proteinG={totals.proteinG}
+            proteinGoalG={proteinGoalG}
+            carbsG={totals.carbsG}
+            carbsGoalG={carbsGoalG}
+            fatG={totals.fatG}
+            fatGoalG={fatGoalG}
+          />
         </div>
 
         {!isToday && (

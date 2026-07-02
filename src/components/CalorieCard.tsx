@@ -4,12 +4,12 @@ import { MoreHorizontal, Pencil } from "lucide-react";
 // The arc is a small section of a very large circle, spanning the card width.
 // Circle center sits far below the SVG, producing a gentle upward bow.
 
-const VW = 320;     // viewBox width
-const VH = 68;      // viewBox height
+const VW = 320; // viewBox width
+const VH = 68; // viewBox height
 const STROKE = 9;
-const R = 310;      // large radius → gentle curve
-const PAD = 14;     // horizontal padding from SVG edges
-const Y_END = 52;   // y-coordinate of arc endpoints
+const R = 310; // large radius → gentle curve
+const PAD = 14; // horizontal padding from SVG edges
+const Y_END = 52; // y-coordinate of arc endpoints
 
 const X_LEFT = PAD;
 const X_RIGHT = VW - PAD;
@@ -38,17 +38,24 @@ const PROGRESS_COLOR = "#F5A623";
 
 // --- Exported helpers (kept for any tests that import them) ---
 export function polarToCartesian(
-  cx: number, cy: number, radius: number, angleDeg: number
+  cx: number,
+  cy: number,
+  radius: number,
+  angleDeg: number
 ): { x: number; y: number } {
   const rad = (angleDeg * Math.PI) / 180;
   return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
 }
 export function describeArc(
-  cx: number, cy: number, radius: number, startAngle: number, endAngle: number
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number
 ): string {
   const start = polarToCartesian(cx, cy, radius, startAngle);
   const end = polarToCartesian(cx, cy, radius, endAngle);
-  const largeArcFlag = (endAngle - startAngle) <= 180 ? 0 : 1;
+  const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
 }
 export function describeTick(_angle: number): { x1: number; y1: number; x2: number; y2: number } {
@@ -76,10 +83,7 @@ function MacroColumn({ label, consumed, goal }: { label: string; consumed: numbe
         <span className="text-[#8E8E93]"> / {Math.round(goal)} g</span>
       </span>
       <div className="h-1.5 w-full rounded-full bg-[#E5E5EA]">
-        <div
-          className="h-full rounded-full bg-[#F5A623]"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="h-full rounded-full bg-[#F5A623]" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -104,8 +108,7 @@ export function CalorieCard({
   const trackEnd = arcPoint(1);
   const trackPath = svgArcPath(trackStart, trackEnd);
 
-  const progressPath =
-    progressT > 0 ? svgArcPath(trackStart, arcPoint(progressT)) : null;
+  const progressPath = progressT > 0 ? svgArcPath(trackStart, arcPoint(progressT)) : null;
 
   // Ticks at −10% (t=0.45) and +10% (t=0.55) of goal, centered on the arc peak
   const tickTs = [0.45, 0.55];
@@ -145,11 +148,7 @@ export function CalorieCard({
       </div>
 
       {/* Bow arc */}
-      <svg
-        width="100%"
-        viewBox={`0 0 ${VW} ${VH}`}
-        aria-hidden="true"
-      >
+      <svg width="100%" viewBox={`0 0 ${VW} ${VH}`} aria-hidden="true">
         {/* Track */}
         <path
           d={trackPath}
@@ -171,12 +170,7 @@ export function CalorieCard({
         {/* Tick marks + labels */}
         {ticks.map((tk) => (
           <g key={tk.kcal}>
-            <line
-              x1={tk.x1} y1={tk.y1}
-              x2={tk.x2} y2={tk.y2}
-              stroke="#9ca3af"
-              strokeWidth={2}
-            />
+            <line x1={tk.x1} y1={tk.y1} x2={tk.x2} y2={tk.y2} stroke="#9ca3af" strokeWidth={2} />
             <text
               x={tk.labelX}
               y={tk.labelY}
