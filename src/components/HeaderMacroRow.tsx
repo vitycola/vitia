@@ -51,36 +51,30 @@ export function HeaderMacroRow({
   const effectiveCalorieGoal = calorieGoal > 0 ? calorieGoal : CALORIE_GOAL_FALLBACK;
 
   return (
-    <div
-      className="grid overflow-hidden"
-      style={{ gridTemplateRows: `${progress}fr` }}
-    >
-    <div className="min-h-0">
-    <div
-      className="flex items-center bg-surface px-2 py-2"
-      style={{ opacity: progress }}
-    >
-      <MacroChip
-        label="kcal"
-        consumed={calories}
-        goal={effectiveCalorieGoal}
-        unit=""
-        color="#F5A623"
-      />
-      <div className="h-6 w-px bg-gray-200" />
-      <MacroChip
-        label="Proteínas"
-        consumed={proteinG}
-        goal={proteinGoalG}
-        unit="g"
-        color="#F5A623"
-      />
-      <div className="h-6 w-px bg-gray-200" />
-      <MacroChip label="Carbs" consumed={carbsG} goal={carbsGoalG} unit="g" color="#F5A623" />
-      <div className="h-6 w-px bg-gray-200" />
-      <MacroChip label="Grasas" consumed={fatG} goal={fatGoalG} unit="g" color="#F5A623" />
-    </div>
-    </div>
+    <div className="grid overflow-hidden" style={{ gridTemplateRows: `${progress}fr` }}>
+      <div className="min-h-0">
+        <div className="flex items-center bg-surface px-2 py-2" style={{ opacity: progress }}>
+          <MacroChip
+            label="kcal"
+            consumed={calories}
+            goal={effectiveCalorieGoal}
+            unit=""
+            color="#F5A623"
+          />
+          <div className="h-6 w-px bg-gray-200" />
+          <MacroChip
+            label="Proteínas"
+            consumed={proteinG}
+            goal={proteinGoalG}
+            unit="g"
+            color="#F5A623"
+          />
+          <div className="h-6 w-px bg-gray-200" />
+          <MacroChip label="Carbs" consumed={carbsG} goal={carbsGoalG} unit="g" color="#F5A623" />
+          <div className="h-6 w-px bg-gray-200" />
+          <MacroChip label="Grasas" consumed={fatG} goal={fatGoalG} unit="g" color="#F5A623" />
+        </div>
+      </div>
     </div>
   );
 }
