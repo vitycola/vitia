@@ -58,8 +58,21 @@ export function describeArc(
   const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
 }
-export function describeTick(_angle: number): { x1: number; y1: number; x2: number; y2: number } {
-  return { x1: 0, y1: 0, x2: 0, y2: 0 };
+export function describeTick(
+  angleDeg: number,
+  cx = 100,
+  cy = 100,
+  radius = 92,
+  tickLen = 10
+): { x1: number; y1: number; x2: number; y2: number } {
+  const p = polarToCartesian(cx, cy, radius, angleDeg);
+  const rad = (angleDeg * Math.PI) / 180;
+  return {
+    x1: p.x - (tickLen / 2) * Math.cos(rad),
+    y1: p.y - (tickLen / 2) * Math.sin(rad),
+    x2: p.x + (tickLen / 2) * Math.cos(rad),
+    y2: p.y + (tickLen / 2) * Math.sin(rad),
+  };
 }
 
 interface CalorieCardProps {
