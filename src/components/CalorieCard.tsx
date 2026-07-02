@@ -1,43 +1,58 @@
-const SIZE = 200;
-const STROKE_WIDTH = 16;
-const START_ANGLE = -225;
-const SWEEP = 270;
-const RADIUS = (SIZE - STROKE_WIDTH) / 2;
-const CENTER = SIZE / 2;
-const TICK_LEN = 10;
+import { MoreHorizontal, Pencil } from "lucide-react";
+
+// --- Arc geometry: wide shallow bow (like Fitia) ---
+// The arc is a small section of a very large circle, spanning the card width.
+// Circle center sits far below the SVG, producing a gentle upward bow.
+
+const VW = 320;     // viewBox width
+const VH = 68;      // viewBox height
+const STROKE = 9;
+const R = 310;      // large radius → gentle curve
+const PAD = 14;     // horizontal padding from SVG edges
+const Y_END = 52;   // y-coordinate of arc endpoints
+
+const X_LEFT = PAD;
+const X_RIGHT = VW - PAD;
+const HALF_CHORD = (X_RIGHT - X_LEFT) / 2;
+const D = Math.sqrt(R * R - HALF_CHORD * HALF_CHORD); // dist from chord to center
+const CX = VW / 2;
+const CY = Y_END + D; // circle center (below SVG)
+
+// Angles at left and right endpoints (radians, standard math)
+const ANGLE_LEFT = Math.atan2(Y_END - CY, X_LEFT - CX);
+const ANGLE_RIGHT = Math.atan2(Y_END - CY, X_RIGHT - CX);
+const SWEEP_TOTAL = ANGLE_RIGHT - ANGLE_LEFT; // positive → CCW
+
+function arcPoint(t: number): { x: number; y: number; angle: number } {
+  const angle = ANGLE_LEFT + t * SWEEP_TOTAL;
+  return { x: CX + R * Math.cos(angle), y: CY + R * Math.sin(angle), angle };
+}
+
+function svgArcPath(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  // sweep-flag=1 (CW in SVG Y-down coords) bows the arc upward
+  return `M ${from.x.toFixed(2)} ${from.y.toFixed(2)} A ${R} ${R} 0 0 1 ${to.x.toFixed(2)} ${to.y.toFixed(2)}`;
+}
 
 const TRACK_COLOR = "#E5E5EA";
-const NORMAL_COLOR = "#F5A623";
-const OVER_TARGET_COLOR = "#F5A623";
+const PROGRESS_COLOR = "#F5A623";
 
+// --- Exported helpers (kept for any tests that import them) ---
 export function polarToCartesian(
-  cx: number,
-  cy: number,
-  radius: number,
-  angleDeg: number
+  cx: number, cy: number, radius: number, angleDeg: number
 ): { x: number; y: number } {
   const rad = (angleDeg * Math.PI) / 180;
   return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
 }
-
 export function describeArc(
-  cx: number,
-  cy: number,
-  radius: number,
-  startAngle: number,
-  endAngle: number
+  cx: number, cy: number, radius: number, startAngle: number, endAngle: number
 ): string {
   const start = polarToCartesian(cx, cy, radius, startAngle);
   const end = polarToCartesian(cx, cy, radius, endAngle);
-  const sweep = endAngle - startAngle;
-  const largeArcFlag = sweep <= 180 ? 0 : 1;
+  const largeArcFlag = (endAngle - startAngle) <= 180 ? 0 : 1;
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
 }
-
-export function describeTick(angle: number): { x1: number; y1: number; x2: number; y2: number } {
-  const inner = polarToCartesian(CENTER, CENTER, RADIUS - TICK_LEN / 2, angle);
-  const outer = polarToCartesian(CENTER, CENTER, RADIUS + TICK_LEN / 2, angle);
-  return { x1: inner.x, y1: inner.y, x2: outer.x, y2: outer.y };
+export function describeTick(_angle: number): { x1: number; y1: number; x2: number; y2: number } {
+  return { x1: 0, y1: 0, x2: 0, y2: 0 };
 }
 
 interface CalorieCardProps {
@@ -51,28 +66,20 @@ interface CalorieCardProps {
   fatGoalG: number;
 }
 
-function MacroRow({
-  label,
-  consumed,
-  goal,
-  color,
-}: {
-  label: string;
-  consumed: number;
-  goal: number;
-  color: string;
-}) {
+function MacroColumn({ label, consumed, goal }: { label: string; consumed: number; goal: number }) {
   const pct = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
   return (
-    <div className="mb-2 w-full">
-      <div className="mb-1 flex justify-between text-xs text-[#8E8E93]">
-        <span>{label}</span>
-        <span>
-          {Math.round(consumed)}g / {Math.round(goal)}g
-        </span>
-      </div>
+    <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
+      <span className="text-xs font-medium text-[#8E8E93]">{label}</span>
+      <span className="text-sm text-[#1C1C1E]">
+        {Math.round(consumed)}
+        <span className="text-[#8E8E93]"> / {Math.round(goal)} g</span>
+      </span>
       <div className="h-1.5 w-full rounded-full bg-[#E5E5EA]">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+        <div
+          className="h-full rounded-full bg-[#F5A623]"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
@@ -88,64 +95,107 @@ export function CalorieCard({
   fatG,
   fatGoalG,
 }: CalorieCardProps) {
+  // Arc spans 0 → 2×goal; goal sits at t=0.5 (the visual peak/center).
+  // Progress fills left-to-center proportionally.
   const fraction = goal > 0 ? Math.min(consumed / goal, 1) : 0;
-  const progressEndAngle = START_ANGLE + SWEEP * fraction;
-  const overTarget = consumed > goal;
-  const progressColor = overTarget ? OVER_TARGET_COLOR : NORMAL_COLOR;
+  const progressT = fraction * 0.5;
 
-  const tickAngles = [0.9, 1.1].map((f) => START_ANGLE + SWEEP * Math.min(f, 1));
+  const trackStart = arcPoint(0);
+  const trackEnd = arcPoint(1);
+  const trackPath = svgArcPath(trackStart, trackEnd);
 
-  const trackPath = describeArc(CENTER, CENTER, RADIUS, START_ANGLE, START_ANGLE + SWEEP);
   const progressPath =
-    fraction > 0 ? describeArc(CENTER, CENTER, RADIUS, START_ANGLE, progressEndAngle) : null;
+    progressT > 0 ? svgArcPath(trackStart, arcPoint(progressT)) : null;
+
+  // Ticks at −10% (t=0.45) and +10% (t=0.55) of goal, centered on the arc peak
+  const tickTs = [0.45, 0.55];
+  const ticks = tickTs.map((t) => {
+    const p = arcPoint(t);
+    const TICK_H = 11;
+    const cosA = Math.cos(p.angle);
+    const sinA = Math.sin(p.angle);
+    return {
+      x1: p.x - (TICK_H / 2) * cosA,
+      y1: p.y - (TICK_H / 2) * sinA,
+      x2: p.x + (TICK_H / 2) * cosA,
+      y2: p.y + (TICK_H / 2) * sinA,
+      labelX: p.x,
+      labelY: p.y + 10,
+      anchor: t < 0.5 ? ("end" as const) : ("start" as const),
+      kcal: Math.round(goal * (t < 0.5 ? 0.9 : 1.1)),
+    };
+  });
 
   return (
-    <div className="mx-4 mb-3 rounded-3xl bg-white px-4 py-5 shadow-sm">
-      <div className="flex flex-col items-center">
-        <div className="relative" style={{ width: SIZE, height: SIZE }}>
-          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
-            <path
-              d={trackPath}
-              fill="none"
-              stroke={TRACK_COLOR}
-              strokeWidth={STROKE_WIDTH}
-              strokeLinecap="round"
-            />
-            {progressPath && (
-              <path
-                d={progressPath}
-                fill="none"
-                stroke={progressColor}
-                strokeWidth={STROKE_WIDTH}
-                strokeLinecap="round"
-              />
-            )}
-            {tickAngles.map((angle) => {
-              const t = describeTick(angle);
-              return (
-                <line
-                  key={angle}
-                  x1={t.x1}
-                  y1={t.y1}
-                  x2={t.x2}
-                  y2={t.y2}
-                  stroke="#9ca3af"
-                  strokeWidth={2}
-                />
-              );
-            })}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-gray-900">{Math.round(consumed)}</span>
-            <span className="text-xs text-gray-500">de {Math.round(goal)} kcal</span>
-          </div>
+    <div className="mb-3 rounded-3xl bg-white px-4 py-4 shadow-sm">
+      {/* Header row */}
+      <div className="mb-1 flex items-center justify-between">
+        <button type="button" aria-label="Edit calorie goal" className="p-1 text-[#C7C7CC]">
+          <Pencil size={16} />
+        </button>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-[#1C1C1E]">
+            {Math.round(consumed).toLocaleString()} / {Math.round(goal).toLocaleString()}
+          </p>
+          <p className="text-xs text-[#8E8E93]">kcal</p>
         </div>
+        <button type="button" aria-label="More options" className="p-1 text-[#C7C7CC]">
+          <MoreHorizontal size={16} />
+        </button>
+      </div>
 
-        <div className="mt-4 w-full">
-          <MacroRow label="Proteínas" consumed={proteinG} goal={proteinGoalG} color="#F5A623" />
-          <MacroRow label="Carbs" consumed={carbsG} goal={carbsGoalG} color="#F5A623" />
-          <MacroRow label="Grasas" consumed={fatG} goal={fatGoalG} color="#F5A623" />
-        </div>
+      {/* Bow arc */}
+      <svg
+        width="100%"
+        viewBox={`0 0 ${VW} ${VH}`}
+        aria-hidden="true"
+      >
+        {/* Track */}
+        <path
+          d={trackPath}
+          fill="none"
+          stroke={TRACK_COLOR}
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+        />
+        {/* Progress */}
+        {progressPath && (
+          <path
+            d={progressPath}
+            fill="none"
+            stroke={PROGRESS_COLOR}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+          />
+        )}
+        {/* Tick marks + labels */}
+        {ticks.map((tk) => (
+          <g key={tk.kcal}>
+            <line
+              x1={tk.x1} y1={tk.y1}
+              x2={tk.x2} y2={tk.y2}
+              stroke="#9ca3af"
+              strokeWidth={2}
+            />
+            <text
+              x={tk.labelX}
+              y={tk.labelY}
+              textAnchor={tk.anchor}
+              dominantBaseline="hanging"
+              fontSize={9}
+              fill="#9ca3af"
+            >
+              {tk.kcal.toLocaleString()}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      {/* Macro columns */}
+      <div className="mt-3 flex gap-2">
+        <MacroColumn label="Proteínas" consumed={proteinG} goal={proteinGoalG} />
+        <MacroColumn label="Carbs" consumed={carbsG} goal={carbsGoalG} />
+        <MacroColumn label="Grasas" consumed={fatG} goal={fatGoalG} />
       </div>
     </div>
   );
