@@ -38,10 +38,21 @@ const INITIAL_STATE: FoodSearchState = {
   error: null,
 };
 
+// Module-level ref to the AbortController for the currently in-flight OFF
+// request. Aborted at the start of every search() call so a stale request
+// never races a newer one (design D7, spec: Query-Scoped Request
+// Cancellation). Lives outside the store state because it is a mutable
+// handle, not serializable/observable state.
+let activeController: AbortController | null = null;
+
 export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()((set, get) => ({
   ...INITIAL_STATE,
 
   search: async (query: string) => {
+    // Cancel any in-flight request for a previous query before starting a
+    // new one — this is the query-scoped cancellation boundary.
+    activeController?.abort();
+
     set({ query, error: null });
 
     if (!query.trim() || query.length < 2) {
@@ -60,9 +71,16 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
     }
 
     // 2. OFF network call — status transitions reflect async phase.
+    const controller = new AbortController();
+    activeController = controller;
+
     set({ status: "loading" });
     try {
-      const offResults = await offSearch(query);
+      const offResults = await offSearch(query, controller.signal);
+
+      // If this request was superseded/aborted after resolving (race
+      // between abort() and the promise settling), do not apply its result.
+      if (controller.signal.aborted) return;
 
       // Merge: combine local + OFF results, deduplicate by food id.
       const currentResults = get().results;
@@ -78,6 +96,11 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
         status: merged.length > 0 ? "results" : "empty",
       });
     } catch (err) {
+      // Aborted requests (superseded by a newer query) must never surface
+      // as an error state (spec: Aborted request does not update state).
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (controller.signal.aborted) return;
+
       // OFF threw — surface error state; keep any cached results visible.
       set({
         status: "error",
@@ -87,6 +110,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
   },
 
   clear: () => {
+    activeController?.abort();
     set(INITIAL_STATE);
   },
 }));

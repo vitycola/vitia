@@ -1,45 +1,18 @@
-import { upsert } from "@/db/repos/foods";
+import { upsert, upsertMany } from "@/db/repos/foods";
 import type { NewFood } from "@/db/schema";
+import type { OffProxyProduct, OffProxyResponse } from "@/lib/offTypes";
 
 // ── OFF API constants ──────────────────────────────────────────────────
-const OFF_SEARCH_BASE_URL = import.meta.env.DEV
-  ? "/api/off-search"
-  : "https://search.openfoodfacts.org";
+// Barcode lookup (getByBarcode) is out of scope for the same-origin proxy
+// migration (spec covers `search` only) and still talks to OFF directly.
 const OFF_BASE_URL = import.meta.env.DEV ? "/api/off" : "https://world.openfoodfacts.org";
-const OFF_SEARCH_PAGE_SIZE = 20;
+const OFF_SEARCH_ENDPOINT = "/api/off-search";
 const OFF_REQUEST_TIMEOUT_MS = 15000;
+const OFF_SEARCH_TIMEOUT_MS = 7000; // 6-8s bound (spec: Bounded Request Timeout)
 
 // Required fields to avoid fetching the full product blob.
 const OFF_FIELDS =
   "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url";
-
-// ── OFF response types ─────────────────────────────────────────────────
-interface OffNutriments {
-  "energy-kcal_100g"?: number;
-  proteins_100g?: number;
-  carbohydrates_100g?: number;
-  fat_100g?: number;
-}
-
-interface OffProduct {
-  code: string;
-  product_name?: string;
-  brands?: string | string[];
-  nutriments?: OffNutriments;
-  serving_quantity?: number; // grams
-  image_front_small_url?: string;
-  image_url?: string;
-}
-
-interface OffCgiResponse {
-  products: OffProduct[];
-  count: number;
-}
-
-interface OffSearchResponse {
-  hits: OffProduct[];
-  count: number;
-}
 
 // ── Food with missing-data flag (for UI warning) ───────────────────────
 export interface SearchResult extends NewFood {
@@ -47,51 +20,6 @@ export interface SearchResult extends NewFood {
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────
-
-/**
- * Try CGI endpoint first (more precise results), fall back to search.openfoodfacts.org
- * if CGI returns 503/504 (common transient failures on OFF main server).
- */
-async function fetchProducts(query: string): Promise<OffProduct[] | null> {
-  // 1. CGI primary — more precise relevance.
-  try {
-    const cgiUrl = new URL(`${OFF_BASE_URL}/cgi/search.pl`, window.location.origin);
-    cgiUrl.searchParams.set("search_terms", query);
-    cgiUrl.searchParams.set("cc", "es");
-    cgiUrl.searchParams.set("lc", "es");
-    cgiUrl.searchParams.set("json", "1");
-    cgiUrl.searchParams.set("page_size", String(OFF_SEARCH_PAGE_SIZE));
-    cgiUrl.searchParams.set("fields", OFF_FIELDS);
-
-    const cgiRes = await fetchWithTimeout(cgiUrl.toString(), OFF_REQUEST_TIMEOUT_MS);
-    if (cgiRes.ok) {
-      const data: OffCgiResponse = await cgiRes.json();
-      return data.products ?? [];
-    }
-  } catch {
-    // CGI failed — fall through to search endpoint.
-  }
-
-  // 2. Fallback — search.openfoodfacts.org (Elasticsearch, broader results).
-  try {
-    const searchUrl = new URL(`${OFF_SEARCH_BASE_URL}/search`, window.location.origin);
-    searchUrl.searchParams.set("q", query);
-    searchUrl.searchParams.set("cc", "es");
-    searchUrl.searchParams.set("lc", "es");
-    searchUrl.searchParams.set("page_size", String(OFF_SEARCH_PAGE_SIZE));
-    searchUrl.searchParams.set("fields", OFF_FIELDS);
-
-    const searchRes = await fetchWithTimeout(searchUrl.toString(), OFF_REQUEST_TIMEOUT_MS);
-    if (searchRes.ok) {
-      const data: OffSearchResponse = await searchRes.json();
-      return data.hits ?? [];
-    }
-  } catch {
-    // Both failed.
-  }
-
-  return null;
-}
 
 function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const controller = new AbortController();
@@ -103,7 +31,9 @@ function fetchWithTimeout(url: string, ms: number): Promise<Response> {
  * Normalize a raw OFF product into the local Food shape.
  * Returns null when the product has no usable name.
  */
-export function normalizeOffProduct(p: OffProduct): (NewFood & { hasMissingData: boolean }) | null {
+export function normalizeOffProduct(
+  p: OffProxyProduct
+): (NewFood & { hasMissingData: boolean }) | null {
   const name = p.product_name?.trim();
   if (!name) return null;
 
@@ -137,36 +67,61 @@ export function normalizeOffProduct(p: OffProduct): (NewFood & { hasMissingData:
 // ── Public API ─────────────────────────────────────────────────────────
 
 /**
- * Search Open Food Facts with Spain locale params using the v2 API.
- * All results are normalized and upserted into the local foods cache.
- * Throws on network failure, timeout, or non-2xx HTTP status.
+ * Search Open Food Facts via the same-origin proxy (`/api/off-search`),
+ * which owns the CGI/fallback cascade, retry/backoff, and normalization
+ * server-side (spec: Same-Origin Endpoint Contract). All results are
+ * normalized and batch-upserted into the local foods cache.
+ *
+ * An optional `signal` allows the caller (the search store) to cancel a
+ * stale in-flight request when a newer query supersedes it (spec:
+ * Query-Scoped Request Cancellation). When no external signal is given, a
+ * 6-8s internal timeout applies (spec: Bounded Request Timeout).
+ *
+ * Throws on network failure, timeout, or non-2xx HTTP status — including
+ * `AbortError` when the request is cancelled, which callers should
+ * distinguish from other errors.
  */
-export async function search(query: string): Promise<SearchResult[]> {
+export async function search(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
-  const products = await fetchProducts(query);
+  const url = new URL(OFF_SEARCH_ENDPOINT, window.location.origin);
+  url.searchParams.set("q", query);
 
-  if (!products) {
-    throw new Error("OFF search failed on both endpoints");
+  const response = await fetch(url.toString(), {
+    signal: signal ?? AbortSignal.timeout(OFF_SEARCH_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OFF search proxy failed with status ${response.status}`);
   }
 
-  const results: SearchResult[] = [];
+  const data: OffProxyResponse = await response.json();
 
-  // Normalize and upsert each valid product into the local cache.
-  for (const product of products) {
+  if ("error" in data) {
+    throw new Error(data.error);
+  }
+
+  const normalizedByCode = new Map<string, NewFood & { hasMissingData: boolean }>();
+  for (const product of data.products) {
     const normalized = normalizeOffProduct(product);
     if (!normalized) continue;
-
-    const { hasMissingData, ...foodData } = normalized;
-    try {
-      await upsert(foodData);
-    } catch {
-      // Upsert failure is non-fatal — still show the result.
-    }
-    results.push({ ...foodData, hasMissingData });
+    normalizedByCode.set(normalized.id, normalized);
   }
 
-  return results;
+  const foodDataList: NewFood[] = Array.from(normalizedByCode.values()).map(
+    ({ hasMissingData: _hasMissingData, ...foodData }) => foodData
+  );
+
+  // Batched upsert instead of a sequential per-item await loop
+  // (spec: Batched Cache Upsert). Non-fatal on write failure — still show
+  // the results even if the local cache write fails.
+  try {
+    await upsertMany(foodDataList);
+  } catch {
+    // Upsert failure is non-fatal — still show the results.
+  }
+
+  return Array.from(normalizedByCode.values());
 }
 
 /**
@@ -183,7 +138,7 @@ export async function getByBarcode(barcode: string): Promise<SearchResult | null
     if (!response.ok) return null;
 
     const data = await response.json();
-    const product: OffProduct | undefined = data.product;
+    const product: OffProxyProduct | undefined = data.product;
     if (!product) return null;
 
     const normalized = normalizeOffProduct(product);

@@ -2,7 +2,7 @@ import { db } from "@/db/client";
 import { foods } from "@/db/schema";
 import type { Food, NewFood } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
-import { eq, like } from "drizzle-orm";
+import { eq, like, sql } from "drizzle-orm";
 
 const MAX_SEARCH_RESULTS = 30;
 
@@ -57,6 +57,42 @@ export async function upsert(food: NewFood): Promise<Food> {
     .returning();
 
   return rows[0];
+}
+
+/**
+ * Batch upsert multiple Open Food Facts foods into the local cache in a
+ * single statement, replacing the old sequential-await-per-item loop.
+ * Same on-conflict semantics as upsert(): existing rows are refreshed.
+ * Returns an empty array without touching the DB when given no rows.
+ */
+export async function upsertMany(foodsToUpsert: NewFood[]): Promise<Food[]> {
+  if (foodsToUpsert.length === 0) return [];
+
+  const values = foodsToUpsert.map((food) => ({
+    ...food,
+    nameNormalized: normalizeForSearch(food.name),
+  }));
+
+  const rows = await db
+    .insert(foods)
+    .values(values)
+    .onConflictDoUpdate({
+      target: foods.id,
+      set: {
+        name: sql`excluded.name`,
+        nameNormalized: sql`excluded.name_normalized`,
+        brand: sql`excluded.brand`,
+        caloriesPer100g: sql`excluded.calories_per_100g`,
+        proteinPer100g: sql`excluded.protein_per_100g`,
+        carbsPer100g: sql`excluded.carbs_per_100g`,
+        fatPer100g: sql`excluded.fat_per_100g`,
+        servingSizeG: sql`excluded.serving_size_g`,
+        offProductCode: sql`excluded.off_product_code`,
+      },
+    })
+    .returning();
+
+  return rows;
 }
 
 /**
