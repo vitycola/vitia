@@ -375,10 +375,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
 
     async getLoggedTotalsByDateRange(from, to) {
-      const rows = await db.meal_entries
-        .where("date")
-        .between(from, to, true, true)
-        .toArray();
+      const rows = await db.meal_entries.where("date").between(from, to, true, true).toArray();
 
       // Group and sum in JS — mirrors the SQL GROUP BY date query in the
       // drizzle backend (T3). Days with no entries are not included.
