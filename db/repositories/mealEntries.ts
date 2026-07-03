@@ -90,10 +90,7 @@ export interface DayTotals {
   fatG: number;
 }
 
-export async function getLoggedTotalsByDateRange(
-  from: string,
-  to: string
-): Promise<DayTotals[]> {
+export async function getLoggedTotalsByDateRange(from: string, to: string): Promise<DayTotals[]> {
   const rows = await db
     .select({
       date: mealEntries.date,

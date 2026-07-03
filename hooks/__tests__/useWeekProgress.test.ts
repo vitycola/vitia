@@ -29,20 +29,15 @@ function goalsMet(
   fatGoalG: number
 ): boolean {
   const calOk =
-    totals.calories >= calorieGoal * CAL_LOW &&
-    totals.calories <= calorieGoal * CAL_HIGH;
+    totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
 
   const proteinOk =
-    totals.proteinG >= proteinGoalG * MACRO_LOW &&
-    totals.proteinG <= proteinGoalG * MACRO_HIGH;
+    totals.proteinG >= proteinGoalG * MACRO_LOW && totals.proteinG <= proteinGoalG * MACRO_HIGH;
 
   const carbsOk =
-    totals.carbsG >= carbsGoalG * MACRO_LOW &&
-    totals.carbsG <= carbsGoalG * MACRO_HIGH;
+    totals.carbsG >= carbsGoalG * MACRO_LOW && totals.carbsG <= carbsGoalG * MACRO_HIGH;
 
-  const fatOk =
-    totals.fatG >= fatGoalG * MACRO_LOW &&
-    totals.fatG <= fatGoalG * MACRO_HIGH;
+  const fatOk = totals.fatG >= fatGoalG * MACRO_LOW && totals.fatG <= fatGoalG * MACRO_HIGH;
 
   return calOk && proteinOk && carbsOk && fatOk;
 }
@@ -63,10 +58,7 @@ function deriveStatus(
 
   const goalsConfigured = calorieGoal > 0;
 
-  if (
-    goalsConfigured &&
-    goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)
-  ) {
+  if (goalsConfigured && goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)) {
     return "complete";
   }
 
@@ -94,9 +86,7 @@ const TODAY = "2024-06-24"; // fixed reference date for tests
 
 describe("deriveStatus", () => {
   it("returns empty when no totals data exists for a day", () => {
-    expect(
-      deriveStatus(PAST_DAY, TODAY, undefined, ...Object.values(GOALS))
-    ).toBe("empty");
+    expect(deriveStatus(PAST_DAY, TODAY, undefined, ...Object.values(GOALS))).toBe("empty");
   });
 
   it("returns empty when calories are 0", () => {
