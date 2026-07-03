@@ -1,8 +1,8 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
-import { todayISO } from "@/lib/date";
+import { formatFullDayLabel, todayISO } from "@/lib/date";
 import { CalorieCard } from "@/src/components/CalorieCard";
-import { DateNavigator } from "@/src/components/DateNavigator";
+import { WeekCalendarHeader } from "@/src/components/WeekCalendarHeader";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
 import { MealSection } from "@/src/components/MealSection";
 import { useDayStore } from "@/stores/useDayStore";
@@ -20,8 +20,7 @@ export function DayScreen() {
     selectedDate,
     entries,
     loadEntries,
-    goPreviousDay,
-    goNextDay,
+    setDate,
     deleteEntry,
     repeatMeal,
     pasteEntries,
@@ -98,13 +97,15 @@ export function DayScreen() {
   const fatGoalG = profile?.fatGoalG ?? 70;
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-surface">
+    <div className="flex h-full flex-col bg-surface">
       {/* Sticky header — sibling above scroll container */}
-      <div className="sticky top-0 z-10 bg-surface">
-        <DateNavigator
+      <div className="z-10 bg-surface">
+        <p className="px-4 pt-3 text-sm font-semibold text-gray-900">
+          {formatFullDayLabel(selectedDate)}
+        </p>
+        <WeekCalendarHeader
           selectedDate={selectedDate}
-          onPrevious={() => void goPreviousDay()}
-          onNext={() => void goNextDay()}
+          onSelectDate={(date) => void setDate(date)}
         />
         <HeaderMacroRow
           calories={totals.calories}

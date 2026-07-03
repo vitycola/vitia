@@ -171,9 +171,18 @@ export interface SyncQueueRepo {
 }
 
 /** MealEntries repository surface — mirrors db/repositories/mealEntries.ts exactly */
+export interface DayTotals {
+  date: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+
 export interface MealEntriesRepo {
   getByDate(date: string): Promise<MealEntry[]>;
   getByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<MealEntry[]>;
+  getLoggedTotalsByDateRange(from: string, to: string): Promise<DayTotals[]>;
   insert(entry: NewMealEntry): Promise<MealEntry>;
   insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]>;
   update(id: string, patch: Partial<Omit<NewMealEntry, "id">>): Promise<MealEntry>;
@@ -363,6 +372,39 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         .equals([date, mealType])
         .toArray();
       return rows.sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
+    },
+
+    async getLoggedTotalsByDateRange(from, to) {
+      const rows = await db.meal_entries
+        .where("date")
+        .between(from, to, true, true)
+        .toArray();
+
+      // Group and sum in JS — mirrors the SQL GROUP BY date query in the
+      // drizzle backend (T3). Days with no entries are not included.
+      const byDate = new Map<
+        string,
+        { calories: number; proteinG: number; carbsG: number; fatG: number }
+      >();
+
+      for (const row of rows) {
+        const existing = byDate.get(row.date) ?? {
+          calories: 0,
+          proteinG: 0,
+          carbsG: 0,
+          fatG: 0,
+        };
+        byDate.set(row.date, {
+          calories: existing.calories + row.calories,
+          proteinG: existing.proteinG + row.proteinG,
+          carbsG: existing.carbsG + row.carbsG,
+          fatG: existing.fatG + row.fatG,
+        });
+      }
+
+      return Array.from(byDate.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, totals]) => ({ date, ...totals }));
     },
 
     async insert(entry) {
