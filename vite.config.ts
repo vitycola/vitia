@@ -1,6 +1,6 @@
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite";
+import { type Plugin, defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -40,32 +40,50 @@ function offSearchDevMiddleware(): Plugin {
             const data = (await cgiRes.json()) as { products?: unknown[] };
             res.setHeader("Content-Type", "application/json");
             res.end(
-              JSON.stringify({ products: data.products ?? [], count: (data.products ?? []).length, source: "cgi" })
+              JSON.stringify({
+                products: data.products ?? [],
+                count: (data.products ?? []).length,
+                source: "cgi",
+              })
             );
             return;
           }
 
           const fallbackUrl = new URL(OFF_FALLBACK_URL);
           fallbackUrl.searchParams.set("q", query);
-          const fallbackRes = await fetch(fallbackUrl, { headers: { "User-Agent": OFF_USER_AGENT } });
+          const fallbackRes = await fetch(fallbackUrl, {
+            headers: { "User-Agent": OFF_USER_AGENT },
+          });
           if (fallbackRes.ok) {
             const data = (await fallbackRes.json()) as { hits?: unknown[] };
             res.setHeader("Content-Type", "application/json");
             res.end(
-              JSON.stringify({ products: data.hits ?? [], count: (data.hits ?? []).length, source: "fallback" })
+              JSON.stringify({
+                products: data.hits ?? [],
+                count: (data.hits ?? []).length,
+                source: "fallback",
+              })
             );
             return;
           }
 
           res.statusCode = 502;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Both upstream Open Food Facts endpoints failed", source: "none" }));
+          res.end(
+            JSON.stringify({
+              error: "Both upstream Open Food Facts endpoints failed",
+              source: "none",
+            })
+          );
         } catch (err) {
           res.statusCode = 502;
           res.setHeader("Content-Type", "application/json");
           res.end(
             JSON.stringify({
-              error: err instanceof Error ? err.message : "Both upstream Open Food Facts endpoints failed",
+              error:
+                err instanceof Error
+                  ? err.message
+                  : "Both upstream Open Food Facts endpoints failed",
               source: "none",
             })
           );
