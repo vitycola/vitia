@@ -1,6 +1,6 @@
 import { useWeekProgress } from "@/hooks/useWeekProgress";
 import type { DayStatus } from "@/hooks/useWeekProgress";
-import { formatFullDayLabel, startOfWeek, weekDays } from "@/lib/date";
+import { startOfWeek, weekDays } from "@/lib/date";
 import { useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
