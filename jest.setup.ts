@@ -19,3 +19,25 @@ if (!globalThis.crypto?.randomUUID) {
 // Register fake-indexeddb so Dexie works in Node/Jest test environment.
 // This must run before any Dexie database is opened.
 import "fake-indexeddb/auto";
+
+// jsdom (used per-file via `@jest-environment jsdom` docblocks for component
+// tests) does not expose TextEncoder/TextDecoder in this Jest/jsdom version,
+// but react-router-dom's ESM build requires them at import time. Polyfill
+// from Node's util module only when missing — no-op in the node environment.
+import { TextDecoder, TextEncoder } from "node:util";
+
+if (typeof globalThis.TextEncoder === "undefined") {
+  Object.defineProperty(globalThis, "TextEncoder", {
+    value: TextEncoder,
+    writable: true,
+    configurable: true,
+  });
+}
+
+if (typeof globalThis.TextDecoder === "undefined") {
+  Object.defineProperty(globalThis, "TextDecoder", {
+    value: TextDecoder,
+    writable: true,
+    configurable: true,
+  });
+}
