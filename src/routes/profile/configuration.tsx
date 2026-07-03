@@ -1,37 +1,59 @@
+import { profileFieldsSchema } from "@/lib/profileSchema";
 import { isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
+import type { ActivityLevel, Sex } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import type { z } from "zod";
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  sedentary: "Sedentario",
-  lightly_active: "Ligeramente activo",
-  moderately_active: "Moderadamente activo",
-  very_active: "Muy activo",
-  extra_active: "Extra activo",
-};
+type FormValues = z.infer<typeof profileFieldsSchema>;
 
-const SEX_LABELS: Record<string, string> = {
-  male: "Masculino",
-  female: "Femenino",
-};
+const MEASUREMENT_PLACEHOLDER_LABELS = [
+  "Cuello",
+  "Pecho",
+  "Brazo",
+  "Cintura",
+  "Cadera",
+  "Muslo",
+] as const;
 
 /**
- * PENDING UNIT 2: this is a read-only placeholder ported verbatim from the
- * former flat ProfileRoute's "Datos personales" section, kept navigable so
- * the /profile/plan and /profile/progress shell isn't blocked. It will be
- * replaced by an editable RHF + zod form (see design capability
- * profile-configuration) wired to `useProfileStore.saveProfile`, backed by
- * the shared schema extracted to `src/lib/profileSchema.ts`. The existing
- * onboarding "Editar perfil" edit path is intentionally left intact until
- * Unit 2 rewires it.
+ * Editable personal-data form for the Configuración tab. Reuses the shared
+ * `profileFieldsSchema` (same validation as onboarding) and writes through
+ * `useProfileStore.saveProfile` — the offline-first Dexie + syncQueue path
+ * is untouched.
+ *
+ * Weight forward-compat seam (SDD-1): `saveProfile` remains the SOLE
+ * weight-write path. A future dated weight-log feature can wrap this same
+ * call to additionally append a history entry, without requiring this form
+ * to change its contract.
  */
 export function ConfigurationRoute() {
   const navigate = useNavigate();
-  const { profile } = useProfileStore();
+  const { profile, saveProfile } = useProfileStore();
   const { signOut } = useAuthStore();
   const [signingOut, setSigningOut] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: zodResolver(profileFieldsSchema),
+    mode: "onChange",
+    defaultValues: profile
+      ? {
+          age: profile.age,
+          heightCm: profile.heightCm,
+          weightKg: profile.weightKg,
+          sex: profile.sex,
+          activityLevel: profile.activityLevel,
+        }
+      : undefined,
+  });
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -45,32 +67,135 @@ export function ConfigurationRoute() {
 
   if (!profile) return null;
 
+  async function onSubmit(data: FormValues) {
+    if (!profile) return;
+    await saveProfile({
+      age: data.age,
+      heightCm: data.heightCm,
+      weightKg: data.weightKg,
+      sex: data.sex as Sex,
+      activityLevel: data.activityLevel as ActivityLevel,
+      // Goal is edited from the Plan tab, not here — preserve the current value.
+      goal: profile.goal,
+    });
+  }
+
   return (
     <div className="space-y-3">
+      <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} noValidate>
+        <section className="rounded-2xl bg-white px-4 py-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            Datos personales
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="age" className="mb-1 block text-sm font-medium text-gray-700">
+                Edad
+              </label>
+              <input
+                id="age"
+                type="number"
+                inputMode="numeric"
+                placeholder="Años"
+                {...register("age")}
+                className={fieldClass(!!errors.age)}
+              />
+              {errors.age && <p className="mt-1 text-xs text-red-600">{errors.age.message}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="heightCm" className="mb-1 block text-sm font-medium text-gray-700">
+                Altura (cm)
+              </label>
+              <input
+                id="heightCm"
+                type="number"
+                inputMode="decimal"
+                placeholder="Centímetros"
+                {...register("heightCm")}
+                className={fieldClass(!!errors.heightCm)}
+              />
+              {errors.heightCm && (
+                <p className="mt-1 text-xs text-red-600">{errors.heightCm.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="weightKg" className="mb-1 block text-sm font-medium text-gray-700">
+                Peso (kg)
+              </label>
+              <input
+                id="weightKg"
+                type="number"
+                inputMode="decimal"
+                placeholder="Kilogramos"
+                {...register("weightKg")}
+                className={fieldClass(!!errors.weightKg)}
+              />
+              {errors.weightKg && (
+                <p className="mt-1 text-xs text-red-600">{errors.weightKg.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="sex" className="mb-1 block text-sm font-medium text-gray-700">
+                Sexo
+              </label>
+              <select id="sex" {...register("sex")} className={fieldClass(!!errors.sex)}>
+                <option value="male">Masculino</option>
+                <option value="female">Femenino</option>
+              </select>
+              {errors.sex && <p className="mt-1 text-xs text-red-600">{errors.sex.message}</p>}
+            </div>
+
+            <div>
+              <label
+                htmlFor="activityLevel"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Nivel de actividad
+              </label>
+              <select
+                id="activityLevel"
+                {...register("activityLevel")}
+                className={fieldClass(!!errors.activityLevel)}
+              >
+                <option value="sedentary">Sedentario (sin ejercicio)</option>
+                <option value="lightly_active">Ligeramente activo (1–3 días/semana)</option>
+                <option value="moderately_active">Moderadamente activo (3–5 días/semana)</option>
+                <option value="very_active">Muy activo (6–7 días/semana)</option>
+                <option value="extra_active">Extra activo (dos veces al día)</option>
+              </select>
+              {errors.activityLevel && (
+                <p className="mt-1 text-xs text-red-600">{errors.activityLevel.message}</p>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-4 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
+          >
+            {isSubmitting ? "Guardando…" : "Guardar cambios"}
+          </button>
+        </section>
+      </form>
+
+      {/* Body measurements — visual placeholders only, no persistence (SDD-1 seam) */}
       <section className="rounded-2xl bg-white px-4 py-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Datos personales
+          Medidas corporales
         </h2>
         <div className="space-y-2">
-          <ConfigRow label="Edad" value={`${profile.age} años`} />
-          <ConfigRow label="Altura" value={`${profile.heightCm} cm`} />
-          <ConfigRow label="Peso" value={`${profile.weightKg} kg`} />
-          <ConfigRow label="Sexo" value={SEX_LABELS[profile.sex] ?? profile.sex} />
-          <ConfigRow
-            label="Actividad"
-            value={ACTIVITY_LABELS[profile.activityLevel] ?? profile.activityLevel}
-          />
+          {MEASUREMENT_PLACEHOLDER_LABELS.map((label) => (
+            <div key={label} className="flex items-center justify-between py-1">
+              <span className="text-sm text-gray-500">{label}</span>
+              <span className="text-sm text-gray-300">Próximamente</span>
+            </div>
+          ))}
         </div>
       </section>
-
-      {/* Edit profile — pending Unit 2 rewire to an inline editable form */}
-      <button
-        type="button"
-        onClick={() => void navigate("/onboarding")}
-        className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
-      >
-        Editar perfil
-      </button>
 
       {/* Sign out — only shown when cloud sync is enabled */}
       {isSyncEnabled() && (
@@ -87,11 +212,8 @@ export function ConfigurationRoute() {
   );
 }
 
-function ConfigRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-900">{value}</span>
-    </div>
-  );
+function fieldClass(hasError: boolean) {
+  return `w-full rounded-xl border px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 bg-white ${
+    hasError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-300"
+  }`;
 }
