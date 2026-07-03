@@ -91,8 +91,18 @@ export function formatFullDayLabel(isoDate: string): string {
   }
 
   const MONTHS_ES_SHORT = [
-    "ene", "feb", "mar", "abr", "may", "jun",
-    "jul", "ago", "sep", "oct", "nov", "dic",
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
   ];
 
   const [, monthStr, dayStr] = isoDate.split("-");

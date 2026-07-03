@@ -25,20 +25,15 @@ function goalsMet(
   fatGoalG: number
 ): boolean {
   const calOk =
-    totals.calories >= calorieGoal * CAL_LOW &&
-    totals.calories <= calorieGoal * CAL_HIGH;
+    totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
 
   const proteinOk =
-    totals.proteinG >= proteinGoalG * MACRO_LOW &&
-    totals.proteinG <= proteinGoalG * MACRO_HIGH;
+    totals.proteinG >= proteinGoalG * MACRO_LOW && totals.proteinG <= proteinGoalG * MACRO_HIGH;
 
   const carbsOk =
-    totals.carbsG >= carbsGoalG * MACRO_LOW &&
-    totals.carbsG <= carbsGoalG * MACRO_HIGH;
+    totals.carbsG >= carbsGoalG * MACRO_LOW && totals.carbsG <= carbsGoalG * MACRO_HIGH;
 
-  const fatOk =
-    totals.fatG >= fatGoalG * MACRO_LOW &&
-    totals.fatG <= fatGoalG * MACRO_HIGH;
+  const fatOk = totals.fatG >= fatGoalG * MACRO_LOW && totals.fatG <= fatGoalG * MACRO_HIGH;
 
   return calOk && proteinOk && carbsOk && fatOk;
 }
@@ -61,19 +56,20 @@ function goalsMet(
 export function useWeekProgress(weekStart: string): Record<string, DayStatus> {
   const [totalsMap, setTotalsMap] = useState<Map<string, DayTotals>>(new Map());
 
-  // Subscribe to entries reference so the hook re-runs when the user logs food
-  // on the currently selected day — same reactivity pattern as useDailyTotals.
-  const entries = useDayStore((s) => s.entries);
-
   const profile = useProfileStore((s) => s.profile);
+
+  // Invalidation counter — increments whenever the entries list changes so the
+  // effect re-fetches fresh totals after the user logs food.
+  const entriesVersion = useDayStore((s) => s.entries.length);
 
   const days = useMemo(() => weekDays(weekStart), [weekStart]);
   const weekEnd = days[6];
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entriesVersion is an intentional invalidation trigger
   useEffect(() => {
     let cancelled = false;
 
-    async function fetch() {
+    async function fetchTotals() {
       const rows = await getLoggedTotalsByDateRange(weekStart, weekEnd);
       if (cancelled) return;
       const map = new Map<string, DayTotals>();
@@ -83,12 +79,12 @@ export function useWeekProgress(weekStart: string): Record<string, DayStatus> {
       setTotalsMap(map);
     }
 
-    void fetch();
+    void fetchTotals();
 
     return () => {
       cancelled = true;
     };
-  }, [weekStart, weekEnd, entries]);
+  }, [weekStart, weekEnd, entriesVersion]);
 
   return useMemo(() => {
     const today = todayISO();
@@ -115,10 +111,7 @@ export function useWeekProgress(weekStart: string): Record<string, DayStatus> {
       }
 
       // Data logged — check goals
-      if (
-        goalsConfigured &&
-        goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)
-      ) {
+      if (goalsConfigured && goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)) {
         result[day] = "complete";
       } else {
         result[day] = "partial";

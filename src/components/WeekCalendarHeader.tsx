@@ -61,9 +61,7 @@ function DayCell({
       {/* Day letter — black circle when selected */}
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-          isSelected
-            ? "bg-gray-900 text-white"
-            : "text-gray-500"
+          isSelected ? "bg-gray-900 text-white" : "text-gray-500"
         }`}
       >
         {dayLetter}
@@ -96,9 +94,7 @@ export interface WeekCalendarHeaderProps {
 export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarHeaderProps) {
   // visibleWeekStart is a local offset — starts at the week containing
   // selectedDate, then shifts ±7 via swipe without changing selection.
-  const [visibleWeekStart, setVisibleWeekStart] = useState<string>(() =>
-    startOfWeek(selectedDate)
-  );
+  const [visibleWeekStart, setVisibleWeekStart] = useState<string>(() => startOfWeek(selectedDate));
 
   const days = weekDays(visibleWeekStart);
   const progress = useWeekProgress(visibleWeekStart);
