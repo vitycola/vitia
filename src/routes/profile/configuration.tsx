@@ -4,7 +4,7 @@ import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { ActivityLevel, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Settings } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -244,10 +244,20 @@ export function ConfigurationRoute() {
       </section>
 
       {/* Body measurements — visual placeholders only, no persistence (SDD-1 seam) */}
-      <section className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Medidas corporales
-        </h2>
+      <section className="mb-3 rounded-2xl bg-white px-4 py-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            Medidas corporales
+          </h2>
+          <button
+            type="button"
+            disabled
+            aria-label="Agregar medida — Próximamente"
+            className="text-gray-300"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
         <div className="space-y-2">
           {MEASUREMENT_PLACEHOLDER_LABELS.map((label) => (
             <div key={label} className="flex items-center justify-between py-1">
@@ -281,9 +291,9 @@ function fieldClass(hasError: boolean) {
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-900">{value}</span>
+    <div className="flex items-start justify-between gap-3 py-1">
+      <span className="shrink-0 text-sm text-gray-500">{label}</span>
+      <span className="text-right text-sm font-medium text-gray-900">{value}</span>
     </div>
   );
 }

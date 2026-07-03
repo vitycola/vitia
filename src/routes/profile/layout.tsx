@@ -41,13 +41,16 @@ export function ProfileLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white px-4 pb-2 pt-5 shadow-sm">
+    <div className="flex h-full flex-col bg-gray-50">
+      {/* Sticky header — sibling above scroll container, same pattern as day.tsx */}
+      <div className="z-10 bg-white px-4 pb-2 pt-5 shadow-sm">
         <h1 className="mb-3 text-xl font-bold text-gray-900">Perfil</h1>
         <RouteTabs items={PROFILE_TABS} />
       </div>
 
-      <div className="px-4 pt-4">
+      {/* Scrollable content — TabLayout's content region is overflow-hidden,
+          so each tab owns its own scroll container. */}
+      <div className="flex-1 overflow-y-auto px-4 pb-20 pt-4">
         <Outlet />
       </div>
     </div>
