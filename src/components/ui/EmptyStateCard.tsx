@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 
 interface EmptyStateCardProps {
   title: string;
-  icon?: string;
+  /** A lucide-react icon element, e.g. `<Flame size={24} />` — matches app-wide icon conventions. */
+  icon?: ReactNode;
   /**
    * Chart seam (SDD-3): a future chart can be mounted here without
    * changing the card's grid/empty-state layout contract.
@@ -21,7 +22,7 @@ export function EmptyStateCard({ title, icon, children }: EmptyStateCardProps) {
       <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
         {children ?? (
           <>
-            {icon && <span className="text-2xl leading-none">{icon}</span>}
+            {icon && <span className="text-gray-300">{icon}</span>}
             <span className="text-xs text-gray-400">Próximamente</span>
           </>
         )}
