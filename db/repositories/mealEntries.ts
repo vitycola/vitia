@@ -1,7 +1,7 @@
 import { db } from "@/db/client";
 import { foods, mealEntries } from "@/db/schema";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 
 export type MealEntryView = MealEntry & { brand: string | null };
 
@@ -74,6 +74,43 @@ export async function insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]> 
     }
     return results;
   });
+}
+
+/**
+ * Aggregate totals (calories, protein, carbs, fat) per day for all meal
+ * entries whose date falls within [from, to] inclusive.
+ * Returns one row per date that has at least one entry; days with no
+ * entries are omitted (callers treat absence as zero / empty).
+ */
+export interface DayTotals {
+  date: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+
+export async function getLoggedTotalsByDateRange(from: string, to: string): Promise<DayTotals[]> {
+  const rows = await db
+    .select({
+      date: mealEntries.date,
+      calories: sql<number>`sum(${mealEntries.calories})`,
+      proteinG: sql<number>`sum(${mealEntries.proteinG})`,
+      carbsG: sql<number>`sum(${mealEntries.carbsG})`,
+      fatG: sql<number>`sum(${mealEntries.fatG})`,
+    })
+    .from(mealEntries)
+    .where(and(gte(mealEntries.date, from), lte(mealEntries.date, to)))
+    .groupBy(mealEntries.date)
+    .orderBy(asc(mealEntries.date));
+
+  return rows.map((r) => ({
+    date: r.date,
+    calories: Number(r.calories ?? 0),
+    proteinG: Number(r.proteinG ?? 0),
+    carbsG: Number(r.carbsG ?? 0),
+    fatG: Number(r.fatG ?? 0),
+  }));
 }
 
 /**

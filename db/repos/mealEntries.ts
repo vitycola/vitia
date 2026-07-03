@@ -15,8 +15,17 @@ import { isSyncEnabled } from "@/src/lib/supabase";
 import { enqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 
-// Re-export the view type so callers can import it from here
+// Re-export the view type and DayTotals so callers can import from here
 export type { MealEntryView } from "@/db/repositories/mealEntries";
+export type { DayTotals } from "@/db/repositories/mealEntries";
+
+export async function getLoggedTotalsByDateRange(
+  from: string,
+  to: string
+): Promise<_impl.DayTotals[]> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.getLoggedTotalsByDateRange(from, to);
+  return _impl.getLoggedTotalsByDateRange(from, to);
+}
 
 export async function getByDate(date: string): Promise<_impl.MealEntryView[]> {
   if (dexieAdapter) {

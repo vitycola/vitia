@@ -3,9 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 
 export function TabLayout() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-[100dvh] flex-col">
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden">
         <Outlet />
       </div>
 
