@@ -47,12 +47,10 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [],
       loading: true,
-      query: "",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     expect(screen.getByText("Cargando…")).toBeInTheDocument();
   });
 
@@ -60,12 +58,10 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     expect(screen.getByText("Sin favoritos todavía")).toBeInTheDocument();
   });
 
@@ -77,12 +73,10 @@ describe("FavoritesTab", () => {
         { mealType: null, items: [makeFood({ id: "c", name: "Manzana" })] },
       ],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
 
     const labels = screen.getAllByText(/Desayuno|Cena|Sin asignar/);
     expect(labels.map((l) => l.textContent)).toEqual(["Desayuno", "Cena", "Sin asignar"]);
@@ -100,12 +94,10 @@ describe("FavoritesTab", () => {
         },
       ],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     expect(screen.getByText(/también en Cena/)).toBeInTheDocument();
   });
 
@@ -113,31 +105,23 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [],
       loading: false,
-      query: "zzz",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="zzz" />);
     expect(screen.getByText(/Sin resultados para/)).toBeInTheDocument();
   });
 
-  it("typing in the search box calls setQuery", () => {
-    const setQuery = jest.fn();
+  it("passes the external query prop down to useFavoritesList", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [{ mealType: "lunch", items: [makeFood()] }],
       loading: false,
-      query: "",
-      setQuery,
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
-    fireEvent.change(screen.getByLabelText("Buscar en favoritos"), {
-      target: { value: "arroz" },
-    });
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="arroz" />);
 
-    expect(setQuery).toHaveBeenCalledWith("arroz");
+    expect(mockUseFavoritesList).toHaveBeenCalledWith("arroz");
   });
 
   it("clicking a favorite row calls onSelect with the food", () => {
@@ -145,12 +129,10 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [{ mealType: "lunch", items: [food] }],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove: jest.fn(),
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByText("Arroz blanco"));
 
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "select-me" }));
@@ -162,12 +144,10 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [{ mealType: "lunch", items: [food] }],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove,
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByLabelText("Quitar de favoritos"));
 
     expect(screen.getByText("¿Quitar de favoritos?")).toBeInTheDocument();
@@ -182,12 +162,10 @@ describe("FavoritesTab", () => {
     mockUseFavoritesList.mockReturnValue({
       sections: [{ mealType: "lunch", items: [food] }],
       loading: false,
-      query: "",
-      setQuery: jest.fn(),
       remove,
     });
 
-    render(<FavoritesTab mealType="lunch" onSelect={onSelect} />);
+    render(<FavoritesTab mealType="lunch" onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByLabelText("Quitar de favoritos"));
     fireEvent.click(screen.getByText("Cancelar"));
 

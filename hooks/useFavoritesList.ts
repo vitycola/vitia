@@ -27,19 +27,16 @@ export interface FavoriteSection {
 export interface UseFavoritesListResult {
   sections: FavoriteSection[];
   loading: boolean;
-  query: string;
-  setQuery: (q: string) => void;
   /** Optimistically removes a food from every section, then persists. */
   remove: (foodId: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
-export function useFavoritesList(): UseFavoritesListResult {
+export function useFavoritesList(query: string): UseFavoritesListResult {
   const userId = useAuthStore((s) => s.userId);
   const [rows, setRows] = useState<Array<{ foodId: string; mealType: MealType | null }>>([]);
   const [foodsById, setFoodsById] = useState<Map<string, Food>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,8 +102,6 @@ export function useFavoritesList(): UseFavoritesListResult {
   return {
     sections,
     loading,
-    query,
-    setQuery,
     remove,
     refresh: load,
   };

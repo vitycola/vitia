@@ -52,7 +52,7 @@ export function MealPicker({ activeMealType, onConfirm, onCancel }: MealPickerPr
                 type="checkbox"
                 checked={selected.has(mealType)}
                 onChange={() => toggleMeal(mealType)}
-                className="h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+                className="h-4 w-4 rounded border-gray-300 accent-accent focus:ring-accent"
               />
               <span className="text-sm text-gray-800">{MEAL_LABELS[mealType]}</span>
             </label>
@@ -70,7 +70,7 @@ export function MealPicker({ activeMealType, onConfirm, onCancel }: MealPickerPr
           <button
             type="button"
             onClick={() => onConfirm(Array.from(selected))}
-            className="flex-1 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+            className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
           >
             Confirmar
           </button>

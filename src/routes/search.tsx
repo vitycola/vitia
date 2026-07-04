@@ -82,7 +82,9 @@ export function SearchRoute() {
         {activeTab === "database" && (
           <FoodDatabaseTab query={query} mealType={mealType} onSelect={handleSelect} />
         )}
-        {activeTab === "favorites" && <FavoritesTab mealType={mealType} onSelect={handleSelect} />}
+        {activeTab === "favorites" && (
+          <FavoritesTab mealType={mealType} onSelect={handleSelect} query={query} />
+        )}
         {activeTab === "created" && <PlaceholderTab label="Creados" />}
         {activeTab === "ai" && <PlaceholderTab label="Añadir con IA" />}
       </div>

@@ -7,30 +7,18 @@ import { useState } from "react";
 interface FavoritesTabProps {
   mealType: MealType;
   onSelect: (food: Food) => void;
+  query: string;
 }
 
-export function FavoritesTab({ mealType: _mealType, onSelect }: FavoritesTabProps) {
-  const { sections, loading, query, setQuery, remove } = useFavoritesList();
+export function FavoritesTab({ mealType: _mealType, onSelect, query }: FavoritesTabProps) {
+  const { sections, loading, remove } = useFavoritesList(query);
 
   if (loading) {
     return <p className="py-4 text-center text-sm text-gray-400">Cargando…</p>;
   }
 
-  const hasAnyFavorites = sections.length > 0 || query.trim().length > 0;
-
   return (
     <div className="px-4 pt-3">
-      {hasAnyFavorites && (
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar en favoritos..."
-          aria-label="Buscar en favoritos"
-          className="mb-3 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-        />
-      )}
-
       {sections.length === 0 && query.trim().length > 0 && (
         <p className="py-4 text-center text-sm text-gray-400">
           Sin resultados para &ldquo;{query}&rdquo; en tus favoritos.
