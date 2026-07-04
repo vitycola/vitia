@@ -77,8 +77,20 @@ export const OPFS_PROBE_TIMEOUT_MS = 3_000;
 // biome-ignore lint/suspicious/noExplicitAny: wa-sqlite types use ambient globals not exported from the module
 type SQLiteAny = any;
 
+/** Max/min values representable by sqlite3_bind_int (signed 32-bit). */
+const INT32_MAX = 0x7fffffff;
+const INT32_MIN = -0x80000000;
+
 /**
  * Bind parameters to a prepared statement (1-based index).
+ *
+ * Integers outside the signed 32-bit range (e.g. Unix millisecond timestamps
+ * used for `created_at` / migration `when` values, which exceed 2^31 well
+ * before the year 2038) MUST go through `bind_int64`, not `bind_int`.
+ * `sqlite3.bind_int` silently returns SQLITE_RANGE and leaves the parameter
+ * unbound when the value overflows 32 bits, which surfaces later as a
+ * confusing "NOT NULL constraint failed" on execution instead of a bind
+ * error at bind time.
  */
 function bindParams(sqlite3: SQLiteAny, stmt: number, params: unknown[]): void {
   const { SQLITE_INTEGER: _INT, SQLITE_FLOAT: _FLOAT, SQLITE_TEXT: _TEXT } = sqlite3;
@@ -90,7 +102,11 @@ function bindParams(sqlite3: SQLiteAny, stmt: number, params: unknown[]): void {
       sqlite3.bind_null(stmt, col);
     } else if (typeof value === "number") {
       if (Number.isInteger(value)) {
-        sqlite3.bind_int(stmt, col, value);
+        if (value > INT32_MAX || value < INT32_MIN) {
+          sqlite3.bind_int64(stmt, col, BigInt(value));
+        } else {
+          sqlite3.bind_int(stmt, col, value);
+        }
       } else {
         sqlite3.bind_double(stmt, col, value);
       }

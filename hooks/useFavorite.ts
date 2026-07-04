@@ -1,38 +1,43 @@
 /**
- * Minimal favorite-toggle hook for a single food.
- * Scope: toggle only — favorites-tab browsing UI stays out (see proposal).
+ * Meal-aware favorite hook for a single food.
+ * A food may be favorited under multiple meal types (or unassigned, mealType
+ * = null). Removal is always whole-food: remove() deletes every row for
+ * (userId, foodId), regardless of how many meal types it was assigned to.
  */
 
 import * as favoritesRepo from "@/db/repos/favorites";
 import { useAuthStore } from "@/src/stores/useAuthStore";
+import type { MealType } from "@/types";
 import { useEffect, useState } from "react";
 
 export interface UseFavoriteResult {
   isFavorite: boolean;
+  meals: (MealType | null)[];
   loading: boolean;
-  toggle: () => Promise<void>;
+  setMeals: (mealTypes: MealType[]) => Promise<void>;
+  remove: () => Promise<void>;
 }
 
 export function useFavorite(foodId: string | null): UseFavoriteResult {
   const userId = useAuthStore((s) => s.userId);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [meals, setMealsState] = useState<(MealType | null)[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!foodId) {
-      setIsFavorite(false);
+      setMealsState([]);
       setLoading(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     favoritesRepo
-      .isFavorite(foodId, userId)
-      .then((fav) => {
-        if (!cancelled) setIsFavorite(fav);
+      .getMealsForFood(foodId, userId)
+      .then((result) => {
+        if (!cancelled) setMealsState(result);
       })
       .catch(() => {
-        if (!cancelled) setIsFavorite(false);
+        if (!cancelled) setMealsState([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -42,11 +47,25 @@ export function useFavorite(foodId: string | null): UseFavoriteResult {
     };
   }, [foodId, userId]);
 
-  async function toggle(): Promise<void> {
+  async function setMeals(mealTypes: MealType[]): Promise<void> {
     if (!foodId) return;
-    const newState = await favoritesRepo.toggle(foodId, userId);
-    setIsFavorite(newState);
+    await favoritesRepo.setMeals(foodId, userId, mealTypes);
+    const updated = await favoritesRepo.getMealsForFood(foodId, userId);
+    setMealsState(updated);
   }
 
-  return { isFavorite, loading, toggle };
+  /** Whole-food removal — deletes every row for (userId, foodId), no context arg. */
+  async function remove(): Promise<void> {
+    if (!foodId) return;
+    await favoritesRepo.removeAllMeals(foodId, userId);
+    setMealsState([]);
+  }
+
+  return {
+    isFavorite: meals.length > 0,
+    meals,
+    loading,
+    setMeals,
+    remove,
+  };
 }

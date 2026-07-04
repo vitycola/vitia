@@ -19,6 +19,11 @@ export async function getById(id: string): Promise<Food | null> {
   return _impl.getById(id);
 }
 
+export async function getByIds(ids: string[]): Promise<Food[]> {
+  if (dexieAdapter) return dexieAdapter.foods.getByIds(ids);
+  return _impl.getByIds(ids);
+}
+
 export async function upsert(food: NewFood): Promise<Food> {
   if (dexieAdapter) return dexieAdapter.foods.upsert(food);
   return _impl.upsert(food);
