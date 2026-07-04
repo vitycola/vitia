@@ -1,8 +1,9 @@
+import type { Food } from "@/db/schema";
+import { FavoritesTab } from "@/src/components/search/FavoritesTab";
 import { FoodDatabaseTab } from "@/src/components/search/FoodDatabaseTab";
 import { PlaceholderTab } from "@/src/components/search/PlaceholderTab";
 import { SearchTabs } from "@/src/components/search/SearchTabs";
 import type { SearchTabId } from "@/src/components/search/SearchTabs";
-import type { SearchResult } from "@/stores/useFoodSearchStore";
 import { useFoodSearchStore } from "@/stores/useFoodSearchStore";
 import type { MealType } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -50,7 +51,7 @@ export function SearchRoute() {
 
   const isOffline = !navigator.onLine;
 
-  function handleSelect(food: SearchResult) {
+  function handleSelect(food: Food) {
     void navigate(`/portion/${food.id}?meal=${mealType}`);
   }
 
@@ -81,7 +82,7 @@ export function SearchRoute() {
         {activeTab === "database" && (
           <FoodDatabaseTab query={query} mealType={mealType} onSelect={handleSelect} />
         )}
-        {activeTab === "favorites" && <PlaceholderTab label="Favoritos" />}
+        {activeTab === "favorites" && <FavoritesTab mealType={mealType} onSelect={handleSelect} />}
         {activeTab === "created" && <PlaceholderTab label="Creados" />}
         {activeTab === "ai" && <PlaceholderTab label="Añadir con IA" />}
       </div>

@@ -9,7 +9,7 @@ interface FoodDatabaseTabProps {
   onSelect: (food: SearchResult) => void;
 }
 
-export function FoodDatabaseTab({ query, mealType: _mealType, onSelect }: FoodDatabaseTabProps) {
+export function FoodDatabaseTab({ query, mealType, onSelect }: FoodDatabaseTabProps) {
   const { results, status, error } = useFoodSearchStore();
 
   return (
@@ -42,7 +42,7 @@ export function FoodDatabaseTab({ query, mealType: _mealType, onSelect }: FoodDa
       {results.length > 0 && (
         <div className="flex flex-col gap-2">
           {results.map((food) => (
-            <FoodResultRow key={food.id} food={food} onSelect={onSelect} />
+            <FoodResultRow key={food.id} food={food} onSelect={onSelect} mealType={mealType} />
           ))}
         </div>
       )}

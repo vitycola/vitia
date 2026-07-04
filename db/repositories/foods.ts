@@ -2,7 +2,7 @@ import { db } from "@/db/client";
 import { foods } from "@/db/schema";
 import type { Food, NewFood } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
-import { eq, like, sql } from "drizzle-orm";
+import { eq, inArray, like, sql } from "drizzle-orm";
 
 const MAX_SEARCH_RESULTS = 30;
 
@@ -28,6 +28,16 @@ export async function searchByName(query: string): Promise<Food[]> {
 export async function getById(id: string): Promise<Food | null> {
   const rows = await db.select().from(foods).where(eq(foods.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * Batch fetch multiple foods by id in a single query.
+ * Returns only the rows that exist (missing ids are silently omitted).
+ * Order is not guaranteed — callers should map results by id.
+ */
+export async function getByIds(ids: string[]): Promise<Food[]> {
+  if (ids.length === 0) return [];
+  return db.select().from(foods).where(inArray(foods.id, ids));
 }
 
 /**

@@ -1,12 +1,14 @@
 import { getById } from "@/db/repos/foods";
 import type { Food, MealEntry } from "@/db/schema";
 import { useFavorite } from "@/hooks/useFavorite";
+import { MEAL_LABELS } from "@/lib/constants";
 import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
 import { scalePortion } from "@/lib/nutrition";
 import { CollapsibleSection } from "@/src/components/CollapsibleSection";
 import { FavoriteToggle } from "@/src/components/FavoriteToggle";
 import { MacroDistributionBar } from "@/src/components/MacroDistributionBar";
+import { MealPicker } from "@/src/components/MealPicker";
 import { MealTypeSelect } from "@/src/components/MealTypeSelect";
 import { useDayStore } from "@/stores/useDayStore";
 import type { MealType } from "@/types";
@@ -44,7 +46,13 @@ export function PortionRoute() {
     : null;
   const isEditMode = entryId !== null && editingEntry !== null;
 
-  const { isFavorite, toggle: toggleFavorite } = useFavorite(foodId ?? null);
+  const {
+    isFavorite,
+    setMeals: setFavoriteMeals,
+    remove: removeFavorite,
+  } = useFavorite(foodId ?? null);
+  const [showMealPicker, setShowMealPicker] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   useEffect(() => {
     if (!foodId) {
@@ -154,7 +162,16 @@ export function PortionRoute() {
           >
             ← Cancelar
           </button>
-          <FavoriteToggle active={isFavorite} onToggle={() => void toggleFavorite()} />
+          <FavoriteToggle
+            active={isFavorite}
+            onToggle={() => {
+              if (isFavorite) {
+                setShowRemoveConfirm(true);
+              } else {
+                setShowMealPicker(true);
+              }
+            }}
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -164,6 +181,31 @@ export function PortionRoute() {
             {food.brand && <p className="truncate text-sm text-white/80">{food.brand}</p>}
           </div>
         </div>
+
+        {showRemoveConfirm && (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white/10 px-3 py-2 text-sm">
+            <span>¿Quitar de favoritos?</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRemoveConfirm(false)}
+                className="rounded-lg px-3 py-1.5 font-medium text-white/90 hover:text-white"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void removeFavorite();
+                  setShowRemoveConfirm(false);
+                }}
+                className="rounded-lg bg-white/20 px-3 py-1.5 font-semibold text-white hover:bg-white/30"
+              >
+                Quitar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mx-auto max-w-md space-y-4 px-4 py-4">
@@ -309,16 +351,20 @@ export function PortionRoute() {
           </button>
         </div>
       </div>
+
+      {showMealPicker && (
+        <MealPicker
+          activeMealType={mealType}
+          onCancel={() => setShowMealPicker(false)}
+          onConfirm={(mealTypes) => {
+            void setFavoriteMeals(mealTypes);
+            setShowMealPicker(false);
+          }}
+        />
+      )}
     </div>
   );
 }
-
-const MEAL_LABELS: Record<MealType, string> = {
-  breakfast: "Desayuno",
-  lunch: "Almuerzo",
-  dinner: "Cena",
-  snack: "Merienda",
-};
 
 function FoodAvatar({ imageUrl, name }: { imageUrl: string | null; name: string }) {
   if (imageUrl) {

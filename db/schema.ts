@@ -86,10 +86,19 @@ export const userFavoriteFoods = sqliteTable(
     foodId: text("food_id")
       .notNull()
       .references(() => foods.id),
+    // Nullable: NULL = "unassigned" bucket. A food may hold multiple rows,
+    // one per meal type it was favorited under (design: per-meal favorite rows).
+    mealType: text("meal_type", {
+      enum: ["breakfast", "lunch", "dinner", "snack"],
+    }),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
-    userFoodIdx: uniqueIndex("user_favorite_foods_user_food_idx").on(t.userId, t.foodId),
+    userFoodMealIdx: uniqueIndex("user_favorite_foods_user_food_meal_idx").on(
+      t.userId,
+      t.foodId,
+      t.mealType
+    ),
   })
 );
 

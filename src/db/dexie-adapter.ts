@@ -26,6 +26,7 @@ import type {
   UserProfile,
 } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search";
+import type { MealType } from "@/types";
 import Dexie, { type Table } from "dexie";
 
 // ---------------------------------------------------------------------------
@@ -58,7 +59,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -70,6 +71,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0001_name_normalized", when: 1782200000000 },
   { tag: "0002_user_session_persistence", when: 1751000000000 },
   { tag: "0003_food_detail", when: 1793000000000 },
+  { tag: "0004_favorites_meal_type", when: 1799000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -123,7 +125,7 @@ class VitiaDb extends Dexie {
 
     // Version 4: adds imageUrl to foods + user_favorite_foods table
     // (0003_food_detail migration)
-    this.version(DB_VERSION).stores({
+    this.version(4).stores({
       foods: "id, name, nameNormalized, source, offProductCode",
       meal_entries: "id, date, [date+mealType], foodId, userId",
       users_profile: "id, userId",
@@ -133,6 +135,19 @@ class VitiaDb extends Dexie {
     });
     // No upgrade() needed: imageUrl is an optional column and
     // user_favorite_foods is a brand-new store.
+
+    // Version 5: adds mealType + compound index to user_favorite_foods
+    // (0004_favorites_meal_type migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: mealType is an optional column; existing rows have
+    // undefined mealType, which is treated as NULL/"unassigned" (design D2).
   }
 }
 
@@ -144,6 +159,7 @@ class VitiaDb extends Dexie {
 export interface FoodsRepo {
   searchByName(query: string): Promise<Food[]>;
   getById(id: string): Promise<Food | null>;
+  getByIds(ids: string[]): Promise<Food[]>;
   upsert(food: NewFood): Promise<Food>;
   upsertMany(foods: NewFood[]): Promise<Food[]>;
   insert(food: NewFood): Promise<Food>;
@@ -151,11 +167,25 @@ export interface FoodsRepo {
   update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
 }
 
+/** A single favorite row's meal assignment — used by listWithMeals(). */
+export interface FavoriteMealRow {
+  foodId: string;
+  mealType: MealType | null;
+}
+
 /** Favorites repository surface — mirrors db/repositories/favorites.ts exactly */
 export interface FavoritesRepo {
   isFavorite(foodId: string, userId: string | null): Promise<boolean>;
+  /** @deprecated kept as a thin wrapper — toggle -> setMeals([]) / removeAllMeals */
   toggle(foodId: string, userId: string | null): Promise<boolean>;
   listFoodIds(userId: string | null): Promise<string[]>;
+  addMeal(foodId: string, userId: string | null, mealType: MealType | null): Promise<void>;
+  /** Deletes EVERY row for (userId, foodId), regardless of mealType. */
+  removeAllMeals(foodId: string, userId: string | null): Promise<void>;
+  /** Diffs mealTypes vs existing rows; empty array -> single NULL row. */
+  setMeals(foodId: string, userId: string | null, mealTypes: MealType[]): Promise<void>;
+  getMealsForFood(foodId: string, userId: string | null): Promise<(MealType | null)[]>;
+  listWithMeals(userId: string | null): Promise<FavoriteMealRow[]>;
 }
 
 /** Profile repository surface — mirrors db/repositories/profile.ts exactly */
@@ -260,6 +290,12 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
 
     async getById(id) {
       return (await db.foods.get(id)) ?? null;
+    },
+
+    async getByIds(ids) {
+      if (ids.length === 0) return [];
+      const rows = await db.foods.bulkGet(ids);
+      return rows.filter((r): r is FoodRow => r !== undefined);
     },
 
     async upsert(food) {
@@ -546,29 +582,110 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
 
     async toggle(foodId, userId) {
-      return db.transaction("rw", db.user_favorite_foods, async () => {
-        const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
-        const existing = rows.find((r) => sameOwner(r.userId, userId));
+      // Thin wrapper for legacy callers: toggle -> setMeals([]) / removeAllMeals.
+      const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+      const existing = rows.filter((r) => sameOwner(r.userId, userId));
 
-        if (existing) {
-          await db.user_favorite_foods.delete(existing.id);
-          return false;
-        }
+      if (existing.length > 0) {
+        await favorites.removeAllMeals(foodId, userId);
+        return false;
+      }
 
-        const row: UserFavoriteFoodRow = {
-          id: globalThis.crypto.randomUUID(),
-          userId: userId ?? null,
-          foodId,
-          createdAt: now(),
-        };
-        await db.user_favorite_foods.add(row);
-        return true;
-      });
+      await favorites.setMeals(foodId, userId, []);
+      return true;
     },
 
     async listFoodIds(userId) {
       const rows = await db.user_favorite_foods.toArray();
       return rows.filter((r) => sameOwner(r.userId, userId)).map((r) => r.foodId);
+    },
+
+    async addMeal(foodId, userId, mealType) {
+      const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+      const alreadyExists = rows.some(
+        (r) => sameOwner(r.userId, userId) && (r.mealType ?? null) === (mealType ?? null)
+      );
+      if (alreadyExists) return; // unique-constraint guard, extended to the meal dimension
+
+      const row: UserFavoriteFoodRow = {
+        id: globalThis.crypto.randomUUID(),
+        userId: userId ?? null,
+        foodId,
+        mealType: mealType ?? null,
+        createdAt: now(),
+      };
+      await db.user_favorite_foods.add(row);
+    },
+
+    async removeAllMeals(foodId, userId) {
+      const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+      const toDelete = rows.filter((r) => sameOwner(r.userId, userId)).map((r) => r.id);
+      if (toDelete.length === 0) return;
+      await db.user_favorite_foods.bulkDelete(toDelete);
+    },
+
+    async setMeals(foodId, userId, mealTypes) {
+      return db.transaction("rw", db.user_favorite_foods, async () => {
+        const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+        const existing = rows.filter((r) => sameOwner(r.userId, userId));
+
+        if (mealTypes.length === 0) {
+          // Zero selections -> exactly one NULL row. Remove all existing
+          // non-null rows and ensure a single NULL row exists.
+          const nonNull = existing.filter((r) => r.mealType !== null && r.mealType !== undefined);
+          await db.user_favorite_foods.bulkDelete(nonNull.map((r) => r.id));
+          const hasNull = existing.some((r) => r.mealType === null || r.mealType === undefined);
+          if (!hasNull) {
+            await db.user_favorite_foods.add({
+              id: globalThis.crypto.randomUUID(),
+              userId: userId ?? null,
+              foodId,
+              mealType: null,
+              createdAt: now(),
+            });
+          }
+          return;
+        }
+
+        // Diff vs existing: remove rows no longer selected (including the
+        // NULL/unassigned row, since a non-empty selection replaces it),
+        // add rows for newly selected meal types.
+        const wanted = new Set(mealTypes);
+        const toRemove = existing.filter(
+          (r) => r.mealType === null || r.mealType === undefined || !wanted.has(r.mealType)
+        );
+        if (toRemove.length > 0) {
+          await db.user_favorite_foods.bulkDelete(toRemove.map((r) => r.id));
+        }
+
+        const existingMealTypes = new Set(
+          existing
+            .filter((r) => r.mealType !== null && r.mealType !== undefined)
+            .map((r) => r.mealType as MealType)
+        );
+        const toAdd = mealTypes.filter((m) => !existingMealTypes.has(m));
+        for (const mealType of toAdd) {
+          await db.user_favorite_foods.add({
+            id: globalThis.crypto.randomUUID(),
+            userId: userId ?? null,
+            foodId,
+            mealType,
+            createdAt: now(),
+          });
+        }
+      });
+    },
+
+    async getMealsForFood(foodId, userId) {
+      const rows = await db.user_favorite_foods.where("foodId").equals(foodId).toArray();
+      return rows.filter((r) => sameOwner(r.userId, userId)).map((r) => r.mealType ?? null);
+    },
+
+    async listWithMeals(userId) {
+      const rows = await db.user_favorite_foods.toArray();
+      return rows
+        .filter((r) => sameOwner(r.userId, userId))
+        .map((r) => ({ foodId: r.foodId, mealType: r.mealType ?? null }));
     },
   };
 
