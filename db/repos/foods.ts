@@ -24,6 +24,11 @@ export async function upsert(food: NewFood): Promise<Food> {
   return _impl.upsert(food);
 }
 
+export async function upsertMany(foods: NewFood[]): Promise<Food[]> {
+  if (dexieAdapter) return dexieAdapter.foods.upsertMany(foods);
+  return _impl.upsertMany(foods);
+}
+
 export async function insert(food: NewFood): Promise<Food> {
   if (dexieAdapter) return dexieAdapter.foods.insert(food);
   return _impl.insert(food);

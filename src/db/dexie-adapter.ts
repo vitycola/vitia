@@ -145,6 +145,7 @@ export interface FoodsRepo {
   searchByName(query: string): Promise<Food[]>;
   getById(id: string): Promise<Food | null>;
   upsert(food: NewFood): Promise<Food>;
+  upsertMany(foods: NewFood[]): Promise<Food[]>;
   insert(food: NewFood): Promise<Food>;
   getCustomFoods(): Promise<Food[]>;
   update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
@@ -302,6 +303,40 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       // Dexie .add() throws ConstraintError on duplicate key, matching SQL behaviour
       await db.foods.add(row);
       return row;
+    },
+
+    async upsertMany(foodsToUpsert) {
+      if (foodsToUpsert.length === 0) return [];
+
+      // W2: single transaction so all N rows commit atomically (mirrors the
+      // batched drizzle insert on the OPFS backend — design D8).
+      return db.transaction("rw", db.foods, async () => {
+        const ids = foodsToUpsert.map((f) => f.id);
+        const existingRows = await db.foods.bulkGet(ids);
+        const existingById = new Map(existingRows.filter(Boolean).map((r) => [r?.id, r]));
+
+        const rows: FoodRow[] = foodsToUpsert.map((food) => {
+          const existing = existingById.get(food.id);
+          return {
+            id: food.id,
+            name: food.name,
+            nameNormalized: normalizeForSearch(food.name),
+            brand: food.brand ?? null,
+            caloriesPer100g: food.caloriesPer100g,
+            proteinPer100g: food.proteinPer100g ?? 0,
+            carbsPer100g: food.carbsPer100g ?? 0,
+            fatPer100g: food.fatPer100g ?? 0,
+            servingSizeG: food.servingSizeG ?? null,
+            source: food.source,
+            offProductCode: food.offProductCode ?? null,
+            imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
+            createdAt: existing?.createdAt ?? food.createdAt ?? now(),
+          };
+        });
+
+        await db.foods.bulkPut(rows);
+        return rows;
+      });
     },
 
     async getCustomFoods() {

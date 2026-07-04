@@ -30,7 +30,7 @@ import { normalizeForSearch } from "@/lib/search";
 import { type DexieAdapter, createDexieAdapter } from "@/src/db/dexie-adapter";
 import { type MigratorExecutor, runWebMigrations } from "@/src/db/migrate.web";
 import Database from "better-sqlite3";
-import { and, asc, eq, isNull, like } from "drizzle-orm";
+import { and, asc, eq, isNull, like, sql } from "drizzle-orm";
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +43,7 @@ interface RepositoryBackend {
   searchByName(query: string): Promise<Food[]>;
   getById(id: string): Promise<Food | null>;
   upsert(food: NewFood): Promise<Food>;
+  upsertMany(foods: NewFood[]): Promise<Food[]>;
   insert(food: NewFood): Promise<Food>;
   getCustomFoods(): Promise<Food[]>;
   update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
@@ -227,6 +228,33 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
       return rows[0];
     },
 
+    async upsertMany(foodsToUpsert) {
+      if (foodsToUpsert.length === 0) return [];
+      const values = foodsToUpsert.map((food) => ({
+        ...food,
+        nameNormalized: normalizeForSearch(food.name),
+      }));
+      const rows = await db
+        .insert(schema.foods)
+        .values(values)
+        .onConflictDoUpdate({
+          target: schema.foods.id,
+          set: {
+            name: sql`excluded.name`,
+            nameNormalized: sql`excluded.name_normalized`,
+            brand: sql`excluded.brand`,
+            caloriesPer100g: sql`excluded.calories_per_100g`,
+            proteinPer100g: sql`excluded.protein_per_100g`,
+            carbsPer100g: sql`excluded.carbs_per_100g`,
+            fatPer100g: sql`excluded.fat_per_100g`,
+            servingSizeG: sql`excluded.serving_size_g`,
+            offProductCode: sql`excluded.off_product_code`,
+          },
+        })
+        .returning();
+      return rows;
+    },
+
     async getCustomFoods() {
       return db
         .select()
@@ -402,6 +430,9 @@ function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie
     async insert(food) {
       return adapter.foods.insert(food);
     },
+    async upsertMany(foods) {
+      return adapter.foods.upsertMany(foods);
+    },
     async getCustomFoods() {
       return adapter.foods.getCustomFoods();
     },
@@ -560,6 +591,48 @@ describe.each([
       const updated = await backend.upsert({ ...food, name: "Updated" });
       expect(updated.id).toBe(food.id);
       expect(updated.name).toBe("Updated");
+    });
+  });
+
+  describe("foods.upsertMany (batched write — spec: Batched Cache Upsert)", () => {
+    it("returns empty array without touching the DB when given no rows", async () => {
+      const result = await backend.upsertMany([]);
+      expect(result).toEqual([]);
+    });
+
+    it("inserts N new rows in a single batched call and returns all of them", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const batch = [
+        makeFood({ name: "Batch Food A" }),
+        makeFood({ name: "Batch Food B" }),
+        makeFood({ name: "Batch Food C" }),
+      ];
+      const results = await fresh.upsertMany(batch);
+
+      expect(results).toHaveLength(3);
+      const ids = results.map((r) => r.id).sort();
+      expect(ids).toEqual(batch.map((f) => f.id).sort());
+    });
+
+    it("updates existing rows on conflict, mirroring upsert() semantics", async () => {
+      const fresh = makeBackend();
+      await fresh._ready;
+
+      const food = makeFood({ name: "Original Batch Name", caloriesPer100g: 50 });
+      await fresh.upsert(food);
+
+      const updated = await fresh.upsertMany([
+        { ...food, name: "Updated Batch Name", caloriesPer100g: 120 },
+      ]);
+
+      expect(updated).toHaveLength(1);
+      expect(updated[0].name).toBe("Updated Batch Name");
+      expect(updated[0].caloriesPer100g).toBe(120);
+
+      const persisted = await fresh.getById(food.id);
+      expect(persisted?.name).toBe("Updated Batch Name");
     });
   });
 
