@@ -62,13 +62,14 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Five migrations: 0000, 0001, 0002, 0003, and 0004
-    expect(rows).toHaveLength(5);
+    // Six migrations: 0000, 0001, 0002, 0003, 0004, and 0005
+    expect(rows).toHaveLength(6);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
     expect(rows[2].tag).toBe("0002_user_session_persistence");
     expect(rows[3].tag).toBe("0003_food_detail");
     expect(rows[4].tag).toBe("0004_favorites_meal_type");
+    expect(rows[5].tag).toBe("0005_composite_foods");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -76,11 +77,29 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly five migration rows — no duplicate inserts
+    // Still exactly six migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(5);
+    expect(rows.c).toBe(6);
+  });
+
+  it("records migration tag 0005_composite_foods and creates food_ingredients table (Phase 1)", async () => {
+    const { executor, db } = makeInMemoryExecutor();
+    await runWebMigrations(executor);
+
+    const rows = db
+      .prepare("SELECT tag FROM __drizzle_migrations WHERE tag = ?")
+      .all("0005_composite_foods") as { tag: string }[];
+    expect(rows).toHaveLength(1);
+
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='food_ingredients'")
+      .all();
+    expect(tables).toHaveLength(1);
+
+    const columns = db.prepare("PRAGMA table_info(foods)").all() as { name: string }[];
+    expect(columns.map((c) => c.name)).toContain("category");
   });
 
   it("applies migrations in journal idx order (multi-migration ordered apply)", async () => {
@@ -100,11 +119,12 @@ describe("runWebMigrations", () => {
     expect(indexNames).toContain("foods_name_normalized_idx");
   });
 
-  it("statement count — 0000 has 4 indexes, 0001 adds 1, 0003 adds 1 more (6 total)", async () => {
+  it("statement count — 0000 has 4 indexes, 0001 adds 1, 0003 adds 1, 0005 adds 1 more (7 total)", async () => {
     // 0000: CREATE INDEX foods_name_idx, foods_off_code_idx,
     //       meal_entries_date_idx, meal_entries_date_meal_idx = 4
     // 0001: CREATE INDEX foods_name_normalized_idx = 1 more → 5
-    // 0003: CREATE UNIQUE INDEX user_favorite_foods_user_food_idx = 1 more → 6 total
+    // 0003: CREATE UNIQUE INDEX user_favorite_foods_user_food_idx = 1 more → 6
+    // 0005: CREATE INDEX food_ingredients_parent_idx = 1 more → 7 total
     const { executor, db } = makeInMemoryExecutor();
     await runWebMigrations(executor);
 
@@ -112,7 +132,7 @@ describe("runWebMigrations", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")
       .all() as { name: string }[];
 
-    expect(indexes.length).toBe(6);
+    expect(indexes.length).toBe(7);
   });
 
   it("throws on hash drift — modified SQL content after migration applied", async () => {

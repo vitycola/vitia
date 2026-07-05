@@ -7,7 +7,9 @@
 
 import { dexieAdapter } from "@/db/client";
 import * as _impl from "@/db/repositories/foods";
-import type { Food, NewFood } from "@/db/schema";
+import type { Food, FoodIngredient, NewFood, NewFoodIngredient } from "@/db/schema";
+
+type NewIngredientInput = Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">;
 
 export async function searchByName(query: string): Promise<Food[]> {
   if (dexieAdapter) return dexieAdapter.foods.searchByName(query);
@@ -50,4 +52,30 @@ export async function update(
 ): Promise<Food> {
   if (dexieAdapter) return dexieAdapter.foods.update(id, patch);
   return _impl.update(id, patch);
+}
+
+export async function createComposite(
+  food: NewFood,
+  ingredients: NewIngredientInput[]
+): Promise<Food> {
+  if (dexieAdapter) return dexieAdapter.foods.createComposite(food, ingredients);
+  return _impl.createComposite(food, ingredients);
+}
+
+export async function getIngredients(parentFoodId: string): Promise<FoodIngredient[]> {
+  if (dexieAdapter) return dexieAdapter.foods.getIngredients(parentFoodId);
+  return _impl.getIngredients(parentFoodId);
+}
+
+export async function upsertIngredients(
+  parentFoodId: string,
+  ingredients: NewIngredientInput[]
+): Promise<void> {
+  if (dexieAdapter) return dexieAdapter.foods.upsertIngredients(parentFoodId, ingredients);
+  return _impl.upsertIngredients(parentFoodId, ingredients);
+}
+
+export async function getCompositeFoodIds(): Promise<string[]> {
+  if (dexieAdapter) return dexieAdapter.foods.getCompositeFoodIds();
+  return _impl.getCompositeFoodIds();
 }

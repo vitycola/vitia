@@ -16,8 +16,10 @@
 
 import type {
   Food,
+  FoodIngredient,
   MealEntry,
   NewFood,
+  NewFoodIngredient,
   NewMealEntry,
   NewSyncQueueRow,
   NewUserProfile,
@@ -25,6 +27,7 @@ import type {
   UserFavoriteFood,
   UserProfile,
 } from "@/db/schema";
+import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
 import type { MealType } from "@/types";
 import Dexie, { type Table } from "dexie";
@@ -43,6 +46,7 @@ interface MealEntryRow extends MealEntry {}
 interface UserProfileRow extends UserProfile {}
 interface SyncQueueDexieRow extends SyncQueueRow {}
 interface UserFavoriteFoodRow extends UserFavoriteFood {}
+interface FoodIngredientRow extends FoodIngredient {}
 
 /**
  * Migration tracking row — same semantic as __drizzle_migrations in SQLite.
@@ -59,7 +63,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -72,6 +76,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0002_user_session_persistence", when: 1751000000000 },
   { tag: "0003_food_detail", when: 1793000000000 },
   { tag: "0004_favorites_meal_type", when: 1799000000000 },
+  { tag: "0005_composite_foods", when: 1805000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -80,6 +85,7 @@ class VitiaDb extends Dexie {
   users_profile!: Table<UserProfileRow, number>;
   sync_queue!: Table<SyncQueueDexieRow, string>;
   user_favorite_foods!: Table<UserFavoriteFoodRow, string>;
+  food_ingredients!: Table<FoodIngredientRow, string>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -138,7 +144,7 @@ class VitiaDb extends Dexie {
 
     // Version 5: adds mealType + compound index to user_favorite_foods
     // (0004_favorites_meal_type migration)
-    this.version(DB_VERSION).stores({
+    this.version(5).stores({
       foods: "id, name, nameNormalized, source, offProductCode",
       meal_entries: "id, date, [date+mealType], foodId, userId",
       users_profile: "id, userId",
@@ -148,12 +154,29 @@ class VitiaDb extends Dexie {
     });
     // No upgrade() needed: mealType is an optional column; existing rows have
     // undefined mealType, which is treated as NULL/"unassigned" (design D2).
+
+    // Version 6: adds food_ingredients table + category on foods
+    // (0005_composite_foods migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode, category",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      food_ingredients: "id, parentFoodId, ingredientFoodId",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: category is an optional column and food_ingredients
+    // is a brand-new store (additive, mirrors v4/v5 rollout style).
   }
 }
 
 // ---------------------------------------------------------------------------
 // Public API types
 // ---------------------------------------------------------------------------
+
+/** Ingredient input shape shared by createComposite/upsertIngredients. */
+export type NewIngredientInput = Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">;
 
 /** Foods repository surface — mirrors db/repositories/foods.ts exactly */
 export interface FoodsRepo {
@@ -165,6 +188,10 @@ export interface FoodsRepo {
   insert(food: NewFood): Promise<Food>;
   getCustomFoods(): Promise<Food[]>;
   update(id: string, patch: Partial<Omit<NewFood, "id" | "createdAt">>): Promise<Food>;
+  createComposite(food: NewFood, ingredients: NewIngredientInput[]): Promise<Food>;
+  getIngredients(parentFoodId: string): Promise<FoodIngredient[]>;
+  upsertIngredients(parentFoodId: string, ingredients: NewIngredientInput[]): Promise<void>;
+  getCompositeFoodIds(): Promise<string[]>;
 }
 
 /** A single favorite row's meal assignment — used by listWithMeals(). */
@@ -314,6 +341,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         source: food.source,
         offProductCode: food.offProductCode ?? null,
         imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
+        category: food.category ?? existing?.category ?? null,
         createdAt: existing?.createdAt ?? food.createdAt ?? now(),
       };
       await db.foods.put(row);
@@ -334,6 +362,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         source: food.source,
         offProductCode: food.offProductCode ?? null,
         imageUrl: food.imageUrl ?? null,
+        category: food.category ?? null,
         createdAt: food.createdAt ?? now(),
       };
       // Dexie .add() throws ConstraintError on duplicate key, matching SQL behaviour
@@ -366,6 +395,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
             source: food.source,
             offProductCode: food.offProductCode ?? null,
             imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
+            category: food.category ?? existing?.category ?? null,
             createdAt: existing?.createdAt ?? food.createdAt ?? now(),
           };
         });
@@ -377,10 +407,8 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
 
     async getCustomFoods() {
       const all = await db.foods.where("source").equals("custom").toArray();
-      // localeCompare with Spanish locale and sensitivity:"base" provides
-      // accent-insensitive alphabetical ordering consistent with SQLite's
-      // ORDER BY name for Spanish food names (ñ sorts after n, etc.).
-      return all.sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+      // Newest first (spec: Created Foods List sorted by createdAt descending).
+      return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     },
 
     async update(id, patch) {
@@ -394,7 +422,112 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       // no-match) without throwing — so both backends behave identically.
       return (await db.foods.get(id)) as Food;
     },
+
+    async createComposite(food, ingredients) {
+      await assertNoNestedComposites(ingredients.map((i) => i.ingredientFoodId));
+
+      return db.transaction("rw", db.foods, db.food_ingredients, async () => {
+        const row: FoodRow = {
+          id: food.id,
+          name: food.name,
+          nameNormalized: normalizeForSearch(food.name),
+          brand: food.brand ?? null,
+          caloriesPer100g: food.caloriesPer100g,
+          proteinPer100g: food.proteinPer100g ?? 0,
+          carbsPer100g: food.carbsPer100g ?? 0,
+          fatPer100g: food.fatPer100g ?? 0,
+          servingSizeG: food.servingSizeG ?? null,
+          source: food.source,
+          offProductCode: food.offProductCode ?? null,
+          imageUrl: food.imageUrl ?? null,
+          category: food.category ?? null,
+          createdAt: food.createdAt ?? now(),
+        };
+        await db.foods.add(row);
+
+        if (ingredients.length > 0) {
+          const ingredientRows: FoodIngredientRow[] = ingredients.map((ing) => ({
+            id: globalThis.crypto.randomUUID(),
+            parentFoodId: row.id,
+            ingredientFoodId: ing.ingredientFoodId,
+            weightG: ing.weightG,
+            position: ing.position,
+            createdAt: now(),
+          }));
+          await db.food_ingredients.bulkAdd(ingredientRows);
+        }
+
+        return row;
+      });
+    },
+
+    async getIngredients(parentFoodId) {
+      const rows = await db.food_ingredients.where("parentFoodId").equals(parentFoodId).toArray();
+      return rows.sort((a, b) => a.position - b.position);
+    },
+
+    async upsertIngredients(parentFoodId, ingredients) {
+      await assertNoNestedComposites(ingredients.map((i) => i.ingredientFoodId));
+
+      await db.transaction("rw", db.foods, db.food_ingredients, async () => {
+        const existingKeys = await db.food_ingredients
+          .where("parentFoodId")
+          .equals(parentFoodId)
+          .primaryKeys();
+        await db.food_ingredients.bulkDelete(existingKeys);
+
+        if (ingredients.length > 0) {
+          const ingredientRows: FoodIngredientRow[] = ingredients.map((ing) => ({
+            id: globalThis.crypto.randomUUID(),
+            parentFoodId,
+            ingredientFoodId: ing.ingredientFoodId,
+            weightG: ing.weightG,
+            position: ing.position,
+            createdAt: now(),
+          }));
+          await db.food_ingredients.bulkAdd(ingredientRows);
+        }
+
+        const ingredientFoodRows =
+          ingredients.length > 0
+            ? await db.foods.bulkGet(ingredients.map((i) => i.ingredientFoodId))
+            : [];
+        const byId = new Map(
+          ingredientFoodRows.filter((r): r is FoodRow => r !== undefined).map((r) => [r.id, r])
+        );
+        const summed = sumIngredientMacros(
+          ingredients.map((ing) => ({
+            food: byId.get(ing.ingredientFoodId) as Food,
+            weightG: ing.weightG,
+          }))
+        );
+
+        await db.foods.update(parentFoodId, {
+          caloriesPer100g: summed.caloriesPer100g,
+          proteinPer100g: summed.proteinPer100g,
+          carbsPer100g: summed.carbsPer100g,
+          fatPer100g: summed.fatPer100g,
+          servingSizeG: summed.totalWeightG,
+        });
+      });
+    },
+
+    async getCompositeFoodIds() {
+      const rows = await db.food_ingredients.toArray();
+      return Array.from(new Set(rows.map((r) => r.parentFoodId)));
+    },
   };
+
+  async function assertNoNestedComposites(ingredientFoodIds: string[]): Promise<void> {
+    if (ingredientFoodIds.length === 0) return;
+    const compositeIds = new Set(await foods.getCompositeFoodIds());
+    const nested = ingredientFoodIds.filter((id) => compositeIds.has(id));
+    if (nested.length > 0) {
+      throw new Error(
+        `Nested composites are not allowed: ${nested.join(", ")} are already composite foods.`
+      );
+    }
+  }
 
   // ── Profile ──────────────────────────────────────────────────────────────
 

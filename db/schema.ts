@@ -38,12 +38,40 @@ export const foods = sqliteTable(
     offProductCode: text("off_product_code"),
     nameNormalized: text("name_normalized").notNull().default(""),
     imageUrl: text("image_url"),
+    // Nullable: null = uncategorized. Validated against lib/foodCategories.ts
+    // keys at the app layer (not a SQL enum) because the category list is
+    // expected to grow — see design.md "category column type".
+    category: text("category"),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
     nameIdx: index("foods_name_idx").on(t.name),
     offCodeIdx: index("foods_off_code_idx").on(t.offProductCode),
     nameNormalizedIdx: index("foods_name_normalized_idx").on(t.nameNormalized),
+  })
+);
+
+// ── food_ingredients (recipe rows for composite/created foods) ────────
+// Child table persisting the recipe of a composite food so it can be
+// reopened and edited. No FK cascade on delete: if an ingredient food is
+// later deleted, the parent's snapshot macros remain locked at last save
+// (spec: Dangling Ingredient Handling).
+export const foodIngredients = sqliteTable(
+  "food_ingredients",
+  {
+    id: text("id").primaryKey(), // UUID
+    parentFoodId: text("parent_food_id")
+      .notNull()
+      .references(() => foods.id),
+    ingredientFoodId: text("ingredient_food_id")
+      .notNull()
+      .references(() => foods.id),
+    weightG: real("weight_g").notNull(),
+    position: integer("position").notNull(),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    parentIdx: index("food_ingredients_parent_idx").on(t.parentFoodId),
   })
 );
 
@@ -125,3 +153,5 @@ export type UserFavoriteFood = typeof userFavoriteFoods.$inferSelect;
 export type NewUserFavoriteFood = typeof userFavoriteFoods.$inferInsert;
 export type SyncQueueRow = typeof syncQueue.$inferSelect;
 export type NewSyncQueueRow = typeof syncQueue.$inferInsert;
+export type FoodIngredient = typeof foodIngredients.$inferSelect;
+export type NewFoodIngredient = typeof foodIngredients.$inferInsert;
