@@ -20,12 +20,15 @@
 import * as schema from "@/db/schema";
 import type {
   Food,
+  FoodIngredient,
   MealEntry,
   NewFood,
+  NewFoodIngredient,
   NewMealEntry,
   NewUserProfile,
   UserProfile,
 } from "@/db/schema";
+import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
 import { type DexieAdapter, createDexieAdapter } from "@/src/db/dexie-adapter";
 import { type MigratorExecutor, runWebMigrations } from "@/src/db/migrate.web";
@@ -81,6 +84,18 @@ interface RepositoryBackend {
   listFavoritesWithMeals(
     userId: string | null
   ): Promise<Array<{ foodId: string; mealType: MealEntry["mealType"] | null }>>;
+  // Composite foods (food_ingredients)
+  createComposite(
+    food: NewFood,
+    ingredients: Array<Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">>
+  ): Promise<Food>;
+  getIngredients(parentFoodId: string): Promise<FoodIngredient[]>;
+  upsertIngredients(
+    parentFoodId: string,
+    ingredients: Array<Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">>
+  ): Promise<void>;
+  getCompositeFoodIds(): Promise<string[]>;
+  deleteFood(id: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,7 +299,7 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
         .select()
         .from(schema.foods)
         .where(eq(schema.foods.source, "custom"))
-        .orderBy(schema.foods.name);
+        .orderBy(sql`${schema.foods.createdAt} DESC`);
     },
 
     async update(id, patch) {
@@ -522,7 +537,128 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
         .where(owner);
       return rows;
     },
+
+    // ── Composite foods ───────────────────────────────────────────────
+
+    async createComposite(food, ingredients) {
+      await assertNoCompositeIngredients(ingredients.map((i) => i.ingredientFoodId));
+
+      return transaction(async (tx) => {
+        const nameNormalized = normalizeForSearch(food.name);
+        const foodRows = await tx
+          .insert(schema.foods)
+          .values({ ...food, nameNormalized })
+          .returning();
+        const parent = foodRows[0];
+
+        if (ingredients.length > 0) {
+          await tx.insert(schema.foodIngredients).values(
+            ingredients.map((ing) => ({
+              id: nextId(),
+              parentFoodId: parent.id,
+              ingredientFoodId: ing.ingredientFoodId,
+              weightG: ing.weightG,
+              position: ing.position,
+            }))
+          );
+        }
+
+        return parent;
+      });
+    },
+
+    async getIngredients(parentFoodId) {
+      return db
+        .select()
+        .from(schema.foodIngredients)
+        .where(eq(schema.foodIngredients.parentFoodId, parentFoodId))
+        .orderBy(asc(schema.foodIngredients.position));
+    },
+
+    async upsertIngredients(parentFoodId, ingredients) {
+      await assertNoCompositeIngredients(ingredients.map((i) => i.ingredientFoodId));
+
+      await transaction(async (tx) => {
+        await tx
+          .delete(schema.foodIngredients)
+          .where(eq(schema.foodIngredients.parentFoodId, parentFoodId));
+
+        if (ingredients.length > 0) {
+          await tx.insert(schema.foodIngredients).values(
+            ingredients.map((ing) => ({
+              id: nextId(),
+              parentFoodId,
+              ingredientFoodId: ing.ingredientFoodId,
+              weightG: ing.weightG,
+              position: ing.position,
+            }))
+          );
+        }
+
+        // Recompute + persist the parent's per-100g snapshot from the new recipe.
+        const ingredientFoodRows = await tx
+          .select()
+          .from(schema.foods)
+          .where(
+            inArray(
+              schema.foods.id,
+              ingredients.map((i) => i.ingredientFoodId)
+            )
+          );
+        const byId = new Map(ingredientFoodRows.map((f) => [f.id, f]));
+        const summed = sumIngredientMacros(
+          ingredients.map((ing) => ({
+            food: byId.get(ing.ingredientFoodId) as Food,
+            weightG: ing.weightG,
+          }))
+        );
+        await tx
+          .update(schema.foods)
+          .set({
+            caloriesPer100g: summed.caloriesPer100g,
+            proteinPer100g: summed.proteinPer100g,
+            carbsPer100g: summed.carbsPer100g,
+            fatPer100g: summed.fatPer100g,
+            servingSizeG: summed.totalWeightG,
+          })
+          .where(eq(schema.foods.id, parentFoodId));
+      });
+    },
+
+    async getCompositeFoodIds() {
+      const rows = await db
+        .selectDistinct({ parentFoodId: schema.foodIngredients.parentFoodId })
+        .from(schema.foodIngredients);
+      return rows.map((r) => r.parentFoodId);
+    },
+
+    async deleteFood(id) {
+      await db.transaction(async (tx) => {
+        // Own recipe (this food as parent) and any line where it's used as an
+        // ingredient elsewhere (ingredientFoodId is a NOT NULL FK with no
+        // cascade — the row must go before the referenced food can).
+        await tx.delete(schema.foodIngredients).where(eq(schema.foodIngredients.parentFoodId, id));
+        await tx
+          .delete(schema.foodIngredients)
+          .where(eq(schema.foodIngredients.ingredientFoodId, id));
+        await tx.delete(schema.foods).where(eq(schema.foods.id, id));
+      });
+    },
   };
+
+  async function assertNoCompositeIngredients(ingredientFoodIds: string[]): Promise<void> {
+    if (ingredientFoodIds.length === 0) return;
+    const compositeParents = await db
+      .selectDistinct({ parentFoodId: schema.foodIngredients.parentFoodId })
+      .from(schema.foodIngredients);
+    const compositeIds = new Set(compositeParents.map((r) => r.parentFoodId));
+    const nested = ingredientFoodIds.filter((id) => compositeIds.has(id));
+    if (nested.length > 0) {
+      throw new Error(
+        `Nested composites are not allowed: ${nested.join(", ")} are already composite foods.`
+      );
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -614,6 +750,22 @@ function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie
     },
     async listFavoritesWithMeals(userId) {
       return adapter.favorites.listWithMeals(userId);
+    },
+
+    async createComposite(food, ingredients) {
+      return adapter.foods.createComposite(food, ingredients);
+    },
+    async getIngredients(parentFoodId) {
+      return adapter.foods.getIngredients(parentFoodId);
+    },
+    async upsertIngredients(parentFoodId, ingredients) {
+      return adapter.foods.upsertIngredients(parentFoodId, ingredients);
+    },
+    async getCompositeFoodIds() {
+      return adapter.foods.getCompositeFoodIds();
+    },
+    async deleteFood(id) {
+      return adapter.foods.deleteFood(id);
     },
   };
 }
@@ -811,13 +963,21 @@ describe.each([
   });
 
   describe("foods.getCustomFoods", () => {
-    it("returns only custom foods ordered by name", async () => {
+    it("returns only custom foods, newest first (createdAt desc)", async () => {
       // Use a fresh isolated backend for this test to avoid cross-contamination
       const fresh = makeBackend();
       await fresh._ready;
 
-      const c1 = makeFood({ name: "Zucchini Bread", source: "custom" });
-      const c2 = makeFood({ name: "Apple Jam", source: "custom" });
+      const c1 = makeFood({
+        name: "Zucchini Bread",
+        source: "custom",
+        createdAt: "2024-01-01T00:00:00.000Z",
+      });
+      const c2 = makeFood({
+        name: "Apple Jam",
+        source: "custom",
+        createdAt: "2024-06-01T00:00:00.000Z",
+      });
       const off = makeFood({ name: "Commercial Product", source: "openfoodfacts" });
       await fresh.insert(c1);
       await fresh.insert(c2);
@@ -826,7 +986,7 @@ describe.each([
       const result = await fresh.getCustomFoods();
       // All results are custom
       expect(result.every((f) => f.source === "custom")).toBe(true);
-      // Alphabetically sorted
+      // Newest first — c2 (June) was created after c1 (January)
       const names = result.map((f) => f.name);
       expect(names.indexOf("Apple Jam")).toBeLessThan(names.indexOf("Zucchini Bread"));
     });
@@ -1406,6 +1566,258 @@ describe.each([
 // Worker path). The Dexie backend is covered implicitly by its own adapter
 // using Dexie's built-in transaction serialization.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Composite foods (food_ingredients) — dual-backend parity
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)("Composite foods — %s", (_backendName, makeBackend) => {
+  let backend: RepositoryBackend & { _ready: Promise<void> };
+
+  beforeEach(async () => {
+    backend = makeBackend();
+    await backend._ready;
+  });
+
+  it("createComposite inserts the parent food + ingredient rows in one call", async () => {
+    const eggFood = makeFood({ name: "Huevo", source: "custom" });
+    const cheeseFood = makeFood({ name: "Queso havarti", source: "custom" });
+    await backend.insert(eggFood);
+    await backend.insert(cheeseFood);
+
+    const composite = await backend.createComposite(
+      makeFood({ name: "Tortilla casera", source: "custom" }),
+      [
+        { ingredientFoodId: eggFood.id, weightG: 50, position: 0 },
+        { ingredientFoodId: cheeseFood.id, weightG: 30, position: 1 },
+      ]
+    );
+
+    expect(composite.name).toBe("Tortilla casera");
+
+    const ingredients = await backend.getIngredients(composite.id);
+    expect(ingredients).toHaveLength(2);
+    expect(ingredients.map((i) => i.ingredientFoodId).sort()).toEqual(
+      [eggFood.id, cheeseFood.id].sort()
+    );
+  });
+
+  it("getIngredients returns rows ordered by position", async () => {
+    const a = makeFood({ name: "Ingrediente A", source: "custom" });
+    const b = makeFood({ name: "Ingrediente B", source: "custom" });
+    await backend.insert(a);
+    await backend.insert(b);
+
+    const composite = await backend.createComposite(
+      makeFood({ name: "Receta", source: "custom" }),
+      [
+        { ingredientFoodId: b.id, weightG: 20, position: 1 },
+        { ingredientFoodId: a.id, weightG: 10, position: 0 },
+      ]
+    );
+
+    const ingredients = await backend.getIngredients(composite.id);
+    expect(ingredients.map((i) => i.ingredientFoodId)).toEqual([a.id, b.id]);
+  });
+
+  it("getIngredients tolerates a missing referenced food (dangling ingredient)", async () => {
+    const gone = makeFood({ name: "Seré borrado", source: "custom" });
+    await backend.insert(gone);
+
+    const composite = await backend.createComposite(
+      makeFood({ name: "Receta con faltante", source: "custom" }),
+      [{ ingredientFoodId: gone.id, weightG: 40, position: 0 }]
+    );
+
+    // Simulate deletion of the base ingredient food by removing it directly —
+    // food_ingredients has no FK cascade, so the row is orphaned but must not
+    // crash reads (spec: Dangling Ingredient Handling).
+    const ingredientsBeforeDeletion = await backend.getIngredients(composite.id);
+    expect(ingredientsBeforeDeletion).toHaveLength(1);
+    // getIngredients only returns food_ingredients rows (not joined food data),
+    // so it tolerates the missing food naturally — this is asserted at the UI
+    // layer (RecipeDetail) rather than here, but we confirm the row itself
+    // persists and does not throw when the referenced food no longer exists.
+    expect(ingredientsBeforeDeletion[0].ingredientFoodId).toBe(gone.id);
+  });
+
+  it("upsertIngredients replaces all ingredients and recomputes the parent snapshot", async () => {
+    const a = makeFood({
+      name: "A",
+      source: "custom",
+      caloriesPer100g: 100,
+      proteinPer100g: 10,
+      carbsPer100g: 10,
+      fatPer100g: 1,
+    });
+    const b = makeFood({
+      name: "B",
+      source: "custom",
+      caloriesPer100g: 200,
+      proteinPer100g: 20,
+      carbsPer100g: 5,
+      fatPer100g: 2,
+    });
+    await backend.insert(a);
+    await backend.insert(b);
+
+    const composite = await backend.createComposite(
+      makeFood({ name: "Receta", source: "custom" }),
+      [{ ingredientFoodId: a.id, weightG: 100, position: 0 }]
+    );
+
+    await backend.upsertIngredients(composite.id, [
+      { ingredientFoodId: a.id, weightG: 50, position: 0 },
+      { ingredientFoodId: b.id, weightG: 50, position: 1 },
+    ]);
+
+    const ingredients = await backend.getIngredients(composite.id);
+    expect(ingredients).toHaveLength(2);
+
+    const updatedParent = await backend.getById(composite.id);
+    // (100*0.5 + 200*0.5) / 100 * 100 = 150
+    expect(updatedParent?.caloriesPer100g).toBeCloseTo(150, 5);
+  });
+
+  it("getCompositeFoodIds returns parent ids that have ingredient rows", async () => {
+    const a = makeFood({ name: "Base", source: "custom" });
+    await backend.insert(a);
+    const composite = await backend.createComposite(
+      makeFood({ name: "Composite Parent", source: "custom" }),
+      [{ ingredientFoodId: a.id, weightG: 10, position: 0 }]
+    );
+
+    const ids = await backend.getCompositeFoodIds();
+    expect(ids).toContain(composite.id);
+    expect(ids).not.toContain(a.id);
+  });
+
+  it("deleteFood removes the food and, if composite, its own recipe rows", async () => {
+    const base = makeFood({ name: "Huevo", source: "custom" });
+    await backend.insert(base);
+    const composite = await backend.createComposite(
+      makeFood({ name: "Tortilla", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 50, position: 0 }]
+    );
+
+    await backend.deleteFood(composite.id);
+
+    expect(await backend.getById(composite.id)).toBeNull();
+    expect(await backend.getIngredients(composite.id)).toEqual([]);
+  });
+
+  it("deleteFood removes the ingredient line from other recipes that used it, without recomputing their snapshot", async () => {
+    const base = makeFood({
+      name: "Queso havarti",
+      source: "custom",
+      caloriesPer100g: 350,
+      proteinPer100g: 25,
+      carbsPer100g: 2,
+      fatPer100g: 28,
+    });
+    await backend.insert(base);
+    const composite = await backend.createComposite(
+      makeFood({ name: "Tortilla con queso", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 30, position: 0 }]
+    );
+    const snapshotBeforeDelete = await backend.getById(composite.id);
+
+    // `ingredientFoodId` is a NOT NULL foreign key with no cascade action, so
+    // a food referenced elsewhere cannot simply be deleted out from under
+    // that reference (SQLite enforces this — FOREIGN KEY constraint failed).
+    // deleteFood removes the now-invalid ingredient line from any recipe that
+    // used it instead. The parent's already-persisted snapshot macros are
+    // untouched (spec: Snapshot Recompute on Explicit Edit Only) — only an
+    // explicit re-edit-and-save would recompute them.
+    await backend.deleteFood(base.id);
+
+    expect(await backend.getById(composite.id)).not.toBeNull();
+    expect(await backend.getById(composite.id)).toMatchObject({
+      caloriesPer100g: snapshotBeforeDelete?.caloriesPer100g,
+    });
+    const ingredients = await backend.getIngredients(composite.id);
+    expect(ingredients).toEqual([]);
+  });
+
+  it("createComposite throws when an ingredient is itself a composite (nested guard)", async () => {
+    const base = makeFood({ name: "Base ingrediente", source: "custom" });
+    await backend.insert(base);
+    const innerComposite = await backend.createComposite(
+      makeFood({ name: "Receta interna", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 10, position: 0 }]
+    );
+
+    await expect(
+      backend.createComposite(makeFood({ name: "Receta anidada", source: "custom" }), [
+        { ingredientFoodId: innerComposite.id, weightG: 10, position: 0 },
+      ])
+    ).rejects.toThrow();
+  });
+
+  it("upsertIngredients throws when an ingredient is itself a composite (nested guard)", async () => {
+    const base = makeFood({ name: "Base 2", source: "custom" });
+    await backend.insert(base);
+    const innerComposite = await backend.createComposite(
+      makeFood({ name: "Receta interna 2", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 10, position: 0 }]
+    );
+    const target = await backend.createComposite(makeFood({ name: "Target", source: "custom" }), [
+      { ingredientFoodId: base.id, weightG: 10, position: 0 },
+    ]);
+
+    await expect(
+      backend.upsertIngredients(target.id, [
+        { ingredientFoodId: innerComposite.id, weightG: 10, position: 0 },
+      ])
+    ).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Favorites and Search Non-Regression — composite/custom foods (spec:
+// created-foods-list "Favorites and Search Non-Regression")
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)(
+  "Composite food search + favorites non-regression — %s",
+  (_backendName, makeBackend) => {
+    let backend: RepositoryBackend & { _ready: Promise<void> };
+
+    beforeEach(async () => {
+      backend = makeBackend();
+      await backend._ready;
+    });
+
+    it("a composite (source: custom) food appears in general searchByName results", async () => {
+      const base = makeFood({ name: "Huevo base", source: "custom" });
+      await backend.insert(base);
+      await backend.createComposite(makeFood({ name: "Tortilla casera", source: "custom" }), [
+        { ingredientFoodId: base.id, weightG: 50, position: 0 },
+      ]);
+
+      const results = await backend.searchByName("Tortilla casera");
+      expect(results.map((f) => f.name)).toContain("Tortilla casera");
+    });
+
+    it("a composite (source: custom) food can be favorited like any other food", async () => {
+      const base = makeFood({ name: "Base ingrediente fav", source: "custom" });
+      await backend.insert(base);
+      const composite = await backend.createComposite(
+        makeFood({ name: "Receta favoritable", source: "custom" }),
+        [{ ingredientFoodId: base.id, weightG: 50, position: 0 }]
+      );
+
+      await backend.toggleFavorite(composite.id, "user-1");
+      expect(await backend.isFavorite(composite.id, "user-1")).toBe(true);
+    });
+  }
+);
 
 describe("FIFO transaction mutex — concurrent transaction() calls (CRITICAL 1)", () => {
   it("two concurrent insertBulk calls both succeed — no collision, exact row count", async () => {

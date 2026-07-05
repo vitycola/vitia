@@ -144,6 +144,7 @@ describe("useFoodSearchStore", () => {
         fatPer100g: 1,
         servingSizeG: null,
         source: "custom",
+        category: null,
         offProductCode: null,
         imageUrl: null,
         nameNormalized: "cached food",

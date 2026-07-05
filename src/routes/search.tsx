@@ -1,4 +1,5 @@
 import type { Food } from "@/db/schema";
+import { CreatedFoodsTab } from "@/src/components/search/CreatedFoodsTab";
 import { FavoritesTab } from "@/src/components/search/FavoritesTab";
 import { FoodDatabaseTab } from "@/src/components/search/FoodDatabaseTab";
 import { PlaceholderTab } from "@/src/components/search/PlaceholderTab";
@@ -85,7 +86,7 @@ export function SearchRoute() {
         {activeTab === "favorites" && (
           <FavoritesTab mealType={mealType} onSelect={handleSelect} query={query} />
         )}
-        {activeTab === "created" && <PlaceholderTab label="Creados" />}
+        {activeTab === "created" && <CreatedFoodsTab onSelect={handleSelect} query={query} />}
         {activeTab === "ai" && <PlaceholderTab label="Añadir con IA" />}
       </div>
     </div>

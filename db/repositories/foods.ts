@@ -1,8 +1,10 @@
 import { db } from "@/db/client";
-import { foods } from "@/db/schema";
-import type { Food, NewFood } from "@/db/schema";
+import { foodIngredients, foods } from "@/db/schema";
+import type { Food, FoodIngredient, NewFood, NewFoodIngredient } from "@/db/schema";
+import { generateId } from "@/lib/id";
+import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
-import { eq, inArray, like, sql } from "drizzle-orm";
+import { asc, eq, inArray, like, sql } from "drizzle-orm";
 
 const MAX_SEARCH_RESULTS = 30;
 
@@ -120,11 +122,15 @@ export async function insert(food: NewFood): Promise<Food> {
 }
 
 /**
- * Get all custom foods (source = 'custom'), ordered by name.
- * Used by the Profile screen to list foods the user has created.
+ * Get all custom foods (source = 'custom'), newest first.
+ * Used by the "Creados" tab to list foods the user has created.
  */
 export async function getCustomFoods(): Promise<Food[]> {
-  return db.select().from(foods).where(eq(foods.source, "custom")).orderBy(foods.name);
+  return db
+    .select()
+    .from(foods)
+    .where(eq(foods.source, "custom"))
+    .orderBy(sql`${foods.createdAt} DESC`);
 }
 
 /**
@@ -144,4 +150,159 @@ export async function update(
   }
   const rows = await db.update(foods).set(fullPatch).where(eq(foods.id, id)).returning();
   return rows[0];
+}
+
+// ── Composite foods (food_ingredients) ─────────────────────────────────
+
+export type NewIngredientInput = Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">;
+
+/**
+ * Returns the distinct set of foodIds that are already composite (have one or
+ * more food_ingredients rows as parent). Used both to exclude composites from
+ * the ingredient picker and to guard against nested composite-of-composite
+ * recipes.
+ */
+export async function getCompositeFoodIds(): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ parentFoodId: foodIngredients.parentFoodId })
+    .from(foodIngredients);
+  return rows.map((r) => r.parentFoodId);
+}
+
+/**
+ * Throws if any of the given ingredient food ids is itself a composite food
+ * (design: nested-composite prevention lives in the repository).
+ */
+async function assertNoNestedComposites(ingredientFoodIds: string[]): Promise<void> {
+  if (ingredientFoodIds.length === 0) return;
+  const compositeIds = new Set(await getCompositeFoodIds());
+  const nested = ingredientFoodIds.filter((id) => compositeIds.has(id));
+  if (nested.length > 0) {
+    throw new Error(
+      `Nested composites are not allowed: ${nested.join(", ")} are already composite foods.`
+    );
+  }
+}
+
+/**
+ * Insert a new composite food and its recipe (food_ingredients rows) in a
+ * single transaction. Throws if any ingredient is itself a composite food.
+ */
+export async function createComposite(
+  food: NewFood,
+  ingredients: NewIngredientInput[]
+): Promise<Food> {
+  await assertNoNestedComposites(ingredients.map((i) => i.ingredientFoodId));
+
+  return db.transaction(async (tx) => {
+    const nameNormalized = normalizeForSearch(food.name);
+    const foodRows = await tx
+      .insert(foods)
+      .values({ ...food, nameNormalized })
+      .returning();
+    const parent = foodRows[0];
+
+    if (ingredients.length > 0) {
+      await tx.insert(foodIngredients).values(
+        ingredients.map((ing) => ({
+          id: generateId(),
+          parentFoodId: parent.id,
+          ingredientFoodId: ing.ingredientFoodId,
+          weightG: ing.weightG,
+          position: ing.position,
+        }))
+      );
+    }
+
+    return parent;
+  });
+}
+
+/**
+ * Get a composite food's recipe rows, ordered by position.
+ * Tolerates a missing referenced ingredient food — this returns the raw
+ * food_ingredients rows only; callers (UI) must handle a missing food when
+ * resolving ingredientFoodId -> Food (spec: Dangling Ingredient Handling).
+ */
+export async function getIngredients(parentFoodId: string): Promise<FoodIngredient[]> {
+  return db
+    .select()
+    .from(foodIngredients)
+    .where(eq(foodIngredients.parentFoodId, parentFoodId))
+    .orderBy(asc(foodIngredients.position));
+}
+
+/**
+ * Replace all ingredient rows for a composite food and recompute + persist
+ * its per-100g snapshot macros from the new recipe (spec: Snapshot Recompute
+ * on Explicit Edit Only). Throws if any ingredient is itself a composite food.
+ */
+export async function upsertIngredients(
+  parentFoodId: string,
+  ingredients: NewIngredientInput[]
+): Promise<void> {
+  await assertNoNestedComposites(ingredients.map((i) => i.ingredientFoodId));
+
+  await db.transaction(async (tx) => {
+    await tx.delete(foodIngredients).where(eq(foodIngredients.parentFoodId, parentFoodId));
+
+    if (ingredients.length > 0) {
+      await tx.insert(foodIngredients).values(
+        ingredients.map((ing) => ({
+          id: generateId(),
+          parentFoodId,
+          ingredientFoodId: ing.ingredientFoodId,
+          weightG: ing.weightG,
+          position: ing.position,
+        }))
+      );
+    }
+
+    const ingredientFoodRows =
+      ingredients.length > 0
+        ? await tx
+            .select()
+            .from(foods)
+            .where(
+              inArray(
+                foods.id,
+                ingredients.map((i) => i.ingredientFoodId)
+              )
+            )
+        : [];
+    const byId = new Map(ingredientFoodRows.map((f) => [f.id, f]));
+    const summed = sumIngredientMacros(
+      ingredients.map((ing) => ({
+        food: byId.get(ing.ingredientFoodId) as Food,
+        weightG: ing.weightG,
+      }))
+    );
+
+    await tx
+      .update(foods)
+      .set({
+        caloriesPer100g: summed.caloriesPer100g,
+        proteinPer100g: summed.proteinPer100g,
+        carbsPer100g: summed.carbsPer100g,
+        fatPer100g: summed.fatPer100g,
+        servingSizeG: summed.totalWeightG,
+      })
+      .where(eq(foods.id, parentFoodId));
+  });
+}
+
+/**
+ * Delete a food and its own recipe (food_ingredients rows as parent), plus
+ * any ingredient line in OTHER recipes that referenced it. The latter is
+ * required, not optional cleanup: ingredientFoodId is a NOT NULL foreign key
+ * with no ON DELETE action, so the food row cannot be deleted while a
+ * referencing row exists. Other recipes' already-persisted snapshot macros
+ * are left untouched (spec: Snapshot Recompute on Explicit Edit Only).
+ */
+export async function deleteFood(id: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(foodIngredients).where(eq(foodIngredients.parentFoodId, id));
+    await tx.delete(foodIngredients).where(eq(foodIngredients.ingredientFoodId, id));
+    await tx.delete(foods).where(eq(foods.id, id));
+  });
 }

@@ -138,3 +138,63 @@ export function scalePortion(
     fatG: food.fatPer100g * factor,
   };
 }
+
+export interface IngredientInput {
+  food: Pick<Food, "caloriesPer100g" | "proteinPer100g" | "carbsPer100g" | "fatPer100g">;
+  weightG: number;
+}
+
+export interface SummedIngredientMacros {
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+  totalWeightG: number;
+}
+
+/**
+ * Sum a composite/recipe's ingredients into a single per-100g macro profile.
+ *
+ * Each ingredient's absolute macros are derived via scalePortion() at its
+ * given weight, then all absolute macros and weights are summed, and the
+ * result is re-normalized back to a per-100g basis using the total weight.
+ *
+ * Store full precision — consistent with the scalePortion()/deriveMacros()
+ * convention (round only at display time, never persist a rounded value).
+ *
+ * Throws when given an empty ingredients array (spec: Empty Recipe cannot be
+ * saved — at least one ingredient is required).
+ */
+export function sumIngredientMacros(ingredients: IngredientInput[]): SummedIngredientMacros {
+  if (ingredients.length === 0) {
+    throw new Error("La receta debe tener al menos un ingrediente.");
+  }
+
+  let totalWeightG = 0;
+  let calories = 0;
+  let proteinG = 0;
+  let carbsG = 0;
+  let fatG = 0;
+
+  for (const { food, weightG } of ingredients) {
+    const portion = scalePortion(food, weightG);
+    totalWeightG += weightG;
+    calories += portion.calories;
+    proteinG += portion.proteinG;
+    carbsG += portion.carbsG;
+    fatG += portion.fatG;
+  }
+
+  if (totalWeightG <= 0) {
+    return { caloriesPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0, totalWeightG };
+  }
+
+  const factor = 100 / totalWeightG;
+  return {
+    caloriesPer100g: calories * factor,
+    proteinPer100g: proteinG * factor,
+    carbsPer100g: carbsG * factor,
+    fatPer100g: fatG * factor,
+    totalWeightG,
+  };
+}

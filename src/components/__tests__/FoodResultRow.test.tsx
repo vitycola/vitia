@@ -23,6 +23,7 @@ function makeFood(): SearchResult {
     fatPer100g: 12,
     servingSizeG: null,
     source: "custom",
+    category: null,
     offProductCode: null,
     nameNormalized: "milanesa",
     imageUrl: null,

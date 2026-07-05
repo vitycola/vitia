@@ -26,6 +26,7 @@ function makeFood(
     fatPer100g: 0.3,
     servingSizeG: null,
     source: "custom" as const,
+    category: null,
     offProductCode: null,
     nameNormalized: "arroz blanco",
     imageUrl: null,

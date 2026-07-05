@@ -1,5 +1,10 @@
 import { AuthGuard } from "@/src/components/AuthGuard";
 import { TabLayout } from "@/src/layouts/TabLayout";
+import { IngredientPickerRoute } from "@/src/routes/createFood/IngredientPicker";
+import { IngredientsBuilderRoute } from "@/src/routes/createFood/IngredientsBuilder";
+import { ManualFormRoute } from "@/src/routes/createFood/ManualForm";
+import { ModeSelectRoute } from "@/src/routes/createFood/ModeSelect";
+import { RecipeDetailRoute } from "@/src/routes/createFood/RecipeDetail";
 import { CustomFoodRoute } from "@/src/routes/customFood";
 import { DayScreen } from "@/src/routes/day";
 import { LoginRoute } from "@/src/routes/login";
@@ -59,6 +64,54 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <CustomFoodRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food",
+    element: (
+      <AuthGuard>
+        <ModeSelectRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food/manual",
+    element: (
+      <AuthGuard>
+        <ManualFormRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food/manual/:foodId",
+    element: (
+      <AuthGuard>
+        <ManualFormRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food/ingredients",
+    element: (
+      <AuthGuard>
+        <IngredientsBuilderRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food/ingredients/add",
+    element: (
+      <AuthGuard>
+        <IngredientPickerRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/create-food/:foodId/edit",
+    element: (
+      <AuthGuard>
+        <RecipeDetailRoute />
       </AuthGuard>
     ),
   },
