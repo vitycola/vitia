@@ -52,6 +52,18 @@ interface ProfileActions {
    * No-op when useManualGoals is true (manual values are preserved).
    */
   recalcFromProfile: () => Promise<void>;
+  /**
+   * Clear a manual goal override and recompute calorie + macro goals from
+   * the current profile in one atomic operation (recompute + persist
+   * useManualGoals=false together).
+   *
+   * Deliberately does NOT flip useManualGoals and then delegate to
+   * recalcFromProfile(): that action reads useManualGoals from the current
+   * profile and no-ops while the flag is still true (see its guard above),
+   * so a flip-then-delegate sequence would silently do nothing. This action
+   * recomputes directly instead.
+   */
+  revertToAutomaticGoals: () => Promise<void>;
 }
 
 export const useProfileStore = create<ProfileState & ProfileActions>()((set, get) => ({
@@ -127,6 +139,32 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
     const current = get().profile;
     // No-op when manual goals are active or no profile exists.
     if (!current || current.useManualGoals) return;
+
+    const bmr = computeBMR(current);
+    const tdee = computeTDEE(bmr, current.activityLevel);
+    const calorieGoal = deriveCalorieGoal(tdee, current.goal);
+    const { proteinG, carbsG, fatG } = deriveMacros(calorieGoal);
+
+    const profile = await profileRepo.upsertProfile({
+      age: current.age,
+      heightCm: current.heightCm,
+      weightKg: current.weightKg,
+      sex: current.sex,
+      activityLevel: current.activityLevel,
+      goal: current.goal,
+      calorieGoal,
+      proteinGoalG: proteinG,
+      carbsGoalG: carbsG,
+      fatGoalG: fatG,
+      useManualGoals: false,
+    });
+
+    set({ profile });
+  },
+
+  revertToAutomaticGoals: async () => {
+    const current = get().profile;
+    if (!current) return;
 
     const bmr = computeBMR(current);
     const tdee = computeTDEE(bmr, current.activityLevel);

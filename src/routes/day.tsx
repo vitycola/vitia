@@ -2,6 +2,7 @@ import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
 import { formatFullDayLabel, todayISO } from "@/lib/date";
 import { CalorieCard } from "@/src/components/CalorieCard";
+import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
 import { MealSection } from "@/src/components/MealSection";
 import { WeekCalendarHeader } from "@/src/components/WeekCalendarHeader";
@@ -26,10 +27,12 @@ export function DayScreen() {
     pasteEntries,
     clearMeal,
   } = useDayStore();
-  const { profile, load } = useProfileStore();
+  const { profile, load, overrideGoals } = useProfileStore();
 
   const totals = useDailyTotals(entries);
   const isToday = selectedDate === todayISO();
+
+  const [editingGoals, setEditingGoals] = useState(false);
 
   useEffect(() => {
     void loadEntries();
@@ -136,8 +139,25 @@ export function DayScreen() {
             carbsGoalG={carbsGoalG}
             fatG={totals.fatG}
             fatGoalG={fatGoalG}
+            onEditGoals={() => setEditingGoals(true)}
           />
         </div>
+
+        {editingGoals && profile && (
+          <GoalEditorSheet
+            initial={{
+              calorieGoal: profile.calorieGoal,
+              proteinGoalG: profile.proteinGoalG,
+              carbsGoalG: profile.carbsGoalG,
+              fatGoalG: profile.fatGoalG,
+            }}
+            onSave={async (goals) => {
+              await overrideGoals(goals);
+              setEditingGoals(false);
+            }}
+            onClose={() => setEditingGoals(false)}
+          />
+        )}
 
         {!isToday && (
           <p className="mb-2 text-center text-xs text-gray-400">Día anterior — solo lectura</p>
