@@ -8,14 +8,20 @@ jest.mock("@/hooks/useCreatedFoodsList", () => ({
   useCreatedFoodsList: jest.fn(),
 }));
 
+jest.mock("@/hooks/useSwipeReveal", () => ({
+  useSwipeReveal: jest.fn(),
+}));
+
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 
 import { useCreatedFoodsList } from "@/hooks/useCreatedFoodsList";
+import { useSwipeReveal } from "@/hooks/useSwipeReveal";
 
 const mockUseCreatedFoodsList = useCreatedFoodsList as jest.Mock;
+const mockUseSwipeReveal = useSwipeReveal as jest.Mock;
 
 function makeFood(overrides: Partial<Food> = {}): Food {
   return {
@@ -40,6 +46,7 @@ function makeFood(overrides: Partial<Food> = {}): Food {
 describe("CreatedFoodsTab", () => {
   const onSelect = jest.fn();
   const remove = jest.fn();
+  const close = jest.fn();
 
   beforeEach(() => {
     onSelect.mockReset();
@@ -47,6 +54,19 @@ describe("CreatedFoodsTab", () => {
     mockUseCreatedFoodsList.mockReset();
     remove.mockReset();
     remove.mockResolvedValue(undefined);
+    close.mockReset();
+    // Default: row closed, swipe handlers are no-ops — most tests only
+    // exercise tap-to-select and the always-present delete button, not the
+    // drag gesture itself (covered by hooks/__tests__/useSwipeReveal.test.ts).
+    mockUseSwipeReveal.mockReturnValue({
+      translateX: 0,
+      isOpen: false,
+      isDragging: false,
+      onPointerDown: jest.fn(),
+      onPointerMove: jest.fn(),
+      onPointerUp: jest.fn(),
+      close,
+    });
   });
 
   function mockList(overrides: Partial<ReturnType<typeof useCreatedFoodsList>> = {}) {
@@ -104,7 +124,7 @@ describe("CreatedFoodsTab", () => {
     expect(screen.getByText("Ensalada de garbanzos")).toBeInTheDocument();
   });
 
-  it("tapping a food row calls onSelect with the food (opens it, same as Base/Favoritos)", () => {
+  it("tapping a food row (closed) calls onSelect with the food, opening it like Base/Favoritos", () => {
     const food = makeFood({ id: "select-me", name: "Tortilla casera" });
     mockList({ items: [food] });
 
@@ -114,38 +134,42 @@ describe("CreatedFoodsTab", () => {
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "select-me" }));
   });
 
+  it("tapping the front content while swiped open closes it instead of calling onSelect", () => {
+    const food = makeFood({ id: "food-1", name: "Tortilla casera" });
+    mockList({ items: [food] });
+    mockUseSwipeReveal.mockReturnValue({
+      translateX: -96,
+      isOpen: true,
+      isDragging: false,
+      onPointerDown: jest.fn(),
+      onPointerMove: jest.fn(),
+      onPointerUp: jest.fn(),
+      close,
+    });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+    fireEvent.click(screen.getByText("Tortilla casera"));
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("renders a red 'Eliminar' action behind every row, and tapping it deletes without a confirm dialog", () => {
+    const food = makeFood({ id: "delete-me", name: "Tortilla casera" });
+    mockList({ items: [food] });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+    fireEvent.click(screen.getByLabelText("Eliminar Tortilla casera"));
+
+    expect(remove).toHaveBeenCalledWith("delete-me");
+    expect(screen.queryByText(/¿eliminar/i)).not.toBeInTheDocument();
+  });
+
   it("passes the external query prop down to useCreatedFoodsList", () => {
     mockList();
 
     render(<CreatedFoodsTab onSelect={onSelect} query="arroz" />);
 
     expect(mockUseCreatedFoodsList).toHaveBeenCalledWith("arroz");
-  });
-});
-
-/**
- * Swipe-to-delete logic, mirrored the same way as
- * src/components/__tests__/MealEntryRow.test.ts — jsdom in this project does
- * not implement the PointerEvent constructor, so the gesture threshold is
- * tested as pure logic identical to the row's handlePointerUp calculation,
- * rather than via fireEvent.pointerDown/pointerUp.
- */
-describe("CreatedFoodsTab row — swipe-to-delete gesture", () => {
-  const SWIPE_THRESHOLD = 80;
-
-  function wouldDeleteOnSwipe(startX: number, endX: number): boolean {
-    return Math.abs(endX - startX) >= SWIPE_THRESHOLD;
-  }
-
-  it("triggers delete when swipe distance meets the threshold (exactly 80px)", () => {
-    expect(wouldDeleteOnSwipe(200, 120)).toBe(true);
-  });
-
-  it("does NOT trigger delete on a small tap (1px movement)", () => {
-    expect(wouldDeleteOnSwipe(200, 201)).toBe(false);
-  });
-
-  it("works for left-to-right swipes too", () => {
-    expect(wouldDeleteOnSwipe(100, 200)).toBe(true);
   });
 });

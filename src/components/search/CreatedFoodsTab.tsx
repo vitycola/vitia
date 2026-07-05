@@ -1,11 +1,11 @@
 import type { Food } from "@/db/schema";
 import { useCreatedFoodsList } from "@/hooks/useCreatedFoodsList";
+import { useSwipeReveal } from "@/hooks/useSwipeReveal";
 import { categoryIcon } from "@/lib/foodCategories";
-import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-/** Mirrors MealEntryRow's swipe-to-delete threshold — same gesture app-wide. */
-const SWIPE_THRESHOLD = 80;
+/** Width of the revealed red delete action, in px. */
+const REVEAL_WIDTH = 96;
 
 interface CreatedFoodsTabProps {
   onSelect: (food: Food) => void;
@@ -59,10 +59,11 @@ export function CreatedFoodsTab({ onSelect, query }: CreatedFoodsTabProps) {
 }
 
 /**
- * Tap opens the food (same "select to log" behavior as Base/Favoritos);
- * swipe left deletes it — no confirmation, matching MealEntryRow's gesture
- * (the app-wide swipe-to-delete convention). Editing a created food happens
- * from its detail screen (portion.tsx "more options" menu), not from here.
+ * Tap opens the food (same "select to log" behavior as Base/Favoritos).
+ * Swipe left reveals a red "Eliminar" button behind the row — tapping that
+ * button is what actually deletes, so the reveal itself doubles as the
+ * confirmation step. Editing a created food happens from its detail screen
+ * (portion.tsx "more options" menu), not from here.
  */
 function CreatedFoodRow({
   food,
@@ -73,52 +74,62 @@ function CreatedFoodRow({
   onSelect: (food: Food) => void;
   onRemove: (foodId: string) => Promise<void>;
 }) {
-  const startX = useRef<number | null>(null);
-  const didSwipe = useRef(false);
-
-  function handlePointerDown(e: React.PointerEvent) {
-    startX.current = e.clientX;
-    didSwipe.current = false;
-  }
-
-  function handlePointerUp(e: React.PointerEvent) {
-    if (startX.current !== null && Math.abs(e.clientX - startX.current) >= SWIPE_THRESHOLD) {
-      didSwipe.current = true;
-      void onRemove(food.id);
-    }
-    startX.current = null;
-  }
+  const { translateX, isOpen, isDragging, onPointerDown, onPointerMove, onPointerUp, close } =
+    useSwipeReveal({ revealWidth: REVEAL_WIDTH });
 
   function handleTap() {
-    if (didSwipe.current) {
-      didSwipe.current = false;
+    if (isOpen) {
+      close();
       return;
     }
     onSelect(food);
   }
 
+  function handleDelete() {
+    close();
+    void onRemove(food.id);
+  }
+
   return (
-    <div
-      className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-    >
-      <button
-        type="button"
-        onClick={handleTap}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left transition-colors active:opacity-70"
+    <div className="relative overflow-hidden rounded-xl">
+      <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
+        <button
+          type="button"
+          onClick={handleDelete}
+          aria-label={`Eliminar ${food.name}`}
+          className="flex flex-1 items-center justify-center bg-red-500 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+        >
+          Eliminar
+        </button>
+      </div>
+
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging ? "none" : "transform 200ms ease-out",
+        }}
+        className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm"
       >
-        <span className="shrink-0 text-lg leading-none" aria-hidden="true">
-          {categoryIcon(food.category)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-gray-900">{food.name}</span>
-          {food.brand && <p className="truncate text-xs text-gray-400">{food.brand}</p>}
-        </div>
-        <span className="shrink-0 text-sm font-semibold text-gray-700">
-          {Math.round(food.caloriesPer100g)} kcal
-        </span>
-      </button>
+        <button
+          type="button"
+          onClick={handleTap}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left transition-colors active:opacity-70"
+        >
+          <span className="shrink-0 text-lg leading-none" aria-hidden="true">
+            {categoryIcon(food.category)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-gray-900">{food.name}</span>
+            {food.brand && <p className="truncate text-xs text-gray-400">{food.brand}</p>}
+          </div>
+          <span className="shrink-0 text-sm font-semibold text-gray-700">
+            {Math.round(food.caloriesPer100g)} kcal
+          </span>
+        </button>
+      </div>
     </div>
   );
 }
