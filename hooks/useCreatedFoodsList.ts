@@ -13,8 +13,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export interface UseCreatedFoodsListResult {
   items: Food[];
   loading: boolean;
-  /** Ids of created foods that are composite (have a persisted recipe) — drives the edit-recipe affordance. */
-  compositeIds: Set<string>;
   /** Optimistically removes a created food, then persists the deletion. */
   remove: (foodId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -22,18 +20,13 @@ export interface UseCreatedFoodsListResult {
 
 export function useCreatedFoodsList(query: string): UseCreatedFoodsListResult {
   const [foods, setFoods] = useState<Food[]>([]);
-  const [compositeIds, setCompositeIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [result, compositeFoodIds] = await Promise.all([
-        foodsRepo.getCustomFoods(),
-        foodsRepo.getCompositeFoodIds(),
-      ]);
+      const result = await foodsRepo.getCustomFoods();
       setFoods(result);
-      setCompositeIds(new Set(compositeFoodIds));
     } finally {
       setLoading(false);
     }
@@ -61,7 +54,6 @@ export function useCreatedFoodsList(query: string): UseCreatedFoodsListResult {
   return {
     items,
     loading,
-    compositeIds,
     remove,
     refresh: load,
   };

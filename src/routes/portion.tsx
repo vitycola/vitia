@@ -1,4 +1,4 @@
-import { getById } from "@/db/repos/foods";
+import { getById, getIngredients } from "@/db/repos/foods";
 import type { Food, MealEntry } from "@/db/schema";
 import { useFavorite } from "@/hooks/useFavorite";
 import { MEAL_LABELS } from "@/lib/constants";
@@ -12,6 +12,7 @@ import { MealPicker } from "@/src/components/MealPicker";
 import { MealTypeSelect } from "@/src/components/MealTypeSelect";
 import { useDayStore } from "@/stores/useDayStore";
 import type { MealType } from "@/types";
+import { MoreVertical } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
@@ -53,6 +54,8 @@ export function PortionRoute() {
   } = useFavorite(foodId ?? null);
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [isComposite, setIsComposite] = useState(false);
 
   useEffect(() => {
     if (!foodId) {
@@ -67,6 +70,12 @@ export function PortionRoute() {
           return;
         }
         setFood(f);
+        // Only created (custom) foods can be edited — and only composite
+        // ones (with a persisted recipe) go to the recipe editor rather
+        // than the manual-food editor.
+        if (f.source === "custom") {
+          return getIngredients(f.id).then((rows) => setIsComposite(rows.length > 0));
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -162,16 +171,48 @@ export function PortionRoute() {
           >
             ← Cancelar
           </button>
-          <FavoriteToggle
-            active={isFavorite}
-            onToggle={() => {
-              if (isFavorite) {
-                setShowRemoveConfirm(true);
-              } else {
-                setShowMealPicker(true);
-              }
-            }}
-          />
+          <div className="flex items-center gap-1">
+            <FavoriteToggle
+              active={isFavorite}
+              onToggle={() => {
+                if (isFavorite) {
+                  setShowRemoveConfirm(true);
+                } else {
+                  setShowMealPicker(true);
+                }
+              }}
+            />
+            {food.source === "custom" && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowOptionsMenu((v) => !v)}
+                  aria-label="Más opciones"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-opacity hover:opacity-80"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                {showOptionsMenu && (
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[8rem] rounded-xl bg-white py-1 shadow-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowOptionsMenu(false);
+                        void navigate(
+                          isComposite
+                            ? `/create-food/${food.id}/edit`
+                            : `/create-food/manual/${food.id}`
+                        );
+                      }}
+                      className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

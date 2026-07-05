@@ -7,7 +7,6 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 
 jest.mock("@/db/repos/foods", () => ({
   getCustomFoods: jest.fn(),
-  getCompositeFoodIds: jest.fn(),
   deleteFood: jest.fn(),
 }));
 
@@ -17,7 +16,6 @@ import { normalizeForSearch } from "@/lib/search";
 import { useCreatedFoodsList } from "../useCreatedFoodsList";
 
 const mockGetCustomFoods = foodsRepo.getCustomFoods as jest.Mock;
-const mockGetCompositeFoodIds = foodsRepo.getCompositeFoodIds as jest.Mock;
 const mockDeleteFood = foodsRepo.deleteFood as jest.Mock;
 
 function makeFood(overrides: Partial<Food> = {}): Food {
@@ -44,22 +42,8 @@ function makeFood(overrides: Partial<Food> = {}): Food {
 describe("useCreatedFoodsList", () => {
   beforeEach(() => {
     mockGetCustomFoods.mockReset();
-    mockGetCompositeFoodIds.mockReset();
-    mockGetCompositeFoodIds.mockResolvedValue([]);
     mockDeleteFood.mockReset();
     mockDeleteFood.mockResolvedValue(undefined);
-  });
-
-  it("exposes compositeIds from getCompositeFoodIds()", async () => {
-    mockGetCustomFoods.mockResolvedValue([makeFood({ id: "a" }), makeFood({ id: "b" })]);
-    mockGetCompositeFoodIds.mockResolvedValue(["a"]);
-
-    const { result } = renderHook(() => useCreatedFoodsList(""));
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(result.current.compositeIds.has("a")).toBe(true);
-    expect(result.current.compositeIds.has("b")).toBe(false);
   });
 
   it("loads created foods on mount, already sorted by createdAt desc from the repo", async () => {

@@ -104,4 +104,11 @@ describe("router.tsx — composite-food-creation route registration", () => {
     expect(route).toBeDefined();
     expect(isAuthGuarded(route)).toBe(true);
   });
+
+  it("registers /create-food/manual/:foodId, wrapped in AuthGuard", async () => {
+    const { router } = await import("@/src/router");
+    const route = findRoute(router.routes, "/create-food/manual/:foodId");
+    expect(route).toBeDefined();
+    expect(isAuthGuarded(route)).toBe(true);
+  });
 });

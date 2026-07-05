@@ -1,9 +1,10 @@
-import { createComposite } from "@/db/repos/foods";
+import { createComposite, getById, update } from "@/db/repos/foods";
 import { FOOD_CATEGORIES } from "@/lib/foodCategories";
 import { generateId } from "@/lib/id";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 const schema = z.object({
@@ -35,10 +36,13 @@ type FormValues = z.infer<typeof schema>;
 
 export function ManualFormRoute() {
   const navigate = useNavigate();
+  const { foodId } = useParams<{ foodId?: string }>();
+  const isEditMode = Boolean(foodId);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -53,22 +57,40 @@ export function ManualFormRoute() {
     },
   });
 
+  useEffect(() => {
+    if (!foodId) return;
+    void getById(foodId).then((food) => {
+      if (!food) return;
+      reset({
+        name: food.name,
+        category: food.category ?? undefined,
+        servingSizeG: food.servingSizeG ?? undefined,
+        caloriesPer100g: food.caloriesPer100g,
+        proteinPer100g: food.proteinPer100g,
+        carbsPer100g: food.carbsPer100g,
+        fatPer100g: food.fatPer100g,
+      });
+    });
+  }, [foodId, reset]);
+
   async function onSubmit(data: FormValues) {
-    const food = await createComposite(
-      {
-        id: generateId(),
-        name: data.name,
-        category: data.category ?? null,
-        servingSizeG: data.servingSizeG,
-        caloriesPer100g: data.caloriesPer100g,
-        proteinPer100g: data.proteinPer100g,
-        carbsPer100g: data.carbsPer100g,
-        fatPer100g: data.fatPer100g,
-        source: "custom",
-      },
-      []
-    );
-    void navigate(`/search?created=${food.id}`);
+    const patch = {
+      name: data.name,
+      category: data.category ?? null,
+      servingSizeG: data.servingSizeG,
+      caloriesPer100g: data.caloriesPer100g,
+      proteinPer100g: data.proteinPer100g,
+      carbsPer100g: data.carbsPer100g,
+      fatPer100g: data.fatPer100g,
+    };
+
+    if (foodId) {
+      await update(foodId, patch);
+      void navigate(`/search?created=${foodId}`);
+    } else {
+      const food = await createComposite({ id: generateId(), ...patch, source: "custom" }, []);
+      void navigate(`/search?created=${food.id}`);
+    }
   }
 
   function handleCancel() {
@@ -88,7 +110,9 @@ export function ManualFormRoute() {
           </button>
         </div>
 
-        <h1 className="mb-2 text-xl font-bold text-gray-900">Crear alimento manual</h1>
+        <h1 className="mb-2 text-xl font-bold text-gray-900">
+          {isEditMode ? "Editar alimento" : "Crear alimento manual"}
+        </h1>
         <p className="mb-6 text-sm text-gray-500">
           Introduce el nombre, la categoría y los valores nutricionales.
         </p>
@@ -226,7 +250,7 @@ export function ManualFormRoute() {
               disabled={isSubmitting}
               className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
             >
-              {isSubmitting ? "Guardando…" : "Guardar"}
+              {isSubmitting ? "Guardando…" : isEditMode ? "Guardar cambios" : "Guardar"}
             </button>
 
             <button

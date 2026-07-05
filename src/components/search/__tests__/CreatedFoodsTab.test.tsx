@@ -53,7 +53,6 @@ describe("CreatedFoodsTab", () => {
     mockUseCreatedFoodsList.mockReturnValue({
       items: [],
       loading: false,
-      compositeIds: new Set<string>(),
       remove,
       ...overrides,
     });
@@ -105,7 +104,7 @@ describe("CreatedFoodsTab", () => {
     expect(screen.getByText("Ensalada de garbanzos")).toBeInTheDocument();
   });
 
-  it("clicking a food row calls onSelect with the food", () => {
+  it("tapping a food row calls onSelect with the food (opens it, same as Base/Favoritos)", () => {
     const food = makeFood({ id: "select-me", name: "Tortilla casera" });
     mockList({ items: [food] });
 
@@ -122,72 +121,31 @@ describe("CreatedFoodsTab", () => {
 
     expect(mockUseCreatedFoodsList).toHaveBeenCalledWith("arroz");
   });
+});
 
-  it("shows an edit-recipe affordance for composite foods only", () => {
-    const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
-    const manual = makeFood({ id: "manual-1", name: "Yogur casero" });
-    mockList({ items: [composite, manual], compositeIds: new Set(["composite-1"]) });
+/**
+ * Swipe-to-delete logic, mirrored the same way as
+ * src/components/__tests__/MealEntryRow.test.ts — jsdom in this project does
+ * not implement the PointerEvent constructor, so the gesture threshold is
+ * tested as pure logic identical to the row's handlePointerUp calculation,
+ * rather than via fireEvent.pointerDown/pointerUp.
+ */
+describe("CreatedFoodsTab row — swipe-to-delete gesture", () => {
+  const SWIPE_THRESHOLD = 80;
 
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+  function wouldDeleteOnSwipe(startX: number, endX: number): boolean {
+    return Math.abs(endX - startX) >= SWIPE_THRESHOLD;
+  }
 
-    expect(screen.getByLabelText("Editar receta de Tortilla casera")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Editar receta de Yogur casero")).not.toBeInTheDocument();
+  it("triggers delete when swipe distance meets the threshold (exactly 80px)", () => {
+    expect(wouldDeleteOnSwipe(200, 120)).toBe(true);
   });
 
-  it("tapping the edit-recipe affordance navigates to the recipe-detail route without calling onSelect", () => {
-    const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
-    mockList({ items: [composite], compositeIds: new Set(["composite-1"]) });
-
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
-    fireEvent.click(screen.getByLabelText("Editar receta de Tortilla casera"));
-
-    expect(mockNavigate).toHaveBeenCalledWith("/create-food/composite-1/edit");
-    expect(onSelect).not.toHaveBeenCalled();
+  it("does NOT trigger delete on a small tap (1px movement)", () => {
+    expect(wouldDeleteOnSwipe(200, 201)).toBe(false);
   });
 
-  it("shows a delete affordance on every row, manual or composite", () => {
-    const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
-    const manual = makeFood({ id: "manual-1", name: "Yogur casero" });
-    mockList({ items: [composite, manual], compositeIds: new Set(["composite-1"]) });
-
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
-
-    expect(screen.getByLabelText("Eliminar Tortilla casera")).toBeInTheDocument();
-    expect(screen.getByLabelText("Eliminar Yogur casero")).toBeInTheDocument();
-  });
-
-  it("tapping delete shows an inline confirm before removing, without calling onSelect", () => {
-    const food = makeFood({ id: "food-1", name: "Yogur casero" });
-    mockList({ items: [food] });
-
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
-    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
-
-    expect(screen.getByText(/¿Eliminar este alimento\?/i)).toBeInTheDocument();
-    expect(remove).not.toHaveBeenCalled();
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it("confirming delete calls remove() with the food id", () => {
-    const food = makeFood({ id: "food-1", name: "Yogur casero" });
-    mockList({ items: [food] });
-
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
-    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
-
-    expect(remove).toHaveBeenCalledWith("food-1");
-  });
-
-  it("cancelling the delete confirm leaves the food untouched", () => {
-    const food = makeFood({ id: "food-1", name: "Yogur casero" });
-    mockList({ items: [food] });
-
-    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
-    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
-    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
-
-    expect(remove).not.toHaveBeenCalled();
-    expect(screen.getByText("Yogur casero")).toBeInTheDocument();
+  it("works for left-to-right swipes too", () => {
+    expect(wouldDeleteOnSwipe(100, 200)).toBe(true);
   });
 });

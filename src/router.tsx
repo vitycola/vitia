@@ -84,6 +84,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/create-food/manual/:foodId",
+    element: (
+      <AuthGuard>
+        <ManualFormRoute />
+      </AuthGuard>
+    ),
+  },
+  {
     path: "/create-food/ingredients",
     element: (
       <AuthGuard>
