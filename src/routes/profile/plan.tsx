@@ -1,3 +1,4 @@
+import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { useProfileStore } from "@/stores/useProfileStore";
 import { useState } from "react";
 
@@ -10,15 +11,16 @@ const GOAL_LABELS: Record<string, string> = {
 const GOAL_PRESETS = ["lose_weight", "maintain", "gain_muscle"] as const;
 
 /**
- * Presentational Plan view: current goal, the 3 available presets, and the
- * daily macro targets. Read-only — no scalar edit fields here.
- *
- * "Configurar plan personalizado" is an inert stub (SDD-2 seam): overrideGoals
- * exists on the store but is intentionally left unwired in this SDD.
+ * Presentational-ish Plan view: current goal, the 3 available presets, the
+ * daily macro targets, and the entry point for manually overriding goals via
+ * the shared `GoalEditorSheet` (same component used by the Day-screen
+ * pencil, seeded from the same profile values so both stay in sync).
  */
 export function PlanRoute() {
-  const { profile, recalcFromProfile } = useProfileStore();
+  const { profile, recalcFromProfile, overrideGoals, revertToAutomaticGoals } = useProfileStore();
   const [recalcing, setRecalcing] = useState(false);
+  const [reverting, setReverting] = useState(false);
+  const [editingGoals, setEditingGoals] = useState(false);
 
   if (!profile) return null;
 
@@ -28,6 +30,15 @@ export function PlanRoute() {
       await recalcFromProfile();
     } finally {
       setRecalcing(false);
+    }
+  }
+
+  async function handleRevert() {
+    setReverting(true);
+    try {
+      await revertToAutomaticGoals();
+    } finally {
+      setReverting(false);
     }
   }
 
@@ -77,16 +88,42 @@ export function PlanRoute() {
             {recalcing ? "Recalculando…" : "Recalcular objetivos"}
           </button>
         )}
+
+        {profile.useManualGoals && (
+          <button
+            type="button"
+            onClick={() => void handleRevert()}
+            disabled={reverting}
+            className="mt-4 flex w-full items-center justify-center rounded-xl border border-accent bg-white px-4 py-2.5 text-sm font-semibold text-accent transition-colors hover:opacity-90 disabled:opacity-50"
+          >
+            {reverting ? "Volviendo…" : "Volver a objetivos automáticos"}
+          </button>
+        )}
       </section>
 
-      {/* SDD-2 seam: inert stub, overrideGoals is intentionally unwired */}
       <button
         type="button"
-        disabled
-        className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground opacity-50"
+        onClick={() => setEditingGoals(true)}
+        className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
       >
         Configurar plan personalizado
       </button>
+
+      {editingGoals && (
+        <GoalEditorSheet
+          initial={{
+            calorieGoal: profile.calorieGoal,
+            proteinGoalG: profile.proteinGoalG,
+            carbsGoalG: profile.carbsGoalG,
+            fatGoalG: profile.fatGoalG,
+          }}
+          onSave={async (goals) => {
+            await overrideGoals(goals);
+            setEditingGoals(false);
+          }}
+          onClose={() => setEditingGoals(false)}
+        />
+      )}
     </div>
   );
 }

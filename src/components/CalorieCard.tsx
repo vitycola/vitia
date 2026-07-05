@@ -84,6 +84,8 @@ interface CalorieCardProps {
   carbsGoalG: number;
   fatG: number;
   fatGoalG: number;
+  /** Called when the pencil icon is tapped. Omit to keep the button inert. */
+  onEditGoals?: () => void;
 }
 
 function MacroColumn({ label, consumed, goal }: { label: string; consumed: number; goal: number }) {
@@ -111,6 +113,7 @@ export function CalorieCard({
   carbsGoalG,
   fatG,
   fatGoalG,
+  onEditGoals,
 }: CalorieCardProps) {
   // Arc spans 0 → 2×goal; goal sits at t=0.5 (the visual peak/center).
   // Progress fills left-to-center proportionally.
@@ -146,7 +149,12 @@ export function CalorieCard({
     <div className="mb-3 rounded-3xl bg-white px-4 py-4 shadow-sm">
       {/* Header row */}
       <div className="mb-1 flex items-center justify-between">
-        <button type="button" aria-label="Edit calorie goal" className="p-1 text-[#C7C7CC]">
+        <button
+          type="button"
+          aria-label="Edit calorie goal"
+          onClick={onEditGoals}
+          className="p-1 text-[#C7C7CC]"
+        >
           <Pencil size={16} />
         </button>
         <div className="text-center">
