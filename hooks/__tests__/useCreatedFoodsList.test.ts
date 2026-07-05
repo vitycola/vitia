@@ -8,6 +8,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 jest.mock("@/db/repos/foods", () => ({
   getCustomFoods: jest.fn(),
   getCompositeFoodIds: jest.fn(),
+  deleteFood: jest.fn(),
 }));
 
 import * as foodsRepo from "@/db/repos/foods";
@@ -17,6 +18,7 @@ import { useCreatedFoodsList } from "../useCreatedFoodsList";
 
 const mockGetCustomFoods = foodsRepo.getCustomFoods as jest.Mock;
 const mockGetCompositeFoodIds = foodsRepo.getCompositeFoodIds as jest.Mock;
+const mockDeleteFood = foodsRepo.deleteFood as jest.Mock;
 
 function makeFood(overrides: Partial<Food> = {}): Food {
   const name = overrides.name ?? "Tortilla casera";
@@ -44,6 +46,8 @@ describe("useCreatedFoodsList", () => {
     mockGetCustomFoods.mockReset();
     mockGetCompositeFoodIds.mockReset();
     mockGetCompositeFoodIds.mockResolvedValue([]);
+    mockDeleteFood.mockReset();
+    mockDeleteFood.mockResolvedValue(undefined);
   });
 
   it("exposes compositeIds from getCompositeFoodIds()", async () => {
@@ -104,5 +108,20 @@ describe("useCreatedFoodsList", () => {
     });
 
     await waitFor(() => expect(result.current.items).toHaveLength(1));
+  });
+
+  it("remove() optimistically drops the food from items and persists via deleteFood", async () => {
+    mockGetCustomFoods.mockResolvedValue([makeFood({ id: "a" }), makeFood({ id: "b" })]);
+
+    const { result } = renderHook(() => useCreatedFoodsList(""));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.items).toHaveLength(2);
+
+    await act(async () => {
+      await result.current.remove("a");
+    });
+
+    expect(result.current.items.map((f) => f.id)).toEqual(["b"]);
+    expect(mockDeleteFood).toHaveBeenCalledWith("a");
   });
 });

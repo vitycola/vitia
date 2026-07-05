@@ -290,3 +290,19 @@ export async function upsertIngredients(
       .where(eq(foods.id, parentFoodId));
   });
 }
+
+/**
+ * Delete a food and its own recipe (food_ingredients rows as parent), plus
+ * any ingredient line in OTHER recipes that referenced it. The latter is
+ * required, not optional cleanup: ingredientFoodId is a NOT NULL foreign key
+ * with no ON DELETE action, so the food row cannot be deleted while a
+ * referencing row exists. Other recipes' already-persisted snapshot macros
+ * are left untouched (spec: Snapshot Recompute on Explicit Edit Only).
+ */
+export async function deleteFood(id: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(foodIngredients).where(eq(foodIngredients.parentFoodId, id));
+    await tx.delete(foodIngredients).where(eq(foodIngredients.ingredientFoodId, id));
+    await tx.delete(foods).where(eq(foods.id, id));
+  });
+}

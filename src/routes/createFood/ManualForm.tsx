@@ -6,13 +6,14 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
-const categoryKeys = Object.keys(FOOD_CATEGORIES) as [string, ...string[]];
-
 const schema = z.object({
   name: z.string().min(1, "Introduce el nombre del alimento").max(200),
-  category: z.enum(categoryKeys, {
-    errorMap: () => ({ message: "Selecciona una categoría" }),
-  }),
+  // Category is optional (spec: Category Taxonomy, amended) — an empty
+  // dropdown selection is normalized to undefined -> null on save.
+  category: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
   servingSizeG: z.coerce
     .number({ invalid_type_error: "Introduce el peso de la porción" })
     .gt(0, "El peso de la porción debe ser mayor que 0"),
@@ -38,8 +39,6 @@ export function ManualFormRoute() {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -54,14 +53,12 @@ export function ManualFormRoute() {
     },
   });
 
-  const selectedCategory = watch("category");
-
   async function onSubmit(data: FormValues) {
     const food = await createComposite(
       {
         id: generateId(),
         name: data.name,
-        category: data.category,
+        category: data.category ?? null,
         servingSizeG: data.servingSizeG,
         caloriesPer100g: data.caloriesPer100g,
         proteinPer100g: data.proteinPer100g,
@@ -112,32 +109,19 @@ export function ManualFormRoute() {
             {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
           </div>
 
-          {/* Category chips */}
+          {/* Category dropdown (optional) */}
           <div>
-            <span className="mb-1 block text-sm font-medium text-gray-700">Categoría</span>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(FOOD_CATEGORIES).map(([key, { label, icon }]) => {
-                const isSelected = selectedCategory === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setValue("category", key, { shouldValidate: true })}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      isSelected
-                        ? "border-accent bg-accent text-accent-foreground"
-                        : "border-gray-300 bg-white text-gray-700 hover:border-accent"
-                    }`}
-                  >
-                    <span>{icon}</span>
-                    <span>{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {errors.category && (
-              <p className="mt-1 text-xs text-red-600">{errors.category.message}</p>
-            )}
+            <label htmlFor="category" className="mb-1 block text-sm font-medium text-gray-700">
+              Categoría (opcional)
+            </label>
+            <select id="category" {...register("category")} className={fieldClass(false)}>
+              <option value="">Sin categoría</option>
+              {Object.entries(FOOD_CATEGORIES).map(([key, { label, icon }]) => (
+                <option key={key} value={key}>
+                  {icon} {label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Portion weight */}

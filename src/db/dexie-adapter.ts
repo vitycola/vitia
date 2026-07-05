@@ -192,6 +192,7 @@ export interface FoodsRepo {
   getIngredients(parentFoodId: string): Promise<FoodIngredient[]>;
   upsertIngredients(parentFoodId: string, ingredients: NewIngredientInput[]): Promise<void>;
   getCompositeFoodIds(): Promise<string[]>;
+  deleteFood(id: string): Promise<void>;
 }
 
 /** A single favorite row's meal assignment — used by listWithMeals(). */
@@ -515,6 +516,21 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     async getCompositeFoodIds() {
       const rows = await db.food_ingredients.toArray();
       return Array.from(new Set(rows.map((r) => r.parentFoodId)));
+    },
+
+    async deleteFood(id) {
+      await db.transaction("rw", db.foods, db.food_ingredients, async () => {
+        const ownRecipeKeys = await db.food_ingredients
+          .where("parentFoodId")
+          .equals(id)
+          .primaryKeys();
+        const referencedElsewhereKeys = await db.food_ingredients
+          .where("ingredientFoodId")
+          .equals(id)
+          .primaryKeys();
+        await db.food_ingredients.bulkDelete([...ownRecipeKeys, ...referencedElsewhereKeys]);
+        await db.foods.delete(id);
+      });
     },
   };
 

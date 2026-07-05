@@ -27,7 +27,7 @@ describe("ManualFormRoute", () => {
     fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
       target: { value: "Tortilla casera" },
     });
-    fireEvent.click(screen.getByText("Huevos"));
+    fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
     fireEvent.change(screen.getByLabelText(/peso de la porción/i), {
       target: { value: "120" },
     });
@@ -37,10 +37,12 @@ describe("ManualFormRoute", () => {
     fireEvent.change(screen.getByLabelText(/grasas/i), { target: { value: "8" } });
   }
 
-  it("renders category chips from lib/foodCategories", () => {
+  it("renders category as a dropdown listing every option from lib/foodCategories", () => {
     render(<ManualFormRoute />);
-    expect(screen.getByText("Huevos")).toBeInTheDocument();
-    expect(screen.getByText("Vegetales")).toBeInTheDocument();
+    const select = screen.getByLabelText(/^categoría/i) as HTMLSelectElement;
+    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    expect(optionLabels.some((label) => label?.includes("Huevos"))).toBe(true);
+    expect(optionLabels.some((label) => label?.includes("Vegetales"))).toBe(true);
   });
 
   it("valid save calls createComposite with entered values", async () => {
@@ -91,7 +93,7 @@ describe("ManualFormRoute", () => {
     await waitFor(() => expect(mockCreateComposite).not.toHaveBeenCalled());
   });
 
-  it("blocks save when no category is selected", async () => {
+  it("saves successfully without selecting a category (category is optional)", async () => {
     render(<ManualFormRoute />);
     fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
       target: { value: "Tortilla casera" },
@@ -105,7 +107,8 @@ describe("ManualFormRoute", () => {
     fireEvent.change(screen.getByLabelText(/grasas/i), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
-    await waitFor(() => expect(screen.getByText(/selecciona una categoría/i)).toBeInTheDocument());
-    expect(mockCreateComposite).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockCreateComposite).toHaveBeenCalledTimes(1));
+    const [food] = mockCreateComposite.mock.calls[0];
+    expect(food).toMatchObject({ name: "Tortilla casera", category: null });
   });
 });

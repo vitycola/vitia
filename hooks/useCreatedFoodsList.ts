@@ -15,6 +15,8 @@ export interface UseCreatedFoodsListResult {
   loading: boolean;
   /** Ids of created foods that are composite (have a persisted recipe) — drives the edit-recipe affordance. */
   compositeIds: Set<string>;
+  /** Optimistically removes a created food, then persists the deletion. */
+  remove: (foodId: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -51,10 +53,16 @@ export function useCreatedFoodsList(query: string): UseCreatedFoodsListResult {
     });
   }, [foods, query]);
 
+  async function remove(foodId: string): Promise<void> {
+    setFoods((prev) => prev.filter((f) => f.id !== foodId));
+    await foodsRepo.deleteFood(foodId);
+  }
+
   return {
     items,
     loading,
     compositeIds,
+    remove,
     refresh: load,
   };
 }

@@ -39,22 +39,35 @@ function makeFood(overrides: Partial<Food> = {}): Food {
 
 describe("CreatedFoodsTab", () => {
   const onSelect = jest.fn();
+  const remove = jest.fn();
 
   beforeEach(() => {
     onSelect.mockReset();
     mockNavigate.mockReset();
     mockUseCreatedFoodsList.mockReset();
+    remove.mockReset();
+    remove.mockResolvedValue(undefined);
   });
 
+  function mockList(overrides: Partial<ReturnType<typeof useCreatedFoodsList>> = {}) {
+    mockUseCreatedFoodsList.mockReturnValue({
+      items: [],
+      loading: false,
+      compositeIds: new Set<string>(),
+      remove,
+      ...overrides,
+    });
+  }
+
   it("shows loading state", () => {
-    mockUseCreatedFoodsList.mockReturnValue({ items: [], loading: true, compositeIds: new Set() });
+    mockList({ loading: true });
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
     expect(screen.getByText("Cargando…")).toBeInTheDocument();
   });
 
   it("shows an empty-state message and a 'Crear alimento' CTA when there are no created foods", () => {
-    mockUseCreatedFoodsList.mockReturnValue({ items: [], loading: false, compositeIds: new Set() });
+    mockList();
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
     expect(screen.getByText(/Todavía no has creado ningún alimento/i)).toBeInTheDocument();
@@ -62,7 +75,7 @@ describe("CreatedFoodsTab", () => {
   });
 
   it("tapping the CTA navigates to /create-food", () => {
-    mockUseCreatedFoodsList.mockReturnValue({ items: [], loading: false, compositeIds: new Set() });
+    mockList();
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByText("Crear alimento"));
@@ -70,14 +83,20 @@ describe("CreatedFoodsTab", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/create-food");
   });
 
+  it("keeps the 'Crear alimento' CTA visible when the list already has items", () => {
+    mockList({ items: [makeFood({ id: "a" })] });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+
+    expect(screen.getByText("Crear alimento")).toBeInTheDocument();
+  });
+
   it("renders a flat list of created foods with no grouping", () => {
-    mockUseCreatedFoodsList.mockReturnValue({
+    mockList({
       items: [
         makeFood({ id: "a", name: "Tortilla casera" }),
         makeFood({ id: "b", name: "Ensalada de garbanzos" }),
       ],
-      loading: false,
-      compositeIds: new Set(),
     });
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
@@ -88,11 +107,7 @@ describe("CreatedFoodsTab", () => {
 
   it("clicking a food row calls onSelect with the food", () => {
     const food = makeFood({ id: "select-me", name: "Tortilla casera" });
-    mockUseCreatedFoodsList.mockReturnValue({
-      items: [food],
-      loading: false,
-      compositeIds: new Set(),
-    });
+    mockList({ items: [food] });
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByText("Tortilla casera"));
@@ -101,7 +116,7 @@ describe("CreatedFoodsTab", () => {
   });
 
   it("passes the external query prop down to useCreatedFoodsList", () => {
-    mockUseCreatedFoodsList.mockReturnValue({ items: [], loading: false, compositeIds: new Set() });
+    mockList();
 
     render(<CreatedFoodsTab onSelect={onSelect} query="arroz" />);
 
@@ -111,11 +126,7 @@ describe("CreatedFoodsTab", () => {
   it("shows an edit-recipe affordance for composite foods only", () => {
     const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
     const manual = makeFood({ id: "manual-1", name: "Yogur casero" });
-    mockUseCreatedFoodsList.mockReturnValue({
-      items: [composite, manual],
-      loading: false,
-      compositeIds: new Set(["composite-1"]),
-    });
+    mockList({ items: [composite, manual], compositeIds: new Set(["composite-1"]) });
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
 
@@ -125,16 +136,58 @@ describe("CreatedFoodsTab", () => {
 
   it("tapping the edit-recipe affordance navigates to the recipe-detail route without calling onSelect", () => {
     const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
-    mockUseCreatedFoodsList.mockReturnValue({
-      items: [composite],
-      loading: false,
-      compositeIds: new Set(["composite-1"]),
-    });
+    mockList({ items: [composite], compositeIds: new Set(["composite-1"]) });
 
     render(<CreatedFoodsTab onSelect={onSelect} query="" />);
     fireEvent.click(screen.getByLabelText("Editar receta de Tortilla casera"));
 
     expect(mockNavigate).toHaveBeenCalledWith("/create-food/composite-1/edit");
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("shows a delete affordance on every row, manual or composite", () => {
+    const composite = makeFood({ id: "composite-1", name: "Tortilla casera" });
+    const manual = makeFood({ id: "manual-1", name: "Yogur casero" });
+    mockList({ items: [composite, manual], compositeIds: new Set(["composite-1"]) });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+
+    expect(screen.getByLabelText("Eliminar Tortilla casera")).toBeInTheDocument();
+    expect(screen.getByLabelText("Eliminar Yogur casero")).toBeInTheDocument();
+  });
+
+  it("tapping delete shows an inline confirm before removing, without calling onSelect", () => {
+    const food = makeFood({ id: "food-1", name: "Yogur casero" });
+    mockList({ items: [food] });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
+
+    expect(screen.getByText(/¿Eliminar este alimento\?/i)).toBeInTheDocument();
+    expect(remove).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("confirming delete calls remove() with the food id", () => {
+    const food = makeFood({ id: "food-1", name: "Yogur casero" });
+    mockList({ items: [food] });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+
+    expect(remove).toHaveBeenCalledWith("food-1");
+  });
+
+  it("cancelling the delete confirm leaves the food untouched", () => {
+    const food = makeFood({ id: "food-1", name: "Yogur casero" });
+    mockList({ items: [food] });
+
+    render(<CreatedFoodsTab onSelect={onSelect} query="" />);
+    fireEvent.click(screen.getByLabelText("Eliminar Yogur casero"));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(screen.getByText("Yogur casero")).toBeInTheDocument();
   });
 });

@@ -111,7 +111,7 @@ describe("IngredientsBuilderRoute", () => {
     fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
       target: { value: "Tortilla" },
     });
-    fireEvent.click(screen.getByText("Huevos"));
+    fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     await waitFor(() => expect(screen.getByText(/al menos un ingrediente/i)).toBeInTheDocument());
@@ -137,7 +137,7 @@ describe("IngredientsBuilderRoute", () => {
     fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
       target: { value: "Tortilla casera" },
     });
-    fireEvent.click(screen.getByText("Huevos"));
+    fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
     fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
 
     await waitFor(() => expect(mockCreateComposite).toHaveBeenCalledTimes(1));
@@ -154,6 +154,20 @@ describe("IngredientsBuilderRoute", () => {
     ]);
   });
 
+  it("saves successfully without selecting a category (category is optional)", async () => {
+    useRecipeBuilderStore.getState().addIngredient(makeFood({ id: "huevo", name: "Huevo" }), 50);
+
+    render(<IngredientsBuilderRoute />);
+    fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
+      target: { value: "Huevo solo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
+
+    await waitFor(() => expect(mockCreateComposite).toHaveBeenCalledTimes(1));
+    const [food] = mockCreateComposite.mock.calls[0];
+    expect(food).toMatchObject({ name: "Huevo solo", category: null });
+  });
+
   it("navigates to the ingredient picker sub-route to add an ingredient", () => {
     render(<IngredientsBuilderRoute />);
 
@@ -168,7 +182,7 @@ describe("IngredientsBuilderRoute", () => {
     fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
       target: { value: "Tortilla casera" },
     });
-    fireEvent.click(screen.getByText("Huevos"));
+    fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
 
     // Simulates navigating to /create-food/ingredients/add and back: the
     // route component unmounts and remounts, but cross-route state must
@@ -177,6 +191,6 @@ describe("IngredientsBuilderRoute", () => {
     render(<IngredientsBuilderRoute />);
 
     expect(screen.getByDisplayValue("Tortilla casera")).toBeInTheDocument();
-    expect(screen.getByText("Huevos").closest("button")).toHaveClass("bg-accent");
+    expect(screen.getByLabelText(/^categoría/i)).toHaveValue("huevos");
   });
 });

@@ -79,3 +79,8 @@ export async function getCompositeFoodIds(): Promise<string[]> {
   if (dexieAdapter) return dexieAdapter.foods.getCompositeFoodIds();
   return _impl.getCompositeFoodIds();
 }
+
+export async function deleteFood(id: string): Promise<void> {
+  if (dexieAdapter) return dexieAdapter.foods.deleteFood(id);
+  return _impl.deleteFood(id);
+}

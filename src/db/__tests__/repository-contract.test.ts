@@ -95,6 +95,7 @@ interface RepositoryBackend {
     ingredients: Array<Omit<NewFoodIngredient, "id" | "parentFoodId" | "createdAt">>
   ): Promise<void>;
   getCompositeFoodIds(): Promise<string[]>;
+  deleteFood(id: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -630,6 +631,19 @@ function makeSqliteProxyBackend(): RepositoryBackend & { _ready: Promise<void> }
         .from(schema.foodIngredients);
       return rows.map((r) => r.parentFoodId);
     },
+
+    async deleteFood(id) {
+      await db.transaction(async (tx) => {
+        // Own recipe (this food as parent) and any line where it's used as an
+        // ingredient elsewhere (ingredientFoodId is a NOT NULL FK with no
+        // cascade — the row must go before the referenced food can).
+        await tx.delete(schema.foodIngredients).where(eq(schema.foodIngredients.parentFoodId, id));
+        await tx
+          .delete(schema.foodIngredients)
+          .where(eq(schema.foodIngredients.ingredientFoodId, id));
+        await tx.delete(schema.foods).where(eq(schema.foods.id, id));
+      });
+    },
   };
 
   async function assertNoCompositeIngredients(ingredientFoodIds: string[]): Promise<void> {
@@ -749,6 +763,9 @@ function makeDexieBackend(): RepositoryBackend & { _ready: Promise<void>; _dexie
     },
     async getCompositeFoodIds() {
       return adapter.foods.getCompositeFoodIds();
+    },
+    async deleteFood(id) {
+      return adapter.foods.deleteFood(id);
     },
   };
 }
@@ -1676,6 +1693,53 @@ describe.each([
     const ids = await backend.getCompositeFoodIds();
     expect(ids).toContain(composite.id);
     expect(ids).not.toContain(a.id);
+  });
+
+  it("deleteFood removes the food and, if composite, its own recipe rows", async () => {
+    const base = makeFood({ name: "Huevo", source: "custom" });
+    await backend.insert(base);
+    const composite = await backend.createComposite(
+      makeFood({ name: "Tortilla", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 50, position: 0 }]
+    );
+
+    await backend.deleteFood(composite.id);
+
+    expect(await backend.getById(composite.id)).toBeNull();
+    expect(await backend.getIngredients(composite.id)).toEqual([]);
+  });
+
+  it("deleteFood removes the ingredient line from other recipes that used it, without recomputing their snapshot", async () => {
+    const base = makeFood({
+      name: "Queso havarti",
+      source: "custom",
+      caloriesPer100g: 350,
+      proteinPer100g: 25,
+      carbsPer100g: 2,
+      fatPer100g: 28,
+    });
+    await backend.insert(base);
+    const composite = await backend.createComposite(
+      makeFood({ name: "Tortilla con queso", source: "custom" }),
+      [{ ingredientFoodId: base.id, weightG: 30, position: 0 }]
+    );
+    const snapshotBeforeDelete = await backend.getById(composite.id);
+
+    // `ingredientFoodId` is a NOT NULL foreign key with no cascade action, so
+    // a food referenced elsewhere cannot simply be deleted out from under
+    // that reference (SQLite enforces this — FOREIGN KEY constraint failed).
+    // deleteFood removes the now-invalid ingredient line from any recipe that
+    // used it instead. The parent's already-persisted snapshot macros are
+    // untouched (spec: Snapshot Recompute on Explicit Edit Only) — only an
+    // explicit re-edit-and-save would recompute them.
+    await backend.deleteFood(base.id);
+
+    expect(await backend.getById(composite.id)).not.toBeNull();
+    expect(await backend.getById(composite.id)).toMatchObject({
+      caloriesPer100g: snapshotBeforeDelete?.caloriesPer100g,
+    });
+    const ingredients = await backend.getIngredients(composite.id);
+    expect(ingredients).toEqual([]);
   });
 
   it("createComposite throws when an ingredient is itself a composite (nested guard)", async () => {

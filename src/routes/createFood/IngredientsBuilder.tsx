@@ -43,10 +43,6 @@ export function IngredientsBuilderRoute() {
       setError("Introduce el nombre del alimento.");
       return;
     }
-    if (!category) {
-      setError("Selecciona una categoría.");
-      return;
-    }
     if (ingredients.length === 0) {
       setError("La receta debe tener al menos un ingrediente.");
       return;
@@ -67,7 +63,7 @@ export function IngredientsBuilderRoute() {
         {
           id: generateId(),
           name,
-          category,
+          category: category || null,
           servingSizeG: summed.totalWeightG,
           caloriesPer100g: summed.caloriesPer100g,
           proteinPer100g: summed.proteinPer100g,
@@ -119,29 +115,24 @@ export function IngredientsBuilderRoute() {
           />
         </div>
 
-        {/* Category chips */}
+        {/* Category dropdown (optional) */}
         <div className="mb-4">
-          <span className="mb-1 block text-sm font-medium text-gray-700">Categoría</span>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(FOOD_CATEGORIES).map(([key, { label, icon }]) => {
-              const isSelected = category === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setCategory(key)}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isSelected
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-accent"
-                  }`}
-                >
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <label htmlFor="category" className="mb-1 block text-sm font-medium text-gray-700">
+            Categoría (opcional)
+          </label>
+          <select
+            id="category"
+            value={category ?? ""}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+          >
+            <option value="">Sin categoría</option>
+            {Object.entries(FOOD_CATEGORIES).map(([key, { label, icon }]) => (
+              <option key={key} value={key}>
+                {icon} {label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Ingredient list */}
