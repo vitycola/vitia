@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { blob, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // ── users_profile (single row per user) ───────────────────────────────
 export const usersProfile = sqliteTable("users_profile", {
@@ -130,12 +130,53 @@ export const userFavoriteFoods = sqliteTable(
   })
 );
 
+// ── progress_entries (daily body-progress snapshot; single row per date) ──
+export const progressEntries = sqliteTable(
+  "progress_entries",
+  {
+    id: text("id").primaryKey(), // UUID
+    userId: text("user_id"), // null when sync is disabled; Supabase auth.uid() when enabled
+    date: text("date").notNull(), // YYYY-MM-DD device-local (unique — one record per day)
+    weightKg: real("weight_kg"),
+    neckCm: real("neck_cm"),
+    waistCm: real("waist_cm"),
+    hipCm: real("hip_cm"),
+    bodyFatPct: real("body_fat_pct"), // stored Navy-method result or carry-forward
+    notes: text("notes"),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at"),
+  },
+  (t) => ({
+    dateIdx: uniqueIndex("progress_entries_date_idx").on(t.date),
+  })
+);
+
+// ── progress_photos (child rows; binary blob, no sync in this change) ──
+export const progressPhotos = sqliteTable(
+  "progress_photos",
+  {
+    id: text("id").primaryKey(), // UUID
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => progressEntries.id),
+    blob: blob("blob", { mode: "buffer" }).notNull(), // Buffer (OPFS) / Blob (Dexie) — repo normalizes
+    mimeType: text("mime_type").notNull(),
+    position: integer("position").notNull(),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    entryIdx: index("progress_photos_entry_idx").on(t.entryId),
+  })
+);
+
 // ── sync_queue (durable outbound operation queue) ─────────────────────
 // Shared by both OPFS and Dexie backends (backed by IndexedDB on Dexie path,
 // SQLite on OPFS path). Survives browser restarts and offline periods.
+// Note: "progress_photos" is intentionally NOT in this enum — binary photo
+// sync is deferred (design: Photo storage strategy across dual backend).
 export const syncQueue = sqliteTable("sync_queue", {
   id: text("id").primaryKey(), // UUID — idempotent re-enqueue guard
-  table: text("table", { enum: ["users_profile", "meal_entries"] }).notNull(),
+  table: text("table", { enum: ["users_profile", "meal_entries", "progress_entries"] }).notNull(),
   op: text("op", { enum: ["upsert", "delete"] }).notNull(),
   row: text("row").notNull(), // JSON-serialised payload
   userId: text("user_id").notNull(),
@@ -155,3 +196,7 @@ export type SyncQueueRow = typeof syncQueue.$inferSelect;
 export type NewSyncQueueRow = typeof syncQueue.$inferInsert;
 export type FoodIngredient = typeof foodIngredients.$inferSelect;
 export type NewFoodIngredient = typeof foodIngredients.$inferInsert;
+export type ProgressEntry = typeof progressEntries.$inferSelect;
+export type NewProgressEntry = typeof progressEntries.$inferInsert;
+export type ProgressPhoto = typeof progressPhotos.$inferSelect;
+export type NewProgressPhoto = typeof progressPhotos.$inferInsert;
