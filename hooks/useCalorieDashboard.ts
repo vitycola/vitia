@@ -1,5 +1,5 @@
 import { getLoggedTotalsByDateRange } from "@/db/repos/mealEntries";
-import { buildBars, imputedAverage } from "@/lib/calorieDashboard";
+import { buildBars, buildOverlayRows, imputedAverage } from "@/lib/calorieDashboard";
 import type { BarDatum, DashboardRange } from "@/lib/calorieDashboard";
 import { rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -12,6 +12,13 @@ export interface CalorieDashboardVM {
   goalLine: number;
   window: { from: string; to: string };
   isLoading: boolean;
+  /**
+   * Daily kcal rows for the same window/granularity as the chart, for the
+   * historical overlay (spec: "Historical Overlay Window Mapping"). Always
+   * daily granularity, even for 3month — never re-bucketed. Absent days are
+   * 0 kcal, never omitted, so length always equals the window's day count.
+   */
+  overlayRows: { date: string; kcal: number }[];
 }
 
 /**
@@ -72,7 +79,8 @@ export function useCalorieDashboard(range: DashboardRange): CalorieDashboardVM {
     const average = imputedAverage(rows);
     const total = rows.reduce((acc, row) => acc + row.calories, 0);
     const goalLine = profile?.calorieGoal ?? 2000;
+    const overlayRows = buildOverlayRows(window.from, window.to, byDate);
 
-    return { bars, average, total, goalLine, window, isLoading };
+    return { bars, average, total, goalLine, window, isLoading, overlayRows };
   }, [rows, range, window, profile, isLoading]);
 }

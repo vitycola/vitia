@@ -135,4 +135,15 @@ describe("useCalorieDashboard", () => {
 
     expect(result.current.window).toEqual({ from: "2026-06-07", to: "2026-07-06" });
   });
+
+  it("exposes overlayRows with one row per day in the window, absent days as 0 kcal", async () => {
+    mockGetLoggedTotalsByDateRange.mockResolvedValue([{ date: "2026-07-06", calories: 1800 }]);
+
+    const { result } = renderHook(() => useCalorieDashboard("week"));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.overlayRows).toHaveLength(7);
+    expect(result.current.overlayRows).toContainEqual({ date: "2026-07-06", kcal: 1800 });
+  });
 });
