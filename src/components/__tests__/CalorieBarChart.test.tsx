@@ -2,6 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type { BarDatum } from "@/lib/calorieDashboard";
+import { startOfWeek, todayISO } from "@/lib/date";
 import { CalorieBarChart } from "../CalorieBarChart";
 
 function makeBars(count: number, kcal = 2000): BarDatum[] {
@@ -51,5 +52,44 @@ describe("CalorieBarChart", () => {
     const firstHeight = Number.parseFloat((first as HTMLElement).style.height);
     const secondHeight = Number.parseFloat((second as HTMLElement).style.height);
     expect(secondHeight).toBeGreaterThan(firstHeight);
+  });
+
+  describe("week day-of-week labels", () => {
+    it("renders 7 day-of-week initial labels in Monday-first order for week range", () => {
+      render(<CalorieBarChart bars={makeBars(7)} goalLine={2000} range="week" />);
+      const labels = screen.getAllByTestId("calorie-day-label");
+      expect(labels).toHaveLength(7);
+      expect(labels.map((l) => l.textContent)).toEqual(["L", "M", "X", "J", "V", "S", "D"]);
+    });
+
+    it("highlights today's label in accent color with medium weight", () => {
+      const today = todayISO();
+      const weekStart = startOfWeek(today);
+      const todayIndex = Math.round(
+        (new Date(today).getTime() - new Date(weekStart).getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      render(<CalorieBarChart bars={makeBars(7)} goalLine={2000} range="week" />);
+      const labels = screen.getAllByTestId("calorie-day-label");
+
+      labels.forEach((label, index) => {
+        if (index === todayIndex) {
+          expect(label).toHaveStyle({ color: "#F5A623" });
+          expect(label.className).toMatch(/font-medium/);
+        } else {
+          expect(label).toHaveStyle({ color: "#8E8E93" });
+        }
+      });
+    });
+
+    it("does not render day-of-week labels for the month range", () => {
+      render(<CalorieBarChart bars={makeBars(30)} goalLine={2000} range="month" />);
+      expect(screen.queryAllByTestId("calorie-day-label")).toHaveLength(0);
+    });
+
+    it("does not render day-of-week labels for the 3month range (keeps its own bucket labels)", () => {
+      render(<CalorieBarChart bars={makeBars(3)} goalLine={2000} range="3month" />);
+      expect(screen.queryAllByTestId("calorie-day-label")).toHaveLength(0);
+    });
   });
 });

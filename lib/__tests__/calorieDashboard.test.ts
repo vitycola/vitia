@@ -168,9 +168,36 @@ describe("buildOverlayRows", () => {
     const rows = buildOverlayRows("2026-06-30", "2026-07-02", byDate);
 
     expect(rows).toEqual([
-      { date: "2026-06-30", kcal: 0 },
-      { date: "2026-07-01", kcal: 2000 },
       { date: "2026-07-02", kcal: 0 },
+      { date: "2026-07-01", kcal: 2000 },
+      { date: "2026-06-30", kcal: 0 },
     ]);
+  });
+
+  it("returns rows in descending date order — most recent (to) first, oldest (from) last", () => {
+    const byDate = new Map<string, number>();
+    const rows = buildOverlayRows("2026-06-30", "2026-07-06", byDate);
+
+    expect(rows[0].date).toBe("2026-07-06");
+    expect(rows[rows.length - 1].date).toBe("2026-06-30");
+    expect(rows.map((r) => r.date)).toEqual([
+      "2026-07-06",
+      "2026-07-05",
+      "2026-07-04",
+      "2026-07-03",
+      "2026-07-02",
+      "2026-07-01",
+      "2026-06-30",
+    ]);
+  });
+
+  it("keeps descending order even when every day in the window is absent (empty window edge case)", () => {
+    const byDate = new Map<string, number>();
+    const rows = buildOverlayRows("2026-04-08", "2026-07-06", byDate);
+
+    expect(rows).toHaveLength(90);
+    expect(rows.every((r) => r.kcal === 0)).toBe(true);
+    expect(rows[0].date).toBe("2026-07-06");
+    expect(rows[89].date).toBe("2026-04-08");
   });
 });

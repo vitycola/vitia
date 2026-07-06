@@ -106,14 +106,19 @@ export function buildBuckets(
  * in [from, to], daily granularity always (even for the 3-Month window,
  * which is never re-bucketed in the overlay). Absent days render as
  * `{ kcal: 0 }` — never omitted — so row count always equals window size.
+ *
+ * Rows are returned in DESCENDING date order (most recent/`to` first,
+ * oldest/`from` last) so the overlay reads newest-first.
  */
 export function buildOverlayRows(
   from: string,
   to: string,
   byDate: Map<string, number>
 ): { date: string; kcal: number }[] {
-  return enumerateDays(from, to).map((date) => ({
-    date,
-    kcal: byDate.get(date) ?? 0,
-  }));
+  return enumerateDays(from, to)
+    .map((date) => ({
+      date,
+      kcal: byDate.get(date) ?? 0,
+    }))
+    .reverse();
 }
