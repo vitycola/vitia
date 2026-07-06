@@ -9,13 +9,17 @@ import { z } from "zod";
  * Mirrors the `lib/goalSchema.ts` convention (z.coerce.number, sane bounds).
  */
 /**
- * Treats an empty string (from a cleared number input) as "not provided" so
- * it does not coerce to 0 and satisfy the at-least-one-field refinement below.
+ * Optional numeric field that treats an empty string (from a cleared number
+ * input) as "not provided" instead of coercing it to 0 — otherwise a cleared
+ * field would silently satisfy the at-least-one-field refinement below.
+ * Built from z.coerce.number() (same base as lib/goalSchema.ts) with a
+ * concrete `number | string | undefined` input type so react-hook-form's
+ * useForm<ProgressFormValues> can infer a usable input shape.
  */
-const optionalCoercedNumber = z.preprocess(
-  (value) => (value === "" || value === null ? undefined : value),
-  z.coerce.number().min(0, "No puede ser negativo").optional()
-);
+const optionalCoercedNumber = z
+  .union([z.literal(""), z.coerce.number().min(0, "No puede ser negativo")])
+  .optional()
+  .transform((value) => (value === "" || value === undefined ? undefined : value));
 
 export const progressEntrySchema = z
   .object({
@@ -39,4 +43,7 @@ export const progressEntrySchema = z
     }
   );
 
+/** Parsed/output shape — what onSubmit receives after zodResolver runs. */
 export type ProgressFormValues = z.infer<typeof progressEntrySchema>;
+/** Raw shape react-hook-form's useForm<> should be parameterized with (pre-parse). */
+export type ProgressFormInput = z.input<typeof progressEntrySchema>;
