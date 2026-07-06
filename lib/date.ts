@@ -126,3 +126,58 @@ export function addDays(isoDate: string, delta: number): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+/**
+ * Return an inclusive rolling window of `days` days ending at `today`
+ * (defaults to `todayISO()`). E.g. rollingWindow(30) covers today and the
+ * 29 days before it — NOT a calendar-aligned month/quarter.
+ */
+export function rollingWindow(
+  days: number,
+  today: string = todayISO()
+): { from: string; to: string } {
+  return { from: addDays(today, -(days - 1)), to: today };
+}
+
+/**
+ * Return an inclusive list of ISO dates (YYYY-MM-DD) from `from` through `to`.
+ */
+export function enumerateDays(from: string, to: string): string[] {
+  const days: string[] = [];
+  let cursor = from;
+  while (cursor <= to) {
+    days.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return days;
+}
+
+/**
+ * Split an inclusive date range into sequential buckets of `size` days each,
+ * oldest to newest. Assumes the range length is an exact multiple of `size`.
+ */
+export function splitBuckets(
+  from: string,
+  to: string,
+  size: number
+): { from: string; to: string }[] {
+  const buckets: { from: string; to: string }[] = [];
+  let bucketStart = from;
+  while (bucketStart <= to) {
+    const bucketEnd = addDays(bucketStart, size - 1);
+    buckets.push({ from: bucketStart, to: bucketEnd });
+    bucketStart = addDays(bucketEnd, 1);
+  }
+  return buckets;
+}
+
+const BUCKET_LABELS = ["Hace 61-90 días", "Hace 31-60 días", "Últimos 30 días"];
+
+/**
+ * Return the relative label for a 3-Month bucket index (0 = oldest,
+ * 2 = most recent). Labels are date-independent by design — rolling 90-day
+ * windows rarely align with calendar months.
+ */
+export function relativeBucketLabel(bucketIndex: number): string {
+  return BUCKET_LABELS[bucketIndex];
+}
