@@ -28,14 +28,34 @@ export function ProgressRoute() {
     void loadByDate(today);
   }, [loadByDate, today]);
 
+  // Convert stored photo Blobs into object URLs for the sheet's thumbnail
+  // preview (edit mode). Ownership of the created URLs — and their cleanup —
+  // belongs here (the caller), not ProgressEntrySheet, which stays
+  // presentational/stateless.
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<{ id: string; url: string }[]>([]);
+
+  useEffect(() => {
+    const photos = current?.photos ?? [];
+    const urls = photos.map((photo) => ({ id: photo.id, url: URL.createObjectURL(photo.blob) }));
+    setExistingPhotoUrls(urls);
+
+    return () => {
+      for (const { url } of urls) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [current?.photos]);
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <EmptyStateCard title="Calorías" icon={<Flame size={24} />} />
-        <EmptyStateCard title="Peso" icon={<Scale size={24} />} />
-        <EmptyStateCard title="% Grasa" icon={<Percent size={24} />} />
-        <EmptyStateCard title="Medidas" icon={<Ruler size={24} />} />
-      </div>
+      <button
+        type="button"
+        aria-label="Añadir progreso"
+        onClick={() => setSheetOpen(true)}
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-white text-accent"
+      >
+        <Plus size={18} />
+      </button>
 
       <div className="flex gap-2 rounded-2xl bg-white p-1 shadow-sm">
         {RANGE_OPTIONS.map((option) => (
@@ -54,14 +74,12 @@ export function ProgressRoute() {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setSheetOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-accent bg-white px-4 py-4 text-sm font-semibold text-accent"
-      >
-        <Plus size={18} />
-        Añadir progreso
-      </button>
+      <div className="grid grid-cols-2 gap-3">
+        <EmptyStateCard title="Calorías" icon={<Flame size={24} />} />
+        <EmptyStateCard title="Peso" icon={<Scale size={24} />} />
+        <EmptyStateCard title="% Grasa" icon={<Percent size={24} />} />
+        <EmptyStateCard title="Medidas" icon={<Ruler size={24} />} />
+      </div>
 
       {sheetOpen && (
         <ProgressEntrySheet
@@ -71,12 +89,16 @@ export function ProgressRoute() {
               ? {
                   weightKg: current.weightKg,
                   neckCm: current.neckCm,
+                  chestCm: current.chestCm,
+                  armCm: current.armCm,
                   waistCm: current.waistCm,
                   hipCm: current.hipCm,
+                  thighCm: current.thighCm,
                   notes: current.notes,
                 }
               : undefined
           }
+          existingPhotos={current ? existingPhotoUrls : undefined}
           onSave={async (input) => {
             await saveEntry({ date: today, ...input });
             setSheetOpen(false);
