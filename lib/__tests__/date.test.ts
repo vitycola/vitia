@@ -1,7 +1,11 @@
 import {
   addDays,
+  enumerateDays,
   formatDayLabel,
   formatFullDayLabel,
+  relativeBucketLabel,
+  rollingWindow,
+  splitBuckets,
   startOfWeek,
   todayISO,
   weekDays,
@@ -122,5 +126,120 @@ describe("formatDayLabel (regression)", () => {
 
   it("still returns DD MMM for a known past date", () => {
     expect(formatDayLabel("2024-07-02")).toBe("2 Jul");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// rollingWindow
+// ---------------------------------------------------------------------------
+
+describe("rollingWindow", () => {
+  it("returns an inclusive 30-day window ending at the given today", () => {
+    expect(rollingWindow(30, "2026-07-06")).toEqual({
+      from: "2026-06-07",
+      to: "2026-07-06",
+    });
+  });
+
+  it("returns an inclusive 90-day window ending at the given today", () => {
+    expect(rollingWindow(90, "2026-07-06")).toEqual({
+      from: "2026-04-08",
+      to: "2026-07-06",
+    });
+  });
+
+  it("returns an inclusive 7-day window ending at the given today", () => {
+    expect(rollingWindow(7, "2026-07-06")).toEqual({
+      from: "2026-06-30",
+      to: "2026-07-06",
+    });
+  });
+
+  it("defaults `today` to todayISO() when omitted", () => {
+    const { to } = rollingWindow(30);
+    expect(to).toBe(todayISO());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// enumerateDays
+// ---------------------------------------------------------------------------
+
+describe("enumerateDays", () => {
+  it("returns an inclusive ISO date list from `from` to `to`", () => {
+    expect(enumerateDays("2026-07-01", "2026-07-03")).toEqual([
+      "2026-07-01",
+      "2026-07-02",
+      "2026-07-03",
+    ]);
+  });
+
+  it("returns a single-element array when from === to", () => {
+    expect(enumerateDays("2026-07-01", "2026-07-01")).toEqual(["2026-07-01"]);
+  });
+
+  it("returns the correct count for a 30-day window", () => {
+    const { from, to } = rollingWindow(30, "2026-07-06");
+    expect(enumerateDays(from, to)).toHaveLength(30);
+  });
+
+  it("crosses a month boundary correctly", () => {
+    expect(enumerateDays("2026-06-29", "2026-07-02")).toEqual([
+      "2026-06-29",
+      "2026-06-30",
+      "2026-07-01",
+      "2026-07-02",
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// splitBuckets
+// ---------------------------------------------------------------------------
+
+describe("splitBuckets", () => {
+  it("splits a rolling 90-day window into 3 sequential 30-day buckets, oldest to newest", () => {
+    const { from, to } = rollingWindow(90, "2026-07-06");
+    const buckets = splitBuckets(from, to, 30);
+
+    expect(buckets).toHaveLength(3);
+    // bucket 1: days -89..-60 → 2026-04-08..2026-05-07
+    expect(buckets[0]).toEqual({ from: "2026-04-08", to: "2026-05-07" });
+    // bucket 2: days -59..-30 → 2026-05-08..2026-06-06
+    expect(buckets[1]).toEqual({ from: "2026-05-08", to: "2026-06-06" });
+    // bucket 3: days -29..0 → 2026-06-07..2026-07-06
+    expect(buckets[2]).toEqual({ from: "2026-06-07", to: "2026-07-06" });
+  });
+
+  it("each bucket spans exactly `size` days inclusive", () => {
+    const { from, to } = rollingWindow(90, "2026-07-06");
+    const buckets = splitBuckets(from, to, 30);
+
+    for (const bucket of buckets) {
+      expect(enumerateDays(bucket.from, bucket.to)).toHaveLength(30);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// relativeBucketLabel
+// ---------------------------------------------------------------------------
+
+describe("relativeBucketLabel", () => {
+  it("returns the correct label for bucket index 0 (oldest)", () => {
+    expect(relativeBucketLabel(0)).toBe("Hace 61-90 días");
+  });
+
+  it("returns the correct label for bucket index 1", () => {
+    expect(relativeBucketLabel(1)).toBe("Hace 31-60 días");
+  });
+
+  it("returns the correct label for bucket index 2 (most recent)", () => {
+    expect(relativeBucketLabel(2)).toBe("Últimos 30 días");
+  });
+
+  it("labels are date-independent — same 3 strings regardless of todayISO()", () => {
+    const labels = [0, 1, 2].map(relativeBucketLabel);
+    expect(labels).toEqual(["Hace 61-90 días", "Hace 31-60 días", "Últimos 30 días"]);
   });
 });
