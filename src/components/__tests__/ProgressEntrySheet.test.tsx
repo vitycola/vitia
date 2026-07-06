@@ -80,4 +80,59 @@ describe("ProgressEntrySheet", () => {
     expect(arg.photos[0].mimeType).toBe("image/png");
     expect(arg.photos[0].blob).toBeInstanceOf(Blob);
   });
+
+  it("renders Pecho/Brazo/Muslo fields inside the Medidas corporales section", () => {
+    render(<ProgressEntrySheet mode="create" onSave={jest.fn()} onClose={jest.fn()} />);
+
+    expect(screen.getByLabelText(/Pecho/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Brazo/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Muslo/)).toBeInTheDocument();
+  });
+
+  it("pre-fills chestCm/armCm/thighCm in edit mode", () => {
+    render(
+      <ProgressEntrySheet
+        mode="edit"
+        initial={{ chestCm: 100, armCm: 32, thighCm: 55 }}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText(/Pecho/)).toHaveValue(100);
+    expect(screen.getByLabelText(/Brazo/)).toHaveValue(32);
+    expect(screen.getByLabelText(/Muslo/)).toHaveValue(55);
+  });
+
+  it("includes chestCm/armCm/thighCm in the save payload when filled", async () => {
+    const onSave = jest.fn();
+    render(<ProgressEntrySheet mode="create" onSave={onSave} onClose={jest.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/Pecho/), { target: { value: "100" } });
+    fireEvent.click(screen.getByText("Guardar"));
+
+    await screen.findByText("Guardar");
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const arg = onSave.mock.calls[0][0];
+    expect(arg.chestCm).toBe(100);
+  });
+
+  it("renders existing photo thumbnails when existingPhotos is provided (regression-proof)", () => {
+    render(
+      <ProgressEntrySheet
+        mode="edit"
+        existingPhotos={[
+          { id: "p1", url: "blob:mock-url-1" },
+          { id: "p2", url: "blob:mock-url-2" },
+        ]}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const thumbnails = screen.getAllByRole("img");
+    expect(thumbnails).toHaveLength(2);
+    expect(thumbnails[0]).toHaveAttribute("src", "blob:mock-url-1");
+    expect(thumbnails[1]).toHaveAttribute("src", "blob:mock-url-2");
+  });
 });

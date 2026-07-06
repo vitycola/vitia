@@ -11,8 +11,11 @@ import { type UseFormRegisterReturn, useForm } from "react-hook-form";
 export interface ProgressEntryInitial {
   weightKg?: number | null;
   neckCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
   waistCm?: number | null;
   hipCm?: number | null;
+  thighCm?: number | null;
   notes?: string | null;
 }
 
@@ -24,8 +27,11 @@ export interface ProgressExistingPhoto {
 export interface ProgressSavePayload {
   weightKg?: number;
   neckCm?: number;
+  chestCm?: number;
+  armCm?: number;
   waistCm?: number;
   hipCm?: number;
+  thighCm?: number;
   notes?: string;
   photos: ProgressPhotoInput[];
 }
@@ -71,8 +77,11 @@ export function ProgressEntrySheet({
     defaultValues: {
       weightKg: initial?.weightKg ?? undefined,
       neckCm: initial?.neckCm ?? undefined,
+      chestCm: initial?.chestCm ?? undefined,
+      armCm: initial?.armCm ?? undefined,
       waistCm: initial?.waistCm ?? undefined,
       hipCm: initial?.hipCm ?? undefined,
+      thighCm: initial?.thighCm ?? undefined,
       notes: initial?.notes ?? undefined,
       photos: existingPhotos,
     },
@@ -87,8 +96,11 @@ export function ProgressEntrySheet({
     await onSave({
       weightKg: data.weightKg,
       neckCm: data.neckCm,
+      chestCm: data.chestCm,
+      armCm: data.armCm,
       waistCm: data.waistCm,
       hipCm: data.hipCm,
+      thighCm: data.thighCm,
       notes: data.notes,
       photos,
     });
@@ -134,6 +146,18 @@ export function ProgressEntrySheet({
                 error={errors.neckCm?.message}
               />
               <ProgressField
+                id="chestCm"
+                label="Pecho (cm)"
+                register={register("chestCm")}
+                error={errors.chestCm?.message}
+              />
+              <ProgressField
+                id="armCm"
+                label="Brazo (cm)"
+                register={register("armCm")}
+                error={errors.armCm?.message}
+              />
+              <ProgressField
                 id="waistCm"
                 label="Cintura (cm)"
                 register={register("waistCm")}
@@ -145,8 +169,28 @@ export function ProgressEntrySheet({
                 register={register("hipCm")}
                 error={errors.hipCm?.message}
               />
+              <ProgressField
+                id="thighCm"
+                label="Muslo (cm)"
+                register={register("thighCm")}
+                error={errors.thighCm?.message}
+              />
             </div>
           </details>
+
+          {existingPhotos.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {existingPhotos.map((photo) => (
+                // biome-ignore lint/performance/noImgElement: local blob/object URLs, not remote assets — next/image is not applicable here
+                <img
+                  key={photo.id}
+                  src={photo.url}
+                  alt="Foto de progreso guardada"
+                  className="h-16 w-16 rounded-lg object-cover"
+                />
+              ))}
+            </div>
+          )}
 
           <label htmlFor="photos" className="flex flex-col gap-1">
             <span className="text-sm text-gray-800">Fotos de progreso</span>
