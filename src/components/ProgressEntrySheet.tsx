@@ -5,7 +5,7 @@ import {
   progressEntrySchema,
 } from "@/lib/progressSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type UseFormRegisterReturn, useForm } from "react-hook-form";
 
 export interface ProgressEntryInitial {
@@ -65,6 +65,24 @@ export function ProgressEntrySheet({
   onClose,
 }: ProgressEntrySheetProps) {
   const [files, setFiles] = useState<File[]>([]);
+
+  // Immediate thumbnail preview for newly selected, not-yet-saved photos
+  // (spec: "Preview newly selected (not-yet-saved) photos immediately").
+  // Object URLs are created/revoked here as `files` changes, mirroring the
+  // revoke pattern used by the callers (day.tsx / profile/progress.tsx) for
+  // `existingPhotos`.
+  const [newPhotoUrls, setNewPhotoUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setNewPhotoUrls(urls);
+
+    return () => {
+      for (const url of urls) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [files]);
 
   const {
     register,
@@ -178,7 +196,7 @@ export function ProgressEntrySheet({
             </div>
           </details>
 
-          {existingPhotos.length > 0 && (
+          {(existingPhotos.length > 0 || newPhotoUrls.length > 0) && (
             <div className="flex flex-wrap gap-2">
               {existingPhotos.map((photo) => (
                 <img
@@ -187,6 +205,18 @@ export function ProgressEntrySheet({
                   alt="Foto de progreso guardada"
                   className="h-16 w-16 rounded-lg object-cover"
                 />
+              ))}
+              {newPhotoUrls.map((url, index) => (
+                <div key={`${index}-${url}`} className="relative h-16 w-16">
+                  <img
+                    src={url}
+                    alt="Foto de progreso nueva (sin guardar)"
+                    className="h-16 w-16 rounded-lg border-2 border-accent object-cover"
+                  />
+                  <span className="absolute -top-1.5 -right-1.5 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                    Nueva
+                  </span>
+                </div>
               ))}
             </div>
           )}

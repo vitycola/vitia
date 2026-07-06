@@ -3,6 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { ProgressEntrySheet } from "../ProgressEntrySheet";
 
+// jsdom does not implement URL.createObjectURL/revokeObjectURL.
+if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-new-url");
+if (!URL.revokeObjectURL) URL.revokeObjectURL = jest.fn();
+
 describe("ProgressEntrySheet", () => {
   it("renders an empty form with the create-mode header", () => {
     render(<ProgressEntrySheet mode="create" onSave={jest.fn()} onClose={jest.fn()} />);
@@ -134,5 +138,53 @@ describe("ProgressEntrySheet", () => {
     expect(thumbnails).toHaveLength(2);
     expect(thumbnails[0]).toHaveAttribute("src", "blob:mock-url-1");
     expect(thumbnails[1]).toHaveAttribute("src", "blob:mock-url-2");
+  });
+
+  it("renders an immediate thumbnail preview for a newly selected, not-yet-saved photo", () => {
+    render(<ProgressEntrySheet mode="create" onSave={jest.fn()} onClose={jest.fn()} />);
+
+    const file = new File(["fake-image-bytes"], "photo.png", { type: "image/png" });
+    const input = screen.getByLabelText(/foto/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const thumbnails = screen.getAllByRole("img");
+    expect(thumbnails).toHaveLength(1);
+    expect(thumbnails[0]).toHaveAttribute("alt", expect.stringMatching(/nueva/i));
+  });
+
+  it("renders a distinct thumbnail per newly selected file", () => {
+    render(<ProgressEntrySheet mode="create" onSave={jest.fn()} onClose={jest.fn()} />);
+
+    const fileA = new File(["a"], "a.png", { type: "image/png" });
+    const fileB = new File(["b"], "b.png", { type: "image/png" });
+    const input = screen.getByLabelText(/foto/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [fileA, fileB] } });
+
+    expect(screen.getAllByRole("img")).toHaveLength(2);
+  });
+
+  it("shows existing and newly-selected thumbnails together, distinguishably, in edit mode", () => {
+    render(
+      <ProgressEntrySheet
+        mode="edit"
+        existingPhotos={[{ id: "p1", url: "blob:mock-url-1" }]}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const file = new File(["fake-image-bytes"], "photo.png", { type: "image/png" });
+    const input = screen.getByLabelText(/foto/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const thumbnails = screen.getAllByRole("img");
+    expect(thumbnails).toHaveLength(2);
+
+    const existingThumb = thumbnails.find((img) => img.getAttribute("src") === "blob:mock-url-1");
+    const newThumb = thumbnails.find((img) => img.getAttribute("src") !== "blob:mock-url-1");
+    expect(existingThumb).toBeDefined();
+    expect(newThumb).toBeDefined();
+    // The two must be visually/accessibly distinguishable (different alt text).
+    expect(existingThumb?.getAttribute("alt")).not.toBe(newThumb?.getAttribute("alt"));
   });
 });
