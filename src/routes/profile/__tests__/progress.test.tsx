@@ -151,6 +151,31 @@ describe("ProgressRoute", () => {
     ).toBeTruthy();
   });
 
+  it("renders the '+' button and the segmented filter as siblings in one shared row, above the dashboard grid", () => {
+    render(<ProgressRoute />);
+
+    const addButton = screen.getByRole("button", { name: "Añadir progreso" });
+    const filterButton = screen.getByRole("button", { name: "Semana" });
+    const filterContainer = filterButton.parentElement; // the segmented-filter row div
+    const grid = screen.getByText("Calorías").closest(".grid.grid-cols-2");
+
+    // The "+" button and the filter container must be DIRECT siblings inside
+    // one shared row — not two separately stacked rows under a generic page
+    // wrapper. This means addButton's parent must be the SAME element as
+    // filterContainer's parent, and that parent must contain only these two
+    // as its row children (not the dashboard grid too).
+    const sharedRow = addButton.parentElement;
+    expect(sharedRow).not.toBeNull();
+    expect(sharedRow).toBe(filterContainer?.parentElement);
+    expect(sharedRow?.contains(grid as Element)).toBe(false);
+
+    // The shared row still precedes the dashboard grid in document order.
+    expect(
+      (sharedRow as Element).compareDocumentPosition(grid as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("passes existingPhotos converted to object URLs to the sheet when a record exists for today", () => {
     mockProgressState = {
       current: {

@@ -48,30 +48,32 @@ export function ProgressRoute() {
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        aria-label="Añadir progreso"
-        onClick={() => setSheetOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-white text-accent"
-      >
-        <Plus size={18} />
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Añadir progreso"
+          onClick={() => setSheetOpen(true)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-accent bg-white text-accent"
+        >
+          <Plus size={18} />
+        </button>
 
-      <div className="flex gap-2 rounded-2xl bg-white p-1 shadow-sm">
-        {RANGE_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setRange(option.value)}
-            className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-              selectedRange === option.value
-                ? "bg-accent text-accent-foreground"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+        <div className="flex flex-1 gap-2 rounded-2xl bg-white p-1 shadow-sm">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setRange(option.value)}
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                selectedRange === option.value
+                  ? "bg-accent text-accent-foreground"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
