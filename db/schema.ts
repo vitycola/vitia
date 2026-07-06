@@ -1,5 +1,13 @@
 import { sql } from "drizzle-orm";
-import { blob, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  blob,
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 // ── users_profile (single row per user) ───────────────────────────────
 export const usersProfile = sqliteTable("users_profile", {
