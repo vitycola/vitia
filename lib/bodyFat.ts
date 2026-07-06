@@ -43,7 +43,8 @@ export function computeNavyBodyFat(input: NavyInput): number | null {
     const logArg = waistCm - neckCm;
     if (logArg <= 0) return null;
 
-    const value = 495 / (1.0324 - 0.19077 * Math.log10(logArg) + 0.15456 * Math.log10(heightCm)) - 450;
+    const value =
+      495 / (1.0324 - 0.19077 * Math.log10(logArg) + 0.15456 * Math.log10(heightCm)) - 450;
     return clampAndRound(value);
   }
 
@@ -53,7 +54,6 @@ export function computeNavyBodyFat(input: NavyInput): number | null {
   const logArg = waistCm + hipCm - neckCm;
   if (logArg <= 0) return null;
 
-  const value =
-    495 / (1.29579 - 0.35004 * Math.log10(logArg) + 0.221 * Math.log10(heightCm)) - 450;
+  const value = 495 / (1.29579 - 0.35004 * Math.log10(logArg) + 0.221 * Math.log10(heightCm)) - 450;
   return clampAndRound(value);
 }

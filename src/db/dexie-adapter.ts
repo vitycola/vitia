@@ -28,6 +28,7 @@ import type {
   UserFavoriteFood,
   UserProfile,
 } from "@/db/schema";
+import { computeNavyBodyFat } from "@/lib/bodyFat";
 import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
 import type { MealType } from "@/types";
@@ -288,11 +289,24 @@ export interface ProgressEntryWithPhotos extends ProgressEntry {
   photos: ProgressPhotoView[];
 }
 
+/** Sex + height needed to run the Navy formula — mirrors db/repositories/progress.ts. */
+export interface ProgressProfileInput {
+  sex: "male" | "female";
+  heightCm: number;
+}
+
 /** Progress repository surface — mirrors db/repositories/progress.ts exactly */
 export interface ProgressRepo {
   getByDate(date: string): Promise<ProgressEntryWithPhotos | null>;
   getRange(from: string, to: string): Promise<ProgressEntry[]>;
-  upsertByDate(input: ProgressUpsertInput): Promise<ProgressEntry>;
+  /**
+   * profile carries sex/heightCm for the Navy formula (mirrors the pure
+   * drizzle repo's signature) — pass null when no profile exists yet.
+   */
+  upsertByDate(
+    input: ProgressUpsertInput,
+    profile: ProgressProfileInput | null
+  ): Promise<ProgressEntry>;
   getPhotos(entryId: string): Promise<ProgressPhotoView[]>;
   getLatestBodyFat(beforeDate?: string): Promise<number | null>;
 }
@@ -929,11 +943,24 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       return rows.sort((a, b) => a.date.localeCompare(b.date));
     },
 
-    async upsertByDate(input) {
+    async upsertByDate(input, profile) {
       return db.transaction("rw", db.progress_entries, db.progress_photos, async () => {
         const existing = await db.progress_entries.where("date").equals(input.date).first();
 
-        const bodyFatPct = existing?.bodyFatPct ?? null;
+        const computed = profile
+          ? computeNavyBodyFat({
+              sex: profile.sex,
+              heightCm: profile.heightCm,
+              neckCm: input.neckCm,
+              waistCm: input.waistCm,
+              hipCm: input.hipCm,
+            })
+          : null;
+
+        let bodyFatPct = computed;
+        if (bodyFatPct === null) {
+          bodyFatPct = await progress.getLatestBodyFat();
+        }
 
         const row: ProgressEntryRow = {
           id: existing?.id ?? globalThis.crypto.randomUUID(),
