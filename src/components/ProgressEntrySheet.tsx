@@ -181,7 +181,6 @@ export function ProgressEntrySheet({
           {existingPhotos.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {existingPhotos.map((photo) => (
-                // biome-ignore lint/performance/noImgElement: local blob/object URLs, not remote assets — next/image is not applicable here
                 <img
                   key={photo.id}
                   src={photo.url}
