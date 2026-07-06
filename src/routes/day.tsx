@@ -5,9 +5,11 @@ import { CalorieCard } from "@/src/components/CalorieCard";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
 import { MealSection } from "@/src/components/MealSection";
+import { ProgressEntrySheet } from "@/src/components/ProgressEntrySheet";
 import { WeekCalendarHeader } from "@/src/components/WeekCalendarHeader";
 import { useDayStore } from "@/stores/useDayStore";
 import { useProfileStore } from "@/stores/useProfileStore";
+import { useProgressStore } from "@/stores/useProgressStore";
 import type { MealType } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,15 +30,21 @@ export function DayScreen() {
     clearMeal,
   } = useDayStore();
   const { profile, load, overrideGoals } = useProfileStore();
+  const { current: progressEntry, loadByDate, saveEntry } = useProgressStore();
 
   const totals = useDailyTotals(entries);
   const isToday = selectedDate === todayISO();
 
   const [editingGoals, setEditingGoals] = useState(false);
+  const [progressSheetMode, setProgressSheetMode] = useState<"create" | "edit" | null>(null);
 
   useEffect(() => {
     void loadEntries();
   }, [loadEntries]);
+
+  useEffect(() => {
+    void loadByDate(selectedDate);
+  }, [loadByDate, selectedDate]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const calorieCardRef = useRef<HTMLDivElement>(null);
@@ -180,8 +188,52 @@ export function DayScreen() {
               onAcceptSuggestion={handleAcceptSuggestion}
             />
           ))}
+
+          {progressEntry ? (
+            <button
+              type="button"
+              data-testid="progress-summary-widget"
+              onClick={() => setProgressSheetMode("edit")}
+              className="mt-3 flex w-full flex-col items-start gap-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left"
+            >
+              <span className="text-sm font-semibold text-gray-900">Progreso registrado</span>
+              <span className="text-xs text-gray-500">
+                {progressEntry.weightKg != null && `Peso: ${progressEntry.weightKg} kg`}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setProgressSheetMode("create")}
+              className="mt-3 w-full rounded-2xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/5"
+            >
+              Añadir progreso
+            </button>
+          )}
         </div>
       </div>
+
+      {progressSheetMode && (
+        <ProgressEntrySheet
+          mode={progressSheetMode}
+          initial={
+            progressSheetMode === "edit" && progressEntry
+              ? {
+                  weightKg: progressEntry.weightKg,
+                  neckCm: progressEntry.neckCm,
+                  waistCm: progressEntry.waistCm,
+                  hipCm: progressEntry.hipCm,
+                  notes: progressEntry.notes,
+                }
+              : undefined
+          }
+          onSave={async (input) => {
+            await saveEntry({ date: selectedDate, ...input });
+            setProgressSheetMode(null);
+          }}
+          onClose={() => setProgressSheetMode(null)}
+        />
+      )}
     </div>
   );
 }
