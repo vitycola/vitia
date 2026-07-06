@@ -147,8 +147,11 @@ export const progressEntries = sqliteTable(
     date: text("date").notNull(), // YYYY-MM-DD device-local (unique — one record per day)
     weightKg: real("weight_kg"),
     neckCm: real("neck_cm"),
+    chestCm: real("chest_cm"),
+    armCm: real("arm_cm"),
     waistCm: real("waist_cm"),
     hipCm: real("hip_cm"),
+    thighCm: real("thigh_cm"),
     bodyFatPct: real("body_fat_pct"), // stored Navy-method result or carry-forward
     notes: text("notes"),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
