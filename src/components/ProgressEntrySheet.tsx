@@ -199,6 +199,7 @@ function ProgressField({
         id={id}
         type="number"
         inputMode="decimal"
+        step="any"
         className="rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900"
         {...register}
       />
