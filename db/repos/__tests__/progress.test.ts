@@ -20,6 +20,7 @@ const mockDexieProgress = {
   upsertByDate: jest.fn(),
   getPhotos: jest.fn(),
   getLatestBodyFat: jest.fn(),
+  deleteByDate: jest.fn(),
 };
 let mockDexieAdapter: { progress: typeof mockDexieProgress } | null = null;
 jest.mock("@/db/client", () => ({
@@ -32,6 +33,7 @@ jest.mock("@/db/repositories/progress", () => ({
   getByDate: jest.fn(),
   getRange: jest.fn(),
   upsertByDate: jest.fn(),
+  deleteByDate: jest.fn(),
 }));
 
 const mockIsSyncEnabled = jest.fn();
@@ -55,6 +57,7 @@ import * as _impl from "@/db/repositories/progress";
 const mockedImplUpsert = _impl.upsertByDate as jest.Mock;
 const mockedImplGetByDate = _impl.getByDate as jest.Mock;
 const mockedImplGetRange = _impl.getRange as jest.Mock;
+const mockedImplDelete = _impl.deleteByDate as jest.Mock;
 
 const NAVY_PROFILE = { sex: "male" as const, heightCm: 180 };
 
@@ -102,6 +105,14 @@ describe("db/repos/progress (dispatching repository)", () => {
 
       expect(mockedImplUpsert).toHaveBeenCalledWith(expect.anything(), null);
     });
+
+    it("deleteByDate delegates to the pure repo", async () => {
+      mockedImplDelete.mockResolvedValue(undefined);
+
+      await progressRepo.deleteByDate("2026-01-01");
+
+      expect(mockedImplDelete).toHaveBeenCalledWith("2026-01-01");
+    });
   });
 
   describe("routing — dexieAdapter active", () => {
@@ -129,6 +140,15 @@ describe("db/repos/progress (dispatching repository)", () => {
         NAVY_PROFILE
       );
       expect(mockedImplUpsert).not.toHaveBeenCalled();
+    });
+
+    it("deleteByDate delegates to the Dexie adapter, not the pure repo", async () => {
+      mockDexieProgress.deleteByDate.mockResolvedValue(undefined);
+
+      await progressRepo.deleteByDate("2026-01-02");
+
+      expect(mockDexieProgress.deleteByDate).toHaveBeenCalledWith("2026-01-02");
+      expect(mockedImplDelete).not.toHaveBeenCalled();
     });
   });
 
@@ -180,6 +200,30 @@ describe("db/repos/progress (dispatching repository)", () => {
       for (const call of mockEnqueue.mock.calls) {
         expect(call[0].table).not.toBe("progress_photos");
       }
+    });
+
+    it("enqueues a progress_entries delete op when sync is enabled and a user is authenticated", async () => {
+      mockIsSyncEnabled.mockReturnValue(true);
+      authState = { userId: "user-1" };
+      mockedImplDelete.mockResolvedValue(undefined);
+
+      await progressRepo.deleteByDate("2026-01-01");
+
+      expect(mockEnqueue).toHaveBeenCalledTimes(1);
+      const [op] = mockEnqueue.mock.calls[0];
+      expect(op.table).toBe("progress_entries");
+      expect(op.op).toBe("delete");
+      expect(op.userId).toBe("user-1");
+    });
+
+    it("does not enqueue a delete op when sync is disabled", async () => {
+      mockIsSyncEnabled.mockReturnValue(false);
+      authState = { userId: "user-1" };
+      mockedImplDelete.mockResolvedValue(undefined);
+
+      await progressRepo.deleteByDate("2026-01-01");
+
+      expect(mockEnqueue).not.toHaveBeenCalled();
     });
   });
 });

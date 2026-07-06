@@ -15,8 +15,11 @@ export interface ProgressInput {
   userId?: string | null;
   weightKg?: number | null;
   neckCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
   waistCm?: number | null;
   hipCm?: number | null;
+  thighCm?: number | null;
   notes?: string | null;
   photos: ProgressPhotoInput[];
 }
@@ -167,8 +170,11 @@ export async function upsertByDate(
         date: input.date,
         weightKg: input.weightKg ?? null,
         neckCm: input.neckCm ?? null,
+        chestCm: input.chestCm ?? null,
+        armCm: input.armCm ?? null,
         waistCm: input.waistCm ?? null,
         hipCm: input.hipCm ?? null,
+        thighCm: input.thighCm ?? null,
         bodyFatPct,
         notes: input.notes ?? null,
         createdAt: existing?.createdAt,
@@ -179,8 +185,11 @@ export async function upsertByDate(
         set: {
           weightKg: input.weightKg ?? null,
           neckCm: input.neckCm ?? null,
+          chestCm: input.chestCm ?? null,
+          armCm: input.armCm ?? null,
           waistCm: input.waistCm ?? null,
           hipCm: input.hipCm ?? null,
+          thighCm: input.thighCm ?? null,
           bodyFatPct,
           notes: input.notes ?? null,
           updatedAt: now,
@@ -206,5 +215,25 @@ export async function upsertByDate(
     }
 
     return entry;
+  });
+}
+
+/**
+ * Delete the progress_entries row for a date, cascading to delete its
+ * progress_photos rows in the same transaction. A no-op (no throw) when no
+ * record exists for that date (spec: "Delete a day's progress entry").
+ */
+export async function deleteByDate(date: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(progressEntries)
+      .where(eq(progressEntries.date, date))
+      .limit(1);
+    const existing = rows[0];
+    if (!existing) return; // no-op: nothing to delete for this date
+
+    await tx.delete(progressPhotos).where(eq(progressPhotos.entryId, existing.id));
+    await tx.delete(progressEntries).where(eq(progressEntries.id, existing.id));
   });
 }

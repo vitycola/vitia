@@ -8,6 +8,7 @@
 jest.mock("@/db/repos/progress", () => ({
   getByDate: jest.fn(),
   upsertByDate: jest.fn(),
+  deleteByDate: jest.fn(),
 }));
 
 import * as progressRepo from "@/db/repos/progress";
@@ -19,6 +20,9 @@ const mockedGetByDate = progressRepo.getByDate as jest.MockedFunction<
 >;
 const mockedUpsertByDate = progressRepo.upsertByDate as jest.MockedFunction<
   typeof progressRepo.upsertByDate
+>;
+const mockedDeleteByDate = progressRepo.deleteByDate as jest.MockedFunction<
+  typeof progressRepo.deleteByDate
 >;
 
 const sampleEntry = {
@@ -87,6 +91,19 @@ describe("useProgressStore", () => {
         photos: [],
       });
       expect(useProgressStore.getState().current?.weightKg).toBe(72);
+    });
+  });
+
+  describe("deleteEntry", () => {
+    it("calls deleteByDate and sets current to null without re-fetching", async () => {
+      useProgressStore.setState({ current: sampleEntry });
+      mockedDeleteByDate.mockResolvedValue(undefined);
+
+      await useProgressStore.getState().deleteEntry("2026-01-01");
+
+      expect(mockedDeleteByDate).toHaveBeenCalledWith("2026-01-01");
+      expect(useProgressStore.getState().current).toBeNull();
+      expect(mockedGetByDate).not.toHaveBeenCalled();
     });
   });
 

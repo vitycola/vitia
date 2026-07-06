@@ -35,8 +35,11 @@ interface ProgressUpsertInput {
   userId?: string | null;
   weightKg?: number | null;
   neckCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
   waistCm?: number | null;
   hipCm?: number | null;
+  thighCm?: number | null;
   notes?: string | null;
   photos: ProgressPhotoInput[];
 }
@@ -51,6 +54,7 @@ interface ProgressBackend {
   ): Promise<schema.ProgressEntry>;
   getPhotos(entryId: string): Promise<Array<{ id: string; blob: Blob; mimeType: string }>>;
   getLatestBodyFat(beforeDate?: string): Promise<number | null>;
+  deleteByDate(date: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,8 +243,11 @@ function makeSqliteProxyBackend(): ProgressBackend & { _ready: Promise<void> } {
             date: input.date,
             weightKg: input.weightKg ?? null,
             neckCm: input.neckCm ?? null,
+            chestCm: input.chestCm ?? null,
+            armCm: input.armCm ?? null,
             waistCm: input.waistCm ?? null,
             hipCm: input.hipCm ?? null,
+            thighCm: input.thighCm ?? null,
             bodyFatPct,
             notes: input.notes ?? null,
             createdAt: existing?.createdAt,
@@ -251,8 +258,11 @@ function makeSqliteProxyBackend(): ProgressBackend & { _ready: Promise<void> } {
             set: {
               weightKg: input.weightKg ?? null,
               neckCm: input.neckCm ?? null,
+              chestCm: input.chestCm ?? null,
+              armCm: input.armCm ?? null,
               waistCm: input.waistCm ?? null,
               hipCm: input.hipCm ?? null,
+              thighCm: input.thighCm ?? null,
               bodyFatPct,
               notes: input.notes ?? null,
               updatedAt: now,
@@ -277,6 +287,23 @@ function makeSqliteProxyBackend(): ProgressBackend & { _ready: Promise<void> } {
         }
 
         return entry;
+      });
+    },
+
+    async deleteByDate(date) {
+      return transaction(async (tx) => {
+        const rows = await tx
+          .select()
+          .from(schema.progressEntries)
+          .where(eq(schema.progressEntries.date, date))
+          .limit(1);
+        const existing = rows[0];
+        if (!existing) return;
+
+        await tx
+          .delete(schema.progressPhotos)
+          .where(eq(schema.progressPhotos.entryId, existing.id));
+        await tx.delete(schema.progressEntries).where(eq(schema.progressEntries.id, existing.id));
       });
     },
   };
@@ -307,6 +334,9 @@ function makeDexieBackend(): ProgressBackend & { _ready: Promise<void> } {
     },
     async getLatestBodyFat(beforeDate) {
       return adapter.progress.getLatestBodyFat(beforeDate);
+    },
+    async deleteByDate(date) {
+      return adapter.progress.deleteByDate(date);
     },
   };
 }
@@ -459,6 +489,31 @@ describe.each([
     });
   });
 
+  describe("upsertByDate — chest/arm/thigh measurements (spec: Body measurement fields)", () => {
+    it("round-trips chestCm, armCm, thighCm through create and read-back", async () => {
+      const entry = await backend.upsertByDate(
+        { date: "2026-03-10", chestCm: 100, armCm: 32, thighCm: 55, photos: [] },
+        null
+      );
+      expect(entry.chestCm).toBe(100);
+      expect(entry.armCm).toBe(32);
+      expect(entry.thighCm).toBe(55);
+
+      const fetched = await backend.getByDate("2026-03-10");
+      expect(fetched?.chestCm).toBe(100);
+      expect(fetched?.armCm).toBe(32);
+      expect(fetched?.thighCm).toBe(55);
+    });
+
+    it("does not affect Navy body-fat computation (chest/arm/thigh alone yield null bodyFatPct)", async () => {
+      const entry = await backend.upsertByDate(
+        { date: "2026-03-11", chestCm: 100, armCm: 32, thighCm: 55, photos: [] },
+        MALE_PROFILE
+      );
+      expect(entry.bodyFatPct).toBeNull();
+    });
+  });
+
   describe("getRange", () => {
     it("returns entries within [from, to] inclusive, ordered by date ascending", async () => {
       await backend.upsertByDate({ date: "2026-04-01", weightKg: 70, photos: [] }, null);
@@ -491,6 +546,35 @@ describe.each([
       // 2026-05-10 entry (waist 90) yields a higher body fat % than 05-01 (waist 85).
       const entry10 = await backend.getByDate("2026-05-10");
       expect(latest).toBe(entry10?.bodyFatPct);
+    });
+  });
+
+  describe("deleteByDate (spec: Delete a day's progress entry)", () => {
+    it("deletes the progress_entries row for the date", async () => {
+      await backend.upsertByDate({ date: "2026-06-01", weightKg: 70, photos: [] }, null);
+
+      await backend.deleteByDate("2026-06-01");
+
+      const fetched = await backend.getByDate("2026-06-01");
+      expect(fetched).toBeNull();
+    });
+
+    it("cascade-deletes progress_photos rows for that entry", async () => {
+      const entry = await backend.upsertByDate(
+        { date: "2026-06-02", photos: [makePhoto(), makePhoto()] },
+        null
+      );
+      const photosBeforeDelete = await backend.getPhotos(entry.id);
+      expect(photosBeforeDelete).toHaveLength(2);
+
+      await backend.deleteByDate("2026-06-02");
+
+      const photosAfterDelete = await backend.getPhotos(entry.id);
+      expect(photosAfterDelete).toHaveLength(0);
+    });
+
+    it("is a no-op (does not throw) when deleting a non-existent date", async () => {
+      await expect(backend.deleteByDate("2026-06-03")).resolves.not.toThrow();
     });
   });
 });

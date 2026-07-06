@@ -23,6 +23,12 @@ interface ProgressActions {
    * single write path — see design "ProgressEntrySheet component design").
    */
   saveEntry: (input: ProgressInput) => Promise<void>;
+  /**
+   * Delete the progress_entries record for a date, then clear `current`.
+   * Does NOT re-fetch — the row no longer exists (spec: "Day screen reverts
+   * to 'no record' state after deletion").
+   */
+  deleteEntry: (date: string) => Promise<void>;
   /** Update the selected dashboard range. No fetch/chart side effects. */
   setRange: (range: DashboardRange) => void;
 }
@@ -48,6 +54,11 @@ export const useProgressStore = create<ProgressState & ProgressActions>()((set) 
     await progressRepo.upsertByDate(input);
     const current = await progressRepo.getByDate(input.date);
     set({ current });
+  },
+
+  deleteEntry: async (date: string) => {
+    await progressRepo.deleteByDate(date);
+    set({ current: null });
   },
 
   setRange: (range: DashboardRange) => {

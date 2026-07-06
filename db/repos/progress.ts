@@ -57,6 +57,22 @@ export async function upsertByDate(input: ProgressInput): Promise<ProgressEntry>
   return entry;
 }
 
+/**
+ * Delete the progress_entries record for a date, cascading to its photos.
+ * Enqueues a delete sync op (mirrors upsertByDate's enqueue-on-write shape).
+ */
+export async function deleteByDate(date: string): Promise<void> {
+  const { userId } = useAuthStore.getState();
+
+  if (dexieAdapter) {
+    await dexieAdapter.progress.deleteByDate(date);
+  } else {
+    await _impl.deleteByDate(date);
+  }
+
+  _enqueueProgressDelete(date, userId);
+}
+
 // ── Private helpers ───────────────────────────────────────────────────
 
 function _enqueueProgressOp(entry: ProgressEntry, userId: string | null): void {
@@ -66,6 +82,18 @@ function _enqueueProgressOp(entry: ProgressEntry, userId: string | null): void {
     table: "progress_entries",
     op: "upsert",
     row: JSON.stringify({ ...entry, user_id: userId }),
+    userId,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+function _enqueueProgressDelete(date: string, userId: string | null): void {
+  if (!isSyncEnabled() || !userId) return;
+
+  void enqueue({
+    table: "progress_entries",
+    op: "delete",
+    row: JSON.stringify({ date, user_id: userId }),
     userId,
     updatedAt: new Date().toISOString(),
   });
