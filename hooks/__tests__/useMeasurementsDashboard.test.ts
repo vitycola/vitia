@@ -20,8 +20,8 @@ jest.mock("@/db/repos/progress", () => ({
   getRange: jest.fn(),
 }));
 
-import { addDays, rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
 import * as progressRepo from "@/db/repos/progress";
+import { addDays, rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
 import { useMeasurementsDashboard } from "../useMeasurementsDashboard";
 
 const mockGetRange = progressRepo.getRange as jest.Mock;

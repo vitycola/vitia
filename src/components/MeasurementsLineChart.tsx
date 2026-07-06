@@ -42,8 +42,7 @@ export function MeasurementsLineChart({ points, renderState }: MeasurementsLineC
   const range = maxValue - minValue || 1;
 
   const coords = drawable.map((p, index) => {
-    const x =
-      drawable.length === 1 ? VIEW_WIDTH / 2 : (index / (drawable.length - 1)) * VIEW_WIDTH;
+    const x = drawable.length === 1 ? VIEW_WIDTH / 2 : (index / (drawable.length - 1)) * VIEW_WIDTH;
     const y = VIEW_HEIGHT - ((p.value - minValue) / range) * VIEW_HEIGHT;
     return { x, y, key: p.key };
   });

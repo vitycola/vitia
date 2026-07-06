@@ -22,10 +22,11 @@ const mockVM = {
   isLoading: false,
 };
 
-const mockUseMeasurementsDashboard = jest.fn(() => mockVM);
+const mockUseMeasurementsDashboard = jest.fn((_range: string, _metric: string) => mockVM);
 
 jest.mock("@/hooks/useMeasurementsDashboard", () => ({
-  useMeasurementsDashboard: (...args: unknown[]) => mockUseMeasurementsDashboard(...args),
+  useMeasurementsDashboard: (range: string, metric: string) =>
+    mockUseMeasurementsDashboard(range, metric),
 }));
 
 jest.mock("@/db/repos/progress", () => ({

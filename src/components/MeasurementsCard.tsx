@@ -13,13 +13,16 @@ interface MeasurementsCardProps {
 const DEFAULT_METRIC: MetricKey = "waistCm";
 
 /**
- * Compact (1/3-width) Medidas dashboard tile. Consumes
- * useMeasurementsDashboard(range, metric) and renders a header
- * (label + chevron metric-picker), the line chart, and a stats caption.
- * The whole card body (everything except the chevron) is the tap target
- * for the historical overlay — there is no room for a bottom link on a
- * 1/3-width tile. Metric selection is local component state, not store
- * state (spec: "Metric Picker Default and Field Mapping").
+ * Compact (1/3-width) Medidas dashboard tile. Mounted as the `children` of
+ * `EmptyStateCard` (chart seam, SDD-3) with `title=""` — the card's
+ * aspect-square/rounded/shadow shell already comes from `EmptyStateCard`,
+ * so this component owns only the header (label + chevron metric-picker),
+ * the line chart, and a stats caption, NOT the outer card frame.
+ * Consumes useMeasurementsDashboard(range, metric). The whole card body
+ * (everything except the chevron) is the tap target for the historical
+ * overlay — there is no room for a bottom link on a 1/3-width tile. Metric
+ * selection is local component state, not store state (spec: "Metric
+ * Picker Default and Field Mapping").
  */
 export function MeasurementsCard({ range }: MeasurementsCardProps) {
   const [metric, setMetric] = useState<MetricKey>(DEFAULT_METRIC);
@@ -72,7 +75,7 @@ export function MeasurementsCard({ range }: MeasurementsCardProps) {
             openOverlay();
           }
         }}
-        className="flex aspect-square flex-col rounded-2xl bg-white p-3 shadow-sm"
+        className="flex h-full w-full flex-col items-stretch text-left"
       >
         <button
           type="button"
