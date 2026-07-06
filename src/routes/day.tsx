@@ -5,10 +5,13 @@ import { CalorieCard } from "@/src/components/CalorieCard";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
 import { MealSection } from "@/src/components/MealSection";
+import { ProgressEntrySheet } from "@/src/components/ProgressEntrySheet";
 import { WeekCalendarHeader } from "@/src/components/WeekCalendarHeader";
 import { useDayStore } from "@/stores/useDayStore";
 import { useProfileStore } from "@/stores/useProfileStore";
+import { useProgressStore } from "@/stores/useProgressStore";
 import type { MealType } from "@/types";
+import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,15 +31,49 @@ export function DayScreen() {
     clearMeal,
   } = useDayStore();
   const { profile, load, overrideGoals } = useProfileStore();
+  const {
+    current: progressEntry,
+    loadByDate,
+    saveEntry,
+    deleteEntry: deleteProgressEntry,
+  } = useProgressStore();
 
   const totals = useDailyTotals(entries);
   const isToday = selectedDate === todayISO();
 
   const [editingGoals, setEditingGoals] = useState(false);
+  const [progressSheetMode, setProgressSheetMode] = useState<"create" | "edit" | null>(null);
 
   useEffect(() => {
     void loadEntries();
   }, [loadEntries]);
+
+  useEffect(() => {
+    void loadByDate(selectedDate);
+  }, [loadByDate, selectedDate]);
+
+  // Convert stored photo Blobs into object URLs for the sheet's thumbnail
+  // preview (edit mode). Ownership of the created URLs — and their cleanup —
+  // belongs here (the caller), not ProgressEntrySheet, which stays
+  // presentational/stateless.
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<{ id: string; url: string }[]>([]);
+
+  useEffect(() => {
+    const photos = progressEntry?.photos ?? [];
+    const urls = photos.map((photo) => ({ id: photo.id, url: URL.createObjectURL(photo.blob) }));
+    setExistingPhotoUrls(urls);
+
+    return () => {
+      for (const { url } of urls) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [progressEntry?.photos]);
+
+  async function handleDeleteProgress(): Promise<void> {
+    if (!window.confirm("¿Eliminar el progreso de este día?")) return;
+    await deleteProgressEntry(selectedDate);
+  }
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const calorieCardRef = useRef<HTMLDivElement>(null);
@@ -180,8 +217,74 @@ export function DayScreen() {
               onAcceptSuggestion={handleAcceptSuggestion}
             />
           ))}
+
+          {progressEntry ? (
+            <div
+              data-testid="progress-summary-widget"
+              className="mt-3 flex w-full items-center justify-between gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3"
+            >
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-sm font-semibold text-gray-900">Progreso registrado</span>
+                <span className="text-xs text-gray-500">
+                  {progressEntry.weightKg != null && `Peso: ${progressEntry.weightKg} kg`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Editar progreso"
+                  onClick={() => setProgressSheetMode("edit")}
+                  className="rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Eliminar progreso"
+                  onClick={() => void handleDeleteProgress()}
+                  className="rounded-full p-2 text-red-500 transition-colors hover:bg-red-50"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setProgressSheetMode("create")}
+              className="mt-3 w-full rounded-2xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/5"
+            >
+              Añadir progreso
+            </button>
+          )}
         </div>
       </div>
+
+      {progressSheetMode && (
+        <ProgressEntrySheet
+          mode={progressSheetMode}
+          initial={
+            progressSheetMode === "edit" && progressEntry
+              ? {
+                  weightKg: progressEntry.weightKg,
+                  neckCm: progressEntry.neckCm,
+                  chestCm: progressEntry.chestCm,
+                  armCm: progressEntry.armCm,
+                  waistCm: progressEntry.waistCm,
+                  hipCm: progressEntry.hipCm,
+                  thighCm: progressEntry.thighCm,
+                  notes: progressEntry.notes,
+                }
+              : undefined
+          }
+          existingPhotos={progressSheetMode === "edit" ? existingPhotoUrls : undefined}
+          onSave={async (input) => {
+            await saveEntry({ date: selectedDate, ...input });
+            setProgressSheetMode(null);
+          }}
+          onClose={() => setProgressSheetMode(null)}
+        />
+      )}
     </div>
   );
 }

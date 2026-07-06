@@ -18,6 +18,8 @@ import sql0002 from "@/db/migrations/0002_user_session_persistence.sql?raw";
 import sql0003 from "@/db/migrations/0003_food_detail.sql?raw";
 import sql0004 from "@/db/migrations/0004_favorites_meal_type.sql?raw";
 import sql0005 from "@/db/migrations/0005_composite_foods.sql?raw";
+import sql0006 from "@/db/migrations/0006_progress_log.sql?raw";
+import sql0007 from "@/db/migrations/0007_progress_measurements.sql?raw";
 import journal from "@/db/migrations/meta/_journal.json";
 
 /** Re-export the journal so runWorkerMigrations in db/client.ts can reuse it. */
@@ -61,6 +63,8 @@ export const SQL_FILES: Record<string, string> = {
   "0003_food_detail": sql0003,
   "0004_favorites_meal_type": sql0004,
   "0005_composite_foods": sql0005,
+  "0006_progress_log": sql0006,
+  "0007_progress_measurements": sql0007,
 };
 
 // ---------------------------------------------------------------------------

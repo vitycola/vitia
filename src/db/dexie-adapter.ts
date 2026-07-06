@@ -23,10 +23,12 @@ import type {
   NewMealEntry,
   NewSyncQueueRow,
   NewUserProfile,
+  ProgressEntry,
   SyncQueueRow,
   UserFavoriteFood,
   UserProfile,
 } from "@/db/schema";
+import { computeNavyBodyFat } from "@/lib/bodyFat";
 import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
 import type { MealType } from "@/types";
@@ -47,6 +49,21 @@ interface UserProfileRow extends UserProfile {}
 interface SyncQueueDexieRow extends SyncQueueRow {}
 interface UserFavoriteFoodRow extends UserFavoriteFood {}
 interface FoodIngredientRow extends FoodIngredient {}
+interface ProgressEntryRow extends ProgressEntry {}
+
+/**
+ * Dexie photo row. Unlike the OPFS/drizzle path (which stores a Buffer in a
+ * BLOB column), IndexedDB stores a native Blob directly — no conversion
+ * needed on this path (design: Photo storage strategy across dual backend).
+ */
+interface ProgressPhotoRow {
+  id: string;
+  entryId: string;
+  blob: Blob;
+  mimeType: string;
+  position: number;
+  createdAt: string;
+}
 
 /**
  * Migration tracking row — same semantic as __drizzle_migrations in SQLite.
@@ -63,7 +80,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 6;
+const DB_VERSION = 8;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -77,6 +94,8 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0003_food_detail", when: 1793000000000 },
   { tag: "0004_favorites_meal_type", when: 1799000000000 },
   { tag: "0005_composite_foods", when: 1805000000000 },
+  { tag: "0006_progress_log", when: 1810000000000 },
+  { tag: "0007_progress_measurements", when: 1815000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -86,6 +105,8 @@ class VitiaDb extends Dexie {
   sync_queue!: Table<SyncQueueDexieRow, string>;
   user_favorite_foods!: Table<UserFavoriteFoodRow, string>;
   food_ingredients!: Table<FoodIngredientRow, string>;
+  progress_entries!: Table<ProgressEntryRow, string>;
+  progress_photos!: Table<ProgressPhotoRow, string>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -168,6 +189,38 @@ class VitiaDb extends Dexie {
     });
     // No upgrade() needed: category is an optional column and food_ingredients
     // is a brand-new store (additive, mirrors v4/v5 rollout style).
+
+    // Version 7: adds progress_entries + progress_photos tables
+    // (0006_progress_log migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode, category",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      food_ingredients: "id, parentFoodId, ingredientFoodId",
+      progress_entries: "id, date, userId",
+      progress_photos: "id, entryId",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: progress_entries and progress_photos are brand-new
+    // stores (additive, mirrors v6 rollout style).
+
+    // Version 8: adds chestCm/armCm/thighCm to progress_entries
+    // (0007_progress_measurements migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode, category",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      food_ingredients: "id, parentFoodId, ingredientFoodId",
+      progress_entries: "id, date, userId",
+      progress_photos: "id, entryId",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: chestCm/armCm/thighCm are new optional columns on
+    // an existing store — no index change (mirrors v7/v6 rollout style).
   }
 }
 
@@ -222,6 +275,64 @@ export interface ProfileRepo {
   upsertProfile(data: Omit<NewUserProfile, "id">): Promise<UserProfile>;
 }
 
+/** A photo attached to a progress entry — always a Blob at the repo boundary. */
+export interface ProgressPhotoView {
+  id: string;
+  entryId: string;
+  blob: Blob;
+  mimeType: string;
+  position: number;
+}
+
+/** Input shape for creating/replacing a progress_photos row. */
+export interface NewProgressPhotoInput {
+  blob: Blob;
+  mimeType: string;
+}
+
+/** Input shape for upsertByDate — mirrors db/repos/progress.ts ProgressInput. */
+export interface ProgressUpsertInput {
+  date: string;
+  weightKg?: number | null;
+  neckCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
+  waistCm?: number | null;
+  hipCm?: number | null;
+  thighCm?: number | null;
+  notes?: string | null;
+  userId?: string | null;
+  photos: NewProgressPhotoInput[];
+}
+
+export interface ProgressEntryWithPhotos extends ProgressEntry {
+  photos: ProgressPhotoView[];
+}
+
+/** Sex + height needed to run the Navy formula — mirrors db/repositories/progress.ts. */
+export interface ProgressProfileInput {
+  sex: "male" | "female";
+  heightCm: number;
+}
+
+/** Progress repository surface — mirrors db/repositories/progress.ts exactly */
+export interface ProgressRepo {
+  getByDate(date: string): Promise<ProgressEntryWithPhotos | null>;
+  getRange(from: string, to: string): Promise<ProgressEntry[]>;
+  /**
+   * profile carries sex/heightCm for the Navy formula (mirrors the pure
+   * drizzle repo's signature) — pass null when no profile exists yet.
+   */
+  upsertByDate(
+    input: ProgressUpsertInput,
+    profile: ProgressProfileInput | null
+  ): Promise<ProgressEntry>;
+  getPhotos(entryId: string): Promise<ProgressPhotoView[]>;
+  getLatestBodyFat(beforeDate?: string): Promise<number | null>;
+  /** Deletes the progress_entries row for a date, cascading to its photos. No-op if the date has no record. */
+  deleteByDate(date: string): Promise<void>;
+}
+
 /** SyncQueue repository surface — durable outbound operation queue */
 export interface SyncQueueRepo {
   enqueue(op: NewSyncQueueRow): Promise<void>;
@@ -258,6 +369,7 @@ export interface DexieAdapter {
   readonly mealEntries: MealEntriesRepo;
   readonly syncQueue: SyncQueueRepo;
   readonly favorites: FavoritesRepo;
+  readonly progress: ProgressRepo;
   /** Exposed for testing: returns the list of applied migration tags (W2/S1). */
   getAppliedMigrationTags(): Promise<string[]>;
   /** Close the underlying Dexie connection (useful in tests). */
@@ -838,6 +950,121 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
   };
 
+  // ── Progress (progress_entries + progress_photos) ───────────────────────
+
+  const progress: ProgressRepo = {
+    async getByDate(date) {
+      const row = await db.progress_entries.where("date").equals(date).first();
+      if (!row) return null;
+      const photos = await progress.getPhotos(row.id);
+      return { ...row, photos };
+    },
+
+    async getRange(from, to) {
+      const rows = await db.progress_entries.where("date").between(from, to, true, true).toArray();
+      return rows.sort((a, b) => a.date.localeCompare(b.date));
+    },
+
+    async upsertByDate(input, profile) {
+      return db.transaction("rw", db.progress_entries, db.progress_photos, async () => {
+        const existing = await db.progress_entries.where("date").equals(input.date).first();
+
+        const computed = profile
+          ? computeNavyBodyFat({
+              sex: profile.sex,
+              heightCm: profile.heightCm,
+              neckCm: input.neckCm,
+              waistCm: input.waistCm,
+              hipCm: input.hipCm,
+            })
+          : null;
+
+        let bodyFatPct = computed;
+        if (bodyFatPct === null) {
+          bodyFatPct = await progress.getLatestBodyFat();
+        }
+
+        const row: ProgressEntryRow = {
+          id: existing?.id ?? globalThis.crypto.randomUUID(),
+          userId: input.userId ?? existing?.userId ?? null,
+          date: input.date,
+          weightKg: input.weightKg ?? null,
+          neckCm: input.neckCm ?? null,
+          chestCm: input.chestCm ?? null,
+          armCm: input.armCm ?? null,
+          waistCm: input.waistCm ?? null,
+          hipCm: input.hipCm ?? null,
+          thighCm: input.thighCm ?? null,
+          bodyFatPct,
+          notes: input.notes ?? null,
+          createdAt: existing?.createdAt ?? now(),
+          updatedAt: now(),
+        };
+        await db.progress_entries.put(row);
+
+        // Replace-on-edit: delete old photos, insert new ones (design: photo
+        // replace-on-edit inside the same transaction).
+        const existingPhotoKeys = await db.progress_photos
+          .where("entryId")
+          .equals(row.id)
+          .primaryKeys();
+        await db.progress_photos.bulkDelete(existingPhotoKeys);
+
+        if (input.photos.length > 0) {
+          const photoRows: ProgressPhotoRow[] = input.photos.map((photo, index) => ({
+            id: globalThis.crypto.randomUUID(),
+            entryId: row.id,
+            blob: photo.blob,
+            mimeType: photo.mimeType,
+            position: index,
+            createdAt: now(),
+          }));
+          await db.progress_photos.bulkAdd(photoRows);
+        }
+
+        return row;
+      });
+    },
+
+    async getPhotos(entryId) {
+      const rows = await db.progress_photos.where("entryId").equals(entryId).toArray();
+      return rows
+        .sort((a, b) => a.position - b.position)
+        .map((r) => ({
+          id: r.id,
+          entryId: r.entryId,
+          blob: r.blob,
+          mimeType: r.mimeType,
+          position: r.position,
+        }));
+    },
+
+    async getLatestBodyFat(beforeDate) {
+      let rows = await db.progress_entries.toArray();
+      if (beforeDate) {
+        rows = rows.filter((r) => r.date < beforeDate);
+      }
+      const withBodyFat = rows
+        .filter((r): r is ProgressEntryRow & { bodyFatPct: number } => r.bodyFatPct != null)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      return withBodyFat[0]?.bodyFatPct ?? null;
+    },
+
+    async deleteByDate(date) {
+      await db.transaction("rw", db.progress_entries, db.progress_photos, async () => {
+        const existing = await db.progress_entries.where("date").equals(date).first();
+        if (!existing) return; // no-op: nothing to delete for this date
+
+        const photoKeys = await db.progress_photos
+          .where("entryId")
+          .equals(existing.id)
+          .primaryKeys();
+        await db.progress_photos.bulkDelete(photoKeys);
+        await db.progress_entries.delete(existing.id);
+      });
+    },
+  };
+
   // ── Public adapter ────────────────────────────────────────────────────────
 
   return {
@@ -847,6 +1074,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     mealEntries,
     syncQueue,
     favorites,
+    progress,
 
     async getAppliedMigrationTags() {
       const rows = await db.__drizzle_migrations.toArray();
