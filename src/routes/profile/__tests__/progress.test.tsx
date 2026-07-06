@@ -24,6 +24,12 @@ jest.mock("@/src/components/ProgressEntrySheet", () => ({
   ),
 }));
 
+jest.mock("@/src/components/CalorieDashboardCard", () => ({
+  CalorieDashboardCard: ({ range }: { range: string }) => (
+    <div data-testid="calorie-dashboard-card">Calorías:{range}</div>
+  ),
+}));
+
 // jsdom does not implement URL.createObjectURL/revokeObjectURL.
 if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-url");
 if (!URL.revokeObjectURL) URL.revokeObjectURL = jest.fn();
@@ -56,17 +62,19 @@ describe("ProgressRoute", () => {
     (URL.createObjectURL as jest.Mock).mockReturnValue("blob:mock-url");
   });
 
-  it("renders all 4 empty-state cards inside a 2x2 grid", () => {
+  it("renders the full-width Calorías card above a 3-column Peso/%Grasa/Medidas row", () => {
     const { container } = render(<ProgressRoute />);
 
-    expect(screen.getByText("Calorías")).toBeInTheDocument();
+    expect(screen.getByTestId("calorie-dashboard-card")).toBeInTheDocument();
     expect(screen.getByText("Peso")).toBeInTheDocument();
     expect(screen.getByText("% Grasa")).toBeInTheDocument();
     expect(screen.getByText("Medidas")).toBeInTheDocument();
 
-    const grid = container.querySelector(".grid.grid-cols-2");
+    const grid = container.querySelector(".grid.grid-cols-3");
     expect(grid).not.toBeNull();
-    expect(grid?.children).toHaveLength(4);
+    expect(grid?.children).toHaveLength(3);
+    // Calorías is NOT one of the 3-column grid's children — it renders full-width above it.
+    expect(grid?.contains(screen.getByTestId("calorie-dashboard-card"))).toBe(false);
   });
 
   it("does not render PhotoStubCard", () => {
@@ -138,7 +146,7 @@ describe("ProgressRoute", () => {
 
     const addButton = screen.getByRole("button", { name: "Añadir progreso" });
     const filterButton = screen.getByRole("button", { name: "Semana" });
-    const grid = screen.getByText("Calorías").closest(".grid.grid-cols-2");
+    const grid = screen.getByText("Peso").closest(".grid.grid-cols-3");
 
     expect(grid).not.toBeNull();
     // addButton precedes filterButton in document order
@@ -157,7 +165,7 @@ describe("ProgressRoute", () => {
     const addButton = screen.getByRole("button", { name: "Añadir progreso" });
     const filterButton = screen.getByRole("button", { name: "Semana" });
     const filterContainer = filterButton.parentElement; // the segmented-filter row div
-    const grid = screen.getByText("Calorías").closest(".grid.grid-cols-2");
+    const grid = screen.getByText("Peso").closest(".grid.grid-cols-3");
 
     // The "+" button and the filter container must be DIRECT siblings inside
     // one shared row — not two separately stacked rows under a generic page

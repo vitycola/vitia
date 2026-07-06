@@ -1,9 +1,10 @@
 import { todayISO } from "@/lib/date";
+import { CalorieDashboardCard } from "@/src/components/CalorieDashboardCard";
 import { ProgressEntrySheet } from "@/src/components/ProgressEntrySheet";
 import { EmptyStateCard } from "@/src/components/ui/EmptyStateCard";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { useProgressStore } from "@/stores/useProgressStore";
-import { Flame, Percent, Plus, Ruler, Scale } from "lucide-react";
+import { Percent, Plus, Ruler, Scale } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
@@ -13,11 +14,12 @@ const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
 ];
 
 /**
- * 2x2 empty-state dashboard shell plus the progress-log entry point. No
- * chart library or data model is introduced for the dashboard cards — each
- * shows a "Próximamente" placeholder. The segmented range filter only holds
- * UI state (spec: "Segmented range filter is UI-only") — it does not fetch
- * or render any chart/dashboard content.
+ * Dashboard shell plus the progress-log entry point. Calorías renders
+ * full-width, driven by `useCalorieDashboard` via `CalorieDashboardCard`,
+ * above a 3-column Peso/%Grasa/Medidas row that still shows "Próximamente"
+ * empty-state placeholders (no data model for those 3 yet). The segmented
+ * range filter (`selectedRange`) drives the Calorías chart/overlay window;
+ * it remains inert for Peso/%Grasa/Medidas.
  */
 export function ProgressRoute() {
   const { current, selectedRange, setRange, loadByDate, saveEntry } = useProgressStore();
@@ -76,8 +78,9 @@ export function ProgressRoute() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <EmptyStateCard title="Calorías" icon={<Flame size={24} />} />
+      <CalorieDashboardCard range={selectedRange} />
+
+      <div className="grid grid-cols-3 gap-3">
         <EmptyStateCard title="Peso" icon={<Scale size={24} />} />
         <EmptyStateCard title="% Grasa" icon={<Percent size={24} />} />
         <EmptyStateCard title="Medidas" icon={<Ruler size={24} />} />
