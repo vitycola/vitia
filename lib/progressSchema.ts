@@ -25,8 +25,11 @@ export const progressEntrySchema = z
   .object({
     weightKg: optionalCoercedNumber,
     neckCm: optionalCoercedNumber,
+    chestCm: optionalCoercedNumber,
+    armCm: optionalCoercedNumber,
     waistCm: optionalCoercedNumber,
     hipCm: optionalCoercedNumber,
+    thighCm: optionalCoercedNumber,
     notes: z.string().optional(),
     photos: z.array(z.unknown()).optional(),
   })
@@ -34,8 +37,11 @@ export const progressEntrySchema = z
     (data) =>
       data.weightKg !== undefined ||
       data.neckCm !== undefined ||
+      data.chestCm !== undefined ||
+      data.armCm !== undefined ||
       data.waistCm !== undefined ||
       data.hipCm !== undefined ||
+      data.thighCm !== undefined ||
       (data.photos !== undefined && data.photos.length > 0),
     {
       message: "Ingresá al menos un dato: peso, una medida o una foto",

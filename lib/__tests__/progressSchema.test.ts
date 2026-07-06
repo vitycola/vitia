@@ -76,4 +76,40 @@ describe("progressEntrySchema", () => {
     const result = progressEntrySchema.safeParse({ notes: "Feeling great" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts chestCm alone as satisfying the at-least-one-field refinement", () => {
+    const result = progressEntrySchema.safeParse({ chestCm: 100 });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts armCm alone as satisfying the at-least-one-field refinement", () => {
+    const result = progressEntrySchema.safeParse({ armCm: 32 });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts thighCm alone as satisfying the at-least-one-field refinement", () => {
+    const result = progressEntrySchema.safeParse({ thighCm: 55 });
+    expect(result.success).toBe(true);
+  });
+
+  it("coerces numeric string inputs for chest/arm/thigh", () => {
+    const result = progressEntrySchema.safeParse({ chestCm: "100", armCm: "32", thighCm: "55" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.chestCm).toBe(100);
+      expect(result.data.armCm).toBe(32);
+      expect(result.data.thighCm).toBe(55);
+    }
+  });
+
+  it("treats a cleared chestCm (empty string) as absent, not zero", () => {
+    const result = progressEntrySchema.safeParse({ chestCm: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a negative chest/arm/thigh measurement", () => {
+    expect(progressEntrySchema.safeParse({ chestCm: -1 }).success).toBe(false);
+    expect(progressEntrySchema.safeParse({ armCm: -1 }).success).toBe(false);
+    expect(progressEntrySchema.safeParse({ thighCm: -1 }).success).toBe(false);
+  });
 });
