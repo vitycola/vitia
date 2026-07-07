@@ -18,20 +18,28 @@ jest.mock("@/stores/useProfileStore", () => ({
     selector({ profile: mockProfile }),
 }));
 
-jest.mock("@/lib/date", () => ({
-  ...jest.requireActual("@/lib/date"),
-  todayISO: () => "2026-07-06",
-}));
-
 import * as mealEntriesRepo from "@/db/repos/mealEntries";
 import { useCalorieDashboard } from "../useCalorieDashboard";
 
 const mockGetLoggedTotalsByDateRange = mealEntriesRepo.getLoggedTotalsByDateRange as jest.Mock;
 
+// Pin the system clock instead of mocking `@/lib/date`'s todayISO export:
+// rollingWindow()'s `today: string = todayISO()` default parameter calls the
+// module-local todayISO directly (a same-file reference, not a re-import), so
+// overriding the exported todayISO via jest.mock never reaches rollingWindow's
+// internal call — the window silently drifts a day every time the wall clock
+// advances. Faking the system time makes the real (un-mocked) todayISO return
+// the pinned date everywhere, sidestepping the module-boundary gap entirely.
 describe("useCalorieDashboard", () => {
   beforeEach(() => {
+    jest.useFakeTimers({ advanceTimers: false });
+    jest.setSystemTime(new Date("2026-07-06T12:00:00"));
     mockGetLoggedTotalsByDateRange.mockReset();
     mockProfile = { calorieGoal: 2200 };
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("week range: fetches the calendar-week window and renders 7 bars", async () => {
