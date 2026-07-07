@@ -1,10 +1,11 @@
 import { todayISO } from "@/lib/date";
 import { CalorieDashboardCard } from "@/src/components/CalorieDashboardCard";
+import { MeasurementsCard } from "@/src/components/MeasurementsCard";
 import { ProgressEntrySheet } from "@/src/components/ProgressEntrySheet";
 import { EmptyStateCard } from "@/src/components/ui/EmptyStateCard";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { useProgressStore } from "@/stores/useProgressStore";
-import { Percent, Plus, Ruler, Scale } from "lucide-react";
+import { Percent, Plus, Scale } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
@@ -16,10 +17,13 @@ const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
 /**
  * Dashboard shell plus the progress-log entry point. Calorías renders
  * full-width, driven by `useCalorieDashboard` via `CalorieDashboardCard`,
- * above a 3-column Peso/%Grasa/Medidas row that still shows "Próximamente"
- * empty-state placeholders (no data model for those 3 yet). The segmented
- * range filter (`selectedRange`) drives the Calorías chart/overlay window;
- * it remains inert for Peso/%Grasa/Medidas.
+ * above a 3-column Peso/%Grasa/Medidas row. Medidas now renders as a live
+ * compact tile (metric picker + line chart + sparse historical overlay)
+ * driven by `useMeasurementsDashboard` via `MeasurementsCard`; Peso and
+ * % Grasa remain "Próximamente" empty-state placeholders (no data model for
+ * those 2 yet). The segmented range filter (`selectedRange`) drives both
+ * the Calorías and Medidas chart/overlay windows; it remains inert for
+ * Peso/%Grasa.
  */
 export function ProgressRoute() {
   const { current, selectedRange, setRange, loadByDate, saveEntry } = useProgressStore();
@@ -83,7 +87,9 @@ export function ProgressRoute() {
       <div className="grid grid-cols-3 gap-3">
         <EmptyStateCard title="Peso" icon={<Scale size={24} />} />
         <EmptyStateCard title="% Grasa" icon={<Percent size={24} />} />
-        <EmptyStateCard title="Medidas" icon={<Ruler size={24} />} />
+        <EmptyStateCard title="">
+          <MeasurementsCard range={selectedRange} />
+        </EmptyStateCard>
       </div>
 
       {sheetOpen && (

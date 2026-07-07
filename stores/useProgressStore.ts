@@ -3,16 +3,18 @@ import type { ProgressEntryWithPhotos, ProgressInput } from "@/db/repos/progress
 import { create } from "zustand";
 
 // ── Dashboard range selection ──────────────────────────────────────────
-// Drives the Calorías chart's data range and the historical overlay's
-// window (see useCalorieDashboard / CalorieDashboardCard). Remains inert
-// for the Peso, % Grasa, and Medidas placeholder cards.
+// Drives the Calorías chart's data range and historical overlay window
+// (see useCalorieDashboard / CalorieDashboardCard), AND the Medidas chart's
+// data range and historical overlay window (see useMeasurementsDashboard /
+// MeasurementsCard). Remains inert for the Peso and % Grasa placeholder
+// cards.
 export type DashboardRange = "week" | "month" | "3month";
 
 // ── Store shape ────────────────────────────────────────────────────────
 interface ProgressState {
   /** The progress_entries record (with photos) for the last loaded date, or null. */
   current: ProgressEntryWithPhotos | null;
-  /** Segmented filter selection on Profile > Progreso — drives the Calorías chart/overlay. */
+  /** Segmented filter selection on Profile > Progreso — drives the Calorías and Medidas chart/overlay. */
   selectedRange: DashboardRange;
   isLoading: boolean;
 }
@@ -33,8 +35,9 @@ interface ProgressActions {
    */
   deleteEntry: (date: string) => Promise<void>;
   /**
-   * Update the selected dashboard range. `useCalorieDashboard` reacts to
-   * this and refetches its window; Peso/%Grasa/Medidas are unaffected.
+   * Update the selected dashboard range. `useCalorieDashboard` and
+   * `useMeasurementsDashboard` both react to this and refetch their
+   * windows; Peso/%Grasa are unaffected.
    */
   setRange: (range: DashboardRange) => void;
 }
