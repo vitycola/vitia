@@ -41,7 +41,6 @@ export interface LinePoint {
   key: string;
   label: string;
   value: number | null;
-  imputed: boolean;
 }
 
 export type RenderState = "empty" | "single" | "line";
@@ -86,7 +85,6 @@ export function buildLine(
       key: `bucket-${index}`,
       label: bucket.label,
       value: bucket.value,
-      imputed: bucket.value !== null,
     }));
     const drawableCount = linePoints.filter((p) => p.value !== null).length;
     return { points: linePoints, renderState: renderStateFor(drawableCount) };
@@ -96,7 +94,6 @@ export function buildLine(
     key: point.date,
     label: point.date,
     value: point.value,
-    imputed: true,
   }));
 
   return { points: linePoints, renderState: renderStateFor(linePoints.length) };

@@ -1,3 +1,4 @@
+import { windowSpanDays } from "@/lib/measurementsDashboard";
 import type { LinePoint, RenderState } from "@/lib/measurementsDashboard";
 
 const TRACK_COLOR = "#E5E5EA";
@@ -9,9 +10,21 @@ const VIEW_WIDTH = 100;
 const VIEW_HEIGHT = 100;
 const DOT_RADIUS = 3;
 
+// ISO date format (YYYY-MM-DD) — used to distinguish week/month LinePoints
+// (whose `key` is a real logged date) from 3-month bucket LinePoints (whose
+// `key` is "bucket-{index}" and are already evenly spaced by construction).
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 interface MeasurementsLineChartProps {
   points: LinePoint[];
   renderState: RenderState;
+  /**
+   * The fetch window {from, to} for the active range. Required to compute
+   * date-proportional X positions for week/month (date-keyed) points. Not
+   * needed for 3-month bucket points, which are spaced by index since each
+   * bucket already represents a uniform 30-day span.
+   */
+  window?: { from: string; to: string };
 }
 
 /**
@@ -19,11 +32,17 @@ interface MeasurementsLineChartProps {
  * no-library approach, but draws a line (not bars) connecting only real
  * logged points, with no goal line (no "goal" concept for measurements).
  * Three explicit render states: "empty" (no data), "single" (one dot, no
- * line), "line" (polyline connecting >=2 real points). X positions are
- * spaced proportionally by index among the drawable (non-null) points —
- * there is no fabricated per-day cell.
+ * line), "line" (polyline connecting >=2 real points).
+ *
+ * X positions: week/month points (LinePoint.key is a real ISO date) are
+ * spaced DATE-PROPORTIONALLY within the fetch window, so a longer gap
+ * between logged days renders as a visually longer flat segment (the gap is
+ * implicit in the slope, not annotated) — see design Decision 2. 3-month
+ * bucket points (LinePoint.key is "bucket-{index}") are spaced by index,
+ * which is already correct/equivalent since each bucket is a uniform
+ * 30-day span by construction.
  */
-export function MeasurementsLineChart({ points, renderState }: MeasurementsLineChartProps) {
+export function MeasurementsLineChart({ points, renderState, window }: MeasurementsLineChartProps) {
   const drawable = points.filter((p) => p.value !== null) as (LinePoint & { value: number })[];
 
   if (renderState === "empty") {
@@ -41,8 +60,21 @@ export function MeasurementsLineChart({ points, renderState }: MeasurementsLineC
   const maxValue = Math.max(...values);
   const range = maxValue - minValue || 1;
 
+  const isDateKeyed = drawable.length > 0 && ISO_DATE_RE.test(drawable[0].key);
+  const spanDays = isDateKeyed && window ? windowSpanDays(window.from, window.to) : 0;
+
   const coords = drawable.map((p, index) => {
-    const x = drawable.length === 1 ? VIEW_WIDTH / 2 : (index / (drawable.length - 1)) * VIEW_WIDTH;
+    let x: number;
+    if (drawable.length === 1) {
+      x = VIEW_WIDTH / 2;
+    } else if (isDateKeyed && window) {
+      const daysElapsed = windowSpanDays(window.from, p.key);
+      x = (daysElapsed / spanDays) * VIEW_WIDTH;
+    } else {
+      // 3-month bucket points (index-keyed) — buckets are uniform-width by
+      // construction, so index-based spacing is already correct here.
+      x = (index / (drawable.length - 1)) * VIEW_WIDTH;
+    }
     const y = VIEW_HEIGHT - ((p.value - minValue) / range) * VIEW_HEIGHT;
     return { x, y, key: p.key };
   });

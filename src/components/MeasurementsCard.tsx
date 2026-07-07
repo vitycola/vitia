@@ -29,7 +29,7 @@ export function MeasurementsCard({ range }: MeasurementsCardProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const { linePoints, renderState, overlayRows, latest, delta } = useMeasurementsDashboard(
+  const { linePoints, renderState, overlayRows, latest, delta, window } = useMeasurementsDashboard(
     range,
     metric
   );
@@ -104,7 +104,7 @@ export function MeasurementsCard({ range }: MeasurementsCardProps) {
         )}
 
         <div className="flex flex-1 flex-col justify-center">
-          <MeasurementsLineChart points={linePoints} renderState={renderState} />
+          <MeasurementsLineChart points={linePoints} renderState={renderState} window={window} />
         </div>
 
         <div>
