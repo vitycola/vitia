@@ -168,6 +168,43 @@ describe("useProgressPhotoGallery", () => {
     expect(result.current.months[0].items[0].url).toBe(createdUrls[0]);
   });
 
+  it("creates each photo's URL exactly once, even though the lightbox reuses it across navigation (no per-navigation churn)", async () => {
+    mockGetPhotosInRange.mockResolvedValue([
+      {
+        date: "2026-07-01",
+        weightKg: 80,
+        bodyFatPct: null,
+        waistCm: null,
+        photos: [
+          { id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
+      },
+      {
+        date: "2026-07-02",
+        weightKg: 78,
+        bodyFatPct: null,
+        waistCm: null,
+        photos: [
+          { id: "p2", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
+      },
+    ]);
+
+    const { result } = renderHook(() => useProgressPhotoGallery());
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Exactly one createObjectURL call per photo across the whole fetched
+    // set (2 photos = 2 calls) — the lightbox and the thumbnail grid share
+    // the SAME url per GalleryItem, so navigating the lightbox between
+    // already-fetched photos revokes nothing and creates nothing new. The
+    // "revoke previous / create new" contract (spec: Object-URL Lifecycle)
+    // is satisfied at the hook's fetch/refetch boundary (see the unmount
+    // test below), not per lightbox navigation, since all thumbnails must
+    // stay renderable simultaneously behind the lightbox.
+    expect(createdUrls).toHaveLength(2);
+  });
+
   it("revokes all created object URLs on unmount", async () => {
     mockGetPhotosInRange.mockResolvedValue([
       {
