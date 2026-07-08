@@ -1,5 +1,5 @@
 import * as progressRepo from "@/db/repos/progress";
-import { rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
+import { resolveDashboardWindow } from "@/lib/date";
 import type {
   DashboardRange,
   LinePoint,
@@ -28,23 +28,6 @@ export interface MeasurementsDashboardVM {
 }
 
 /**
- * Resolve the {from, to} fetch window for a given dashboard range —
- * IDENTICAL semantics to Calorías' resolveWindow so the shared
- * `selectedRange` never diverges between cards.
- */
-function resolveWindow(range: DashboardRange): { from: string; to: string } {
-  if (range === "week") {
-    const weekStart = startOfWeek(todayISO());
-    const days = weekDays(weekStart);
-    return { from: days[0], to: days[6] };
-  }
-  if (range === "month") {
-    return rollingWindow(30);
-  }
-  return rollingWindow(90);
-}
-
-/**
  * Fetch+shape hook for the Progress > Medidas dashboard. Mirrors
  * useCalorieDashboard's fetch pattern: resolves the window for the active
  * range, calls progressRepo.getRange, and derives sparse points + line data
@@ -59,7 +42,7 @@ export function useMeasurementsDashboard(
   const [rows, setRows] = useState<MeasurementEntryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const window = useMemo(() => resolveWindow(range), [range]);
+  const window = useMemo(() => resolveDashboardWindow(range), [range]);
 
   useEffect(() => {
     let cancelled = false;

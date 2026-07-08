@@ -42,7 +42,7 @@ describe("useCalorieDashboard", () => {
     jest.useRealTimers();
   });
 
-  it("week range: fetches the calendar-week window and renders 7 bars", async () => {
+  it("week range: fetches a rolling 7-day window ending today and renders 7 bars", async () => {
     mockGetLoggedTotalsByDateRange.mockResolvedValue([
       { date: "2026-07-01", calories: 2100 },
       { date: "2026-07-02", calories: 1900 },
@@ -54,8 +54,8 @@ describe("useCalorieDashboard", () => {
 
     expect(result.current.bars).toHaveLength(7);
     expect(result.current.goalLine).toBe(2200);
-    // 2026-07-06 is itself a Monday -> week is 2026-07-06..2026-07-12
-    expect(mockGetLoggedTotalsByDateRange).toHaveBeenCalledWith("2026-07-06", "2026-07-12");
+    // rolling 7-day window ending at pinned "today" 2026-07-06 -> 2026-06-30..2026-07-06
+    expect(mockGetLoggedTotalsByDateRange).toHaveBeenCalledWith("2026-06-30", "2026-07-06");
   });
 
   it("month range: fetches a rolling 30-day window and renders 30 bars", async () => {
@@ -93,8 +93,8 @@ describe("useCalorieDashboard", () => {
 
   it("computes imputed-only average and total from fetched rows", async () => {
     mockGetLoggedTotalsByDateRange.mockResolvedValue([
-      { date: "2026-06-29", calories: 2100 },
-      { date: "2026-06-30", calories: 1900 },
+      { date: "2026-06-30", calories: 2100 },
+      { date: "2026-07-01", calories: 1900 },
     ]);
 
     const { result } = renderHook(() => useCalorieDashboard("week"));

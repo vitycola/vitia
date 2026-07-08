@@ -1,5 +1,5 @@
 import * as progressRepo from "@/db/repos/progress";
-import { rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
+import { resolveDashboardWindow } from "@/lib/date";
 import type { DashboardRange, LinePoint, RenderState, WeightEntryRow } from "@/lib/weightDashboard";
 import {
   buildLine,
@@ -22,23 +22,6 @@ export interface WeightDashboardVM {
 }
 
 /**
- * Resolve the {from, to} fetch window for a given dashboard range —
- * IDENTICAL semantics to Calorías'/Medidas' resolveWindow so the shared
- * `selectedRange` never diverges between cards.
- */
-function resolveWindow(range: DashboardRange): { from: string; to: string } {
-  if (range === "week") {
-    const weekStart = startOfWeek(todayISO());
-    const days = weekDays(weekStart);
-    return { from: days[0], to: days[6] };
-  }
-  if (range === "month") {
-    return rollingWindow(30);
-  }
-  return rollingWindow(90);
-}
-
-/**
  * Fetch+shape hook for the Progress > Peso dashboard. Mirrors
  * useMeasurementsDashboard's fetch pattern minus the metric param: resolves
  * the window for the active range, calls progressRepo.getRange, and derives
@@ -49,7 +32,7 @@ export function useWeightDashboard(range: DashboardRange): WeightDashboardVM {
   const [rows, setRows] = useState<WeightEntryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const window = useMemo(() => resolveWindow(range), [range]);
+  const window = useMemo(() => resolveDashboardWindow(range), [range]);
 
   useEffect(() => {
     let cancelled = false;
