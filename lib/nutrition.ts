@@ -150,6 +150,10 @@ export interface SummedIngredientMacros {
   carbsPer100g: number;
   fatPer100g: number;
   totalWeightG: number;
+  totalCalories: number;
+  totalProteinG: number;
+  totalCarbsG: number;
+  totalFatG: number;
 }
 
 /**
@@ -186,7 +190,17 @@ export function sumIngredientMacros(ingredients: IngredientInput[]): SummedIngre
   }
 
   if (totalWeightG <= 0) {
-    return { caloriesPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0, totalWeightG };
+    return {
+      caloriesPer100g: 0,
+      proteinPer100g: 0,
+      carbsPer100g: 0,
+      fatPer100g: 0,
+      totalWeightG,
+      totalCalories: 0,
+      totalProteinG: 0,
+      totalCarbsG: 0,
+      totalFatG: 0,
+    };
   }
 
   const factor = 100 / totalWeightG;
@@ -196,5 +210,9 @@ export function sumIngredientMacros(ingredients: IngredientInput[]): SummedIngre
     carbsPer100g: carbsG * factor,
     fatPer100g: fatG * factor,
     totalWeightG,
+    totalCalories: calories,
+    totalProteinG: proteinG,
+    totalCarbsG: carbsG,
+    totalFatG: fatG,
   };
 }

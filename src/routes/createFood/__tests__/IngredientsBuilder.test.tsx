@@ -56,7 +56,7 @@ describe("IngredientsBuilderRoute", () => {
 
     expect(screen.getByText("Huevo")).toBeInTheDocument();
     // 50g of huevo: calories = 155 * 0.5 = 77.5 -> rounded display 78 (or 77)
-    expect(screen.getByText(/kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/kcal total/)).toBeInTheDocument();
   });
 
   it("adding an ingredient updates the displayed sum", () => {

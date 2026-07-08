@@ -59,7 +59,7 @@ export function FoodResultRow({
 
           <div className="flex shrink-0 flex-col items-end gap-0.5">
             <span className="text-sm font-semibold text-gray-700">
-              {Math.round(food.caloriesPer100g)} kcal
+              {Math.round(food.caloriesPer100g)} kcal/100g
             </span>
             <span className="text-xs text-gray-400">
               P {Math.round(food.proteinPer100g)}g · C {Math.round(food.carbsPer100g)}g · G{" "}
