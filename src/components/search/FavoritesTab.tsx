@@ -93,7 +93,7 @@ function FavoriteRow({
           </div>
 
           <span className="shrink-0 text-sm font-semibold text-gray-700">
-            {Math.round(item.caloriesPer100g)} kcal
+            {Math.round(item.caloriesPer100g)} kcal/100g
           </span>
         </button>
       </div>

@@ -126,7 +126,7 @@ function CreatedFoodRow({
             {food.brand && <p className="truncate text-xs text-gray-400">{food.brand}</p>}
           </div>
           <span className="shrink-0 text-sm font-semibold text-gray-700">
-            {Math.round(food.caloriesPer100g)} kcal
+            {Math.round(food.caloriesPer100g)} kcal/100g
           </span>
         </button>
       </div>
