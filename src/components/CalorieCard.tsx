@@ -1,4 +1,11 @@
-import { CAL_GOAL_HIGH, CAL_GOAL_LOW } from "@/lib/constants";
+import {
+  CAL_GOAL_HIGH,
+  CAL_GOAL_LOW,
+  MACRO_GOAL_HIGH,
+  MACRO_GOAL_LOW,
+  ON_TARGET_COLOR,
+  isWithinGoalRange,
+} from "@/lib/constants";
 import { MoreHorizontal, Pencil } from "lucide-react";
 
 // --- Arc geometry: wide shallow bow (like Fitia) ---
@@ -36,7 +43,6 @@ function svgArcPath(from: { x: number; y: number }, to: { x: number; y: number }
 
 const TRACK_COLOR = "#E5E5EA";
 const PROGRESS_COLOR = "#F5A623";
-const ON_TARGET_COLOR = "#22C55E";
 
 // --- Exported helpers (kept for any tests that import them) ---
 export function polarToCartesian(
@@ -92,6 +98,8 @@ interface CalorieCardProps {
 
 function MacroColumn({ label, consumed, goal }: { label: string; consumed: number; goal: number }) {
   const pct = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
+  const onTarget = isWithinGoalRange(consumed, goal, MACRO_GOAL_LOW, MACRO_GOAL_HIGH);
+  const barColor = onTarget ? ON_TARGET_COLOR : PROGRESS_COLOR;
   return (
     <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
       <span className="text-xs font-medium text-[#8E8E93]">{label}</span>
@@ -100,7 +108,10 @@ function MacroColumn({ label, consumed, goal }: { label: string; consumed: numbe
         <span className="text-[#8E8E93]"> / {Math.round(goal)} g</span>
       </span>
       <div className="h-1.5 w-full rounded-full bg-[#E5E5EA]">
-        <div className="h-full rounded-full bg-[#F5A623]" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct}%`, backgroundColor: barColor }}
+        />
       </div>
     </div>
   );
@@ -120,8 +131,7 @@ export function CalorieCard({
   // Arc spans 0 → 2×goal; goal sits at t=0.5 (the visual peak/center).
   // Progress fills across the full arc, past center once consumed > goal.
   const progressT = goal > 0 ? Math.min(consumed / (goal * 2), 1) : 0;
-  const isOnTarget =
-    goal > 0 && consumed >= goal * CAL_GOAL_LOW && consumed <= goal * CAL_GOAL_HIGH;
+  const isOnTarget = isWithinGoalRange(consumed, goal, CAL_GOAL_LOW, CAL_GOAL_HIGH);
   const progressColor = isOnTarget ? ON_TARGET_COLOR : PROGRESS_COLOR;
 
   const trackStart = arcPoint(0);

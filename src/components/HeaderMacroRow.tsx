@@ -1,15 +1,28 @@
+import {
+  CAL_GOAL_HIGH,
+  CAL_GOAL_LOW,
+  MACRO_GOAL_HIGH,
+  MACRO_GOAL_LOW,
+  ON_TARGET_COLOR,
+  isWithinGoalRange,
+} from "@/lib/constants";
+
 const CALORIE_GOAL_FALLBACK = 2000;
+const DEFAULT_BAR_COLOR = "#F5A623";
 
 interface ChipProps {
   label: string;
   consumed: number;
   goal: number;
   unit: string;
-  color: string;
+  goalLow: number;
+  goalHigh: number;
 }
 
-function MacroChip({ label, consumed, goal, unit, color }: ChipProps) {
+function MacroChip({ label, consumed, goal, unit, goalLow, goalHigh }: ChipProps) {
   const pct = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
+  const onTarget = isWithinGoalRange(consumed, goal, goalLow, goalHigh);
+  const color = onTarget ? ON_TARGET_COLOR : DEFAULT_BAR_COLOR;
   return (
     <div className="flex flex-1 flex-col items-center px-1">
       <span className="text-[10px] font-medium text-[#8E8E93]">{label}</span>
@@ -59,7 +72,8 @@ export function HeaderMacroRow({
             consumed={calories}
             goal={effectiveCalorieGoal}
             unit=""
-            color="#F5A623"
+            goalLow={CAL_GOAL_LOW}
+            goalHigh={CAL_GOAL_HIGH}
           />
           <div className="h-6 w-px bg-gray-200" />
           <MacroChip
@@ -67,12 +81,27 @@ export function HeaderMacroRow({
             consumed={proteinG}
             goal={proteinGoalG}
             unit="g"
-            color="#F5A623"
+            goalLow={MACRO_GOAL_LOW}
+            goalHigh={MACRO_GOAL_HIGH}
           />
           <div className="h-6 w-px bg-gray-200" />
-          <MacroChip label="Carbs" consumed={carbsG} goal={carbsGoalG} unit="g" color="#F5A623" />
+          <MacroChip
+            label="Carbs"
+            consumed={carbsG}
+            goal={carbsGoalG}
+            unit="g"
+            goalLow={MACRO_GOAL_LOW}
+            goalHigh={MACRO_GOAL_HIGH}
+          />
           <div className="h-6 w-px bg-gray-200" />
-          <MacroChip label="Grasas" consumed={fatG} goal={fatGoalG} unit="g" color="#F5A623" />
+          <MacroChip
+            label="Grasas"
+            consumed={fatG}
+            goal={fatGoalG}
+            unit="g"
+            goalLow={MACRO_GOAL_LOW}
+            goalHigh={MACRO_GOAL_HIGH}
+          />
         </div>
       </div>
     </div>
