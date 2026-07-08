@@ -80,7 +80,6 @@ export function PhotoLightbox({ items, index, onClose, onNavigate }: PhotoLightb
       )}
 
       <div className="flex h-full flex-col items-center justify-center gap-4 px-4 py-8">
-        {/* biome-ignore lint/performance/noImgElement: local blob URL, not a remote/optimizable asset */}
         <img
           src={url}
           alt={`Progreso ${entry.date}`}

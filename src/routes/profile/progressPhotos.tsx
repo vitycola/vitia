@@ -42,9 +42,7 @@ export function ProgressPhotosRoute() {
 
       <div className="px-4 py-4">
         {!isLoading && months.length === 0 && (
-          <p className="pt-12 text-center text-sm text-gray-400">
-            Aún no hay fotos de progreso
-          </p>
+          <p className="pt-12 text-center text-sm text-gray-400">Aún no hay fotos de progreso</p>
         )}
 
         {months.map((month) => (
@@ -62,7 +60,6 @@ export function ProgressPhotosRoute() {
                     onClick={() => setLightboxIndex(flatIndex)}
                     className="aspect-square overflow-hidden rounded-xl bg-gray-200"
                   >
-                    {/* biome-ignore lint/performance/noImgElement: local blob URL, not a remote/optimizable asset */}
                     <img
                       src={item.url}
                       alt={`Progreso ${item.entry.date}`}

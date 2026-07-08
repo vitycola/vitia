@@ -69,14 +69,18 @@ describe("useProgressPhotoGallery", () => {
         weightKg: 80,
         bodyFatPct: null,
         waistCm: null,
-        photos: [{ id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 }],
+        photos: [
+          { id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
       },
       {
         date: "2026-07-01",
         weightKg: 78,
         bodyFatPct: null,
         waistCm: null,
-        photos: [{ id: "p2", entryId: "e2", blob: makePhotoBlob(), mimeType: "image/png", position: 0 }],
+        photos: [
+          { id: "p2", entryId: "e2", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
       },
     ]);
 
@@ -96,14 +100,18 @@ describe("useProgressPhotoGallery", () => {
         weightKg: 80,
         bodyFatPct: null,
         waistCm: null,
-        photos: [{ id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 }],
+        photos: [
+          { id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
       },
       {
         date: "2026-07-15",
         weightKg: 78,
         bodyFatPct: null,
         waistCm: null,
-        photos: [{ id: "p2", entryId: "e2", blob: makePhotoBlob(), mimeType: "image/png", position: 0 }],
+        photos: [
+          { id: "p2", entryId: "e2", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
       },
     ]);
 
@@ -147,7 +155,9 @@ describe("useProgressPhotoGallery", () => {
         weightKg: 80,
         bodyFatPct: null,
         waistCm: null,
-        photos: [{ id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 }],
+        photos: [
+          { id: "p1", entryId: "e1", blob: makePhotoBlob(), mimeType: "image/png", position: 0 },
+        ],
       },
     ]);
 

@@ -13,7 +13,12 @@ let mockGalleryVM: {
     key: string;
     label: string;
     items: Array<{
-      entry: { date: string; weightKg: number | null; bodyFatPct: number | null; waistCm: number | null };
+      entry: {
+        date: string;
+        weightKg: number | null;
+        bodyFatPct: number | null;
+        waistCm: number | null;
+      };
       photo: { id: string };
       url: string;
     }>;

@@ -567,10 +567,7 @@ describe.each([
     });
 
     it("includes an entry with partial metrics (only weight) and a photo, other fields absent not crashing", async () => {
-      await backend.upsertByDate(
-        { date: "2026-07-02", weightKg: 79, photos: [makePhoto()] },
-        null
-      );
+      await backend.upsertByDate({ date: "2026-07-02", weightKg: 79, photos: [makePhoto()] }, null);
 
       const rows = await backend.getPhotosInRange("2026-07-02", "2026-07-02");
       expect(rows).toHaveLength(1);

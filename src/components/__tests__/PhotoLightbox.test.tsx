@@ -37,14 +37,7 @@ describe("PhotoLightbox", () => {
   it("renders as a dialog with the photo and full stats when all three metrics are logged", () => {
     const item = makeItem({ weightKg: 80, bodyFatPct: 18.456, waistCm: 85 });
 
-    render(
-      <PhotoLightbox
-        items={[item]}
-        index={0}
-        onClose={jest.fn()}
-        onNavigate={jest.fn()}
-      />
-    );
+    render(<PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("80 kg")).toBeInTheDocument();
@@ -55,9 +48,7 @@ describe("PhotoLightbox", () => {
   it("renders dashes for any metric not logged that day, without crashing", () => {
     const item = makeItem({ weightKg: 79, bodyFatPct: null, waistCm: null });
 
-    render(
-      <PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />
-    );
+    render(<PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.getByText("79 kg")).toBeInTheDocument();
     expect(screen.getAllByText("—")).toHaveLength(2);
@@ -66,9 +57,7 @@ describe("PhotoLightbox", () => {
   it("renders three dashes when no metrics were logged that day (photo-only day is valid)", () => {
     const item = makeItem({ weightKg: null, bodyFatPct: null, waistCm: null });
 
-    render(
-      <PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />
-    );
+    render(<PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.getAllByText("—")).toHaveLength(3);
   });
@@ -88,9 +77,7 @@ describe("PhotoLightbox", () => {
     const onNavigate = jest.fn();
     const items = [makeItem({ date: "2026-07-01" }), makeItem({ date: "2026-07-02" })];
 
-    render(
-      <PhotoLightbox items={items} index={0} onClose={jest.fn()} onNavigate={onNavigate} />
-    );
+    render(<PhotoLightbox items={items} index={0} onClose={jest.fn()} onNavigate={onNavigate} />);
 
     fireEvent.click(screen.getByRole("button", { name: /siguiente/i }));
 
@@ -101,9 +88,7 @@ describe("PhotoLightbox", () => {
     const onNavigate = jest.fn();
     const items = [makeItem({ date: "2026-07-01" }), makeItem({ date: "2026-07-02" })];
 
-    render(
-      <PhotoLightbox items={items} index={1} onClose={jest.fn()} onNavigate={onNavigate} />
-    );
+    render(<PhotoLightbox items={items} index={1} onClose={jest.fn()} onNavigate={onNavigate} />);
 
     fireEvent.click(screen.getByRole("button", { name: /anterior/i }));
 
@@ -113,9 +98,7 @@ describe("PhotoLightbox", () => {
   it("does not render a prev chevron on the first photo", () => {
     const items = [makeItem({ date: "2026-07-01" }), makeItem({ date: "2026-07-02" })];
 
-    render(
-      <PhotoLightbox items={items} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />
-    );
+    render(<PhotoLightbox items={items} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.queryByRole("button", { name: /anterior/i })).not.toBeInTheDocument();
   });
@@ -123,9 +106,7 @@ describe("PhotoLightbox", () => {
   it("does not render a next chevron on the last photo", () => {
     const items = [makeItem({ date: "2026-07-01" }), makeItem({ date: "2026-07-02" })];
 
-    render(
-      <PhotoLightbox items={items} index={1} onClose={jest.fn()} onNavigate={jest.fn()} />
-    );
+    render(<PhotoLightbox items={items} index={1} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.queryByRole("button", { name: /siguiente/i })).not.toBeInTheDocument();
   });
@@ -133,9 +114,7 @@ describe("PhotoLightbox", () => {
   it("renders the photo's img element with the item's object URL", () => {
     const item = makeItem({}, "blob:mock-photo-url");
 
-    render(
-      <PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />
-    );
+    render(<PhotoLightbox items={[item]} index={0} onClose={jest.fn()} onNavigate={jest.fn()} />);
 
     expect(screen.getByRole("img")).toHaveAttribute("src", "blob:mock-photo-url");
   });
