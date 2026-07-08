@@ -320,6 +320,12 @@ export interface ProgressRepo {
   getByDate(date: string): Promise<ProgressEntryWithPhotos | null>;
   getRange(from: string, to: string): Promise<ProgressEntry[]>;
   /**
+   * Get entries in [from, to] inclusive, each enriched with its photos,
+   * excluding entries with zero photos. Mirrors db/repositories/progress.ts
+   * getPhotosInRange exactly (spec: Range+Photos Query Contract).
+   */
+  getPhotosInRange(from: string, to: string): Promise<ProgressEntryWithPhotos[]>;
+  /**
    * profile carries sex/heightCm for the Navy formula (mirrors the pure
    * drizzle repo's signature) — pass null when no profile exists yet.
    */
@@ -963,6 +969,15 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     async getRange(from, to) {
       const rows = await db.progress_entries.where("date").between(from, to, true, true).toArray();
       return rows.sort((a, b) => a.date.localeCompare(b.date));
+    },
+
+    async getPhotosInRange(from, to) {
+      const rows = await db.progress_entries.where("date").between(from, to, true, true).toArray();
+      const sorted = rows.sort((a, b) => a.date.localeCompare(b.date));
+      const withPhotos = await Promise.all(
+        sorted.map(async (row) => ({ ...row, photos: await progress.getPhotos(row.id) }))
+      );
+      return withPhotos.filter((row) => row.photos.length > 0);
     },
 
     async upsertByDate(input, profile) {

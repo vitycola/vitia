@@ -39,6 +39,19 @@ export async function getRange(from: string, to: string): Promise<ProgressEntry[
 }
 
 /**
+ * Get entries in [from, to] inclusive, each enriched with its photos,
+ * excluding entries with zero photos (spec: Range+Photos Query Contract).
+ * Used by the progress-photos gallery.
+ */
+export async function getPhotosInRange(
+  from: string,
+  to: string
+): Promise<ProgressEntryWithPhotos[]> {
+  if (dexieAdapter) return dexieAdapter.progress.getPhotosInRange(from, to);
+  return _impl.getPhotosInRange(from, to);
+}
+
+/**
  * Create or overwrite the progress_entries record for input.date, computing
  * bodyFatPct via the Navy method (falling back to carry-forward, then null)
  * and replacing photos in the same transaction.
