@@ -18,6 +18,12 @@ jest.mock("@/db/repos/foods", () => ({
   update: (...args: unknown[]) => mockUpdate(...args),
 }));
 
+const mockIncrementOffCategoryCorrection = jest.fn();
+jest.mock("@/db/repos/offCategoryCorrections", () => ({
+  incrementOffCategoryCorrection: (...args: unknown[]) =>
+    mockIncrementOffCategoryCorrection(...args),
+}));
+
 jest.mock("@/lib/id", () => ({ generateId: () => "generated-id" }));
 
 import type { Food } from "@/db/schema";
@@ -52,6 +58,8 @@ describe("ManualFormRoute", () => {
     mockGetById.mockReset();
     mockUpdate.mockReset();
     mockUpdate.mockResolvedValue(makeFood());
+    mockIncrementOffCategoryCorrection.mockReset();
+    mockIncrementOffCategoryCorrection.mockResolvedValue(undefined);
   });
 
   function fillValidForm() {
@@ -59,6 +67,11 @@ describe("ManualFormRoute", () => {
       target: { value: "Tortilla casera" },
     });
     fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
+    // huevos has a known cooking factor (COOKING_FACTORS) — dataBasis is
+    // required once that category is selected (design D6.3).
+    fireEvent.change(screen.getByLabelText(/tipo de dato|crudo.*cocido/i), {
+      target: { value: "crudo" },
+    });
     fireEvent.change(screen.getByLabelText(/peso de la porción/i), {
       target: { value: "120" },
     });
@@ -143,6 +156,67 @@ describe("ManualFormRoute", () => {
     expect(food).toMatchObject({ name: "Tortilla casera", category: null });
   });
 
+  describe("required dataBasis when category has a cooking factor", () => {
+    it("does not show a dataBasis control for a category with no cooking factor", () => {
+      render(<ManualFormRoute />);
+      fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "bebidas" } });
+      expect(screen.queryByLabelText(/tipo de dato|crudo.*cocido/i)).not.toBeInTheDocument();
+    });
+
+    it("shows a required dataBasis control once a convertible category is selected", () => {
+      render(<ManualFormRoute />);
+      fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "carnes" } });
+      expect(screen.getByLabelText(/tipo de dato|crudo.*cocido/i)).toBeInTheDocument();
+    });
+
+    it("blocks save when category has a factor and dataBasis is unset", async () => {
+      render(<ManualFormRoute />);
+      fillValidForm();
+      fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "carnes" } });
+      fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
+
+      await waitFor(() => expect(mockCreateComposite).not.toHaveBeenCalled());
+    });
+
+    it("saves successfully when category has a factor and dataBasis is set", async () => {
+      render(<ManualFormRoute />);
+      fillValidForm();
+      fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "carnes" } });
+      fireEvent.change(screen.getByLabelText(/tipo de dato|crudo.*cocido/i), {
+        target: { value: "crudo" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
+
+      await waitFor(() => expect(mockCreateComposite).toHaveBeenCalledTimes(1));
+      const [food] = mockCreateComposite.mock.calls[0];
+      expect(food).toMatchObject({ category: "carnes", dataBasis: "crudo" });
+    });
+
+    it("saves successfully without a dataBasis for a non-convertible category", async () => {
+      render(<ManualFormRoute />);
+      // Fill everything except category/dataBasis directly (not via
+      // fillValidForm, which defaults to a convertible category + basis) —
+      // this test specifically exercises a category that never shows the
+      // dataBasis control at all.
+      fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
+        target: { value: "Bebida energética" },
+      });
+      fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "bebidas" } });
+      fireEvent.change(screen.getByLabelText(/peso de la porción/i), {
+        target: { value: "250" },
+      });
+      fireEvent.change(screen.getByLabelText(/calorías/i), { target: { value: "45" } });
+      fireEvent.change(screen.getByLabelText(/proteínas/i), { target: { value: "0" } });
+      fireEvent.change(screen.getByLabelText(/carbohidratos/i), { target: { value: "11" } });
+      fireEvent.change(screen.getByLabelText(/grasas/i), { target: { value: "0" } });
+      fireEvent.click(screen.getByRole("button", { name: /guardar/i }));
+
+      await waitFor(() => expect(mockCreateComposite).toHaveBeenCalledTimes(1));
+      const [food] = mockCreateComposite.mock.calls[0];
+      expect(food).toMatchObject({ category: "bebidas", dataBasis: null });
+    });
+  });
+
   describe("edit mode (foodId route param present)", () => {
     beforeEach(() => {
       mockUseParams.mockReturnValue({ foodId: "food-1" });
@@ -185,6 +259,55 @@ describe("ManualFormRoute", () => {
       );
       expect(mockCreateComposite).not.toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith("/search?created=food-1");
+    });
+
+    describe("OFF category-correction counter (design D5)", () => {
+      it("increments the counter when an OFF-sourced food's category is manually changed", async () => {
+        mockGetById.mockResolvedValue(makeFood({ source: "openfoodfacts", category: "lacteos" }));
+
+        render(<ManualFormRoute />);
+        await waitFor(() => expect(screen.getByLabelText(/^categoría/i)).toHaveValue("lacteos"));
+
+        fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
+        fireEvent.change(screen.getByLabelText(/tipo de dato|crudo.*cocido/i), {
+          target: { value: "crudo" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+        expect(mockIncrementOffCategoryCorrection).toHaveBeenCalledTimes(1);
+      });
+
+      it("does not increment the counter when the category is left unchanged", async () => {
+        mockGetById.mockResolvedValue(makeFood({ source: "openfoodfacts", category: "lacteos" }));
+
+        render(<ManualFormRoute />);
+        await waitFor(() => expect(screen.getByLabelText(/^categoría/i)).toHaveValue("lacteos"));
+
+        fireEvent.change(screen.getByLabelText(/nombre del alimento/i), {
+          target: { value: "Yogur casero (renombrado)" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+        expect(mockIncrementOffCategoryCorrection).not.toHaveBeenCalled();
+      });
+
+      it("does not increment the counter for a custom (non-OFF) food's category change", async () => {
+        mockGetById.mockResolvedValue(makeFood({ source: "custom", category: "lacteos" }));
+
+        render(<ManualFormRoute />);
+        await waitFor(() => expect(screen.getByLabelText(/^categoría/i)).toHaveValue("lacteos"));
+
+        fireEvent.change(screen.getByLabelText(/^categoría/i), { target: { value: "huevos" } });
+        fireEvent.change(screen.getByLabelText(/tipo de dato|crudo.*cocido/i), {
+          target: { value: "crudo" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+        await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+        expect(mockIncrementOffCategoryCorrection).not.toHaveBeenCalled();
+      });
     });
   });
 });

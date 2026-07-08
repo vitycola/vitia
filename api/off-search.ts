@@ -22,7 +22,7 @@ export const config = {
 const OFF_CGI_URL = "https://world.openfoodfacts.org/cgi/search.pl";
 const OFF_FALLBACK_URL = "https://search.openfoodfacts.org/search";
 const OFF_FIELDS =
-  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url";
+  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url,categories_tags";
 const OFF_PAGE_SIZE = 20;
 const OFF_USER_AGENT = "Vitia/1.0 (+https://vitia.app)";
 const UPSTREAM_TIMEOUT_MS = 8000;

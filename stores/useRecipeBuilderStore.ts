@@ -1,4 +1,5 @@
 import type { Food } from "@/db/schema";
+import type { CookingBasis } from "@/lib/cookingConversion";
 import { create } from "zustand";
 
 /**
@@ -12,6 +13,10 @@ import { create } from "zustand";
 export interface RecipeIngredient {
   food: Food;
   weightG: number;
+  /** Undefined = user has not chosen a basis for this ingredient yet.
+   * Per-ingredient (not per-recipe) because each ingredient has its own
+   * category, factor, and dataBasis (design D4 surface 2). */
+  basis?: CookingBasis;
 }
 
 interface RecipeBuilderState {
@@ -26,6 +31,7 @@ interface RecipeBuilderState {
 interface RecipeBuilderActions {
   addIngredient: (food: Food, weightG?: number) => void;
   updateWeight: (foodId: string, weightG: number) => void;
+  setIngredientBasis: (foodId: string, basis: CookingBasis) => void;
   removeIngredient: (foodId: string) => void;
   setName: (name: string) => void;
   setCategory: (category: string) => void;
@@ -43,6 +49,11 @@ export const useRecipeBuilderStore = create<RecipeBuilderState & RecipeBuilderAc
   updateWeight: (foodId, weightG) =>
     set((state) => ({
       ingredients: state.ingredients.map((i) => (i.food.id === foodId ? { ...i, weightG } : i)),
+    })),
+
+  setIngredientBasis: (foodId, basis) =>
+    set((state) => ({
+      ingredients: state.ingredients.map((i) => (i.food.id === foodId ? { ...i, basis } : i)),
     })),
 
   removeIngredient: (foodId) =>

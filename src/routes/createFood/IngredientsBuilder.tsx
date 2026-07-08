@@ -1,16 +1,38 @@
 import { createComposite, upsertIngredients } from "@/db/repos/foods";
+import { canConvert, convertWeight, directionFor } from "@/lib/cookingConversion";
+import type { CookingBasis } from "@/lib/cookingConversion";
 import { FOOD_CATEGORIES } from "@/lib/foodCategories";
 import { generateId } from "@/lib/id";
 import { sumIngredientMacros } from "@/lib/nutrition";
+import type { RecipeIngredient } from "@/stores/useRecipeBuilderStore";
 import { useRecipeBuilderStore } from "@/stores/useRecipeBuilderStore";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+/**
+ * Resolve an ingredient's effective (converted, when applicable) weight
+ * before it feeds macro math. Mirrors the diary-logging surface's D6.5
+ * direction derivation (design D4 surface 2): entered weight is in
+ * `ingredient.basis`; convert it to the food's stored `dataBasis` when they
+ * differ, otherwise use the entered weight unchanged.
+ */
+function effectiveWeight(ingredient: RecipeIngredient): number {
+  if (!canConvert(ingredient.food) || !ingredient.basis) return ingredient.weightG;
+  const dir = directionFor(ingredient.food.dataBasis, ingredient.basis);
+  if (!dir) return ingredient.weightG;
+  const result = convertWeight(ingredient.food.category, ingredient.weightG, dir);
+  // canConvert() already guarantees hasCookingFactor(ingredient.food.category),
+  // so this is always the "converted" branch — the fallback is unreachable
+  // in practice but keeps this function total or a "no-factor" category.
+  return result.kind === "converted" ? result.grams : ingredient.weightG;
+}
 
 export function IngredientsBuilderRoute() {
   const navigate = useNavigate();
   const {
     ingredients,
     updateWeight,
+    setIngredientBasis,
     removeIngredient,
     clear,
     name,
@@ -24,7 +46,7 @@ export function IngredientsBuilderRoute() {
 
   const preview =
     ingredients.length > 0
-      ? sumIngredientMacros(ingredients.map((i) => ({ food: i.food, weightG: i.weightG })))
+      ? sumIngredientMacros(ingredients.map((i) => ({ food: i.food, weightG: effectiveWeight(i) })))
       : null;
 
   function handleCancel() {
@@ -51,11 +73,11 @@ export function IngredientsBuilderRoute() {
     setIsSubmitting(true);
     try {
       const summed = sumIngredientMacros(
-        ingredients.map((i) => ({ food: i.food, weightG: i.weightG }))
+        ingredients.map((i) => ({ food: i.food, weightG: effectiveWeight(i) }))
       );
       const ingredientInputs = ingredients.map((i, index) => ({
         ingredientFoodId: i.food.id,
-        weightG: i.weightG,
+        weightG: effectiveWeight(i),
         position: index,
       }));
 
@@ -163,6 +185,26 @@ export function IngredientsBuilderRoute() {
                     className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-right text-sm text-gray-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                   />
                   <span className="text-xs text-gray-400">g</span>
+                  {/* Per-row crudo/cocido toggle — only when canConvert is true
+                      for this ingredient's food (design D4 surface 2, fail-closed). */}
+                  {canConvert(ingredient.food) && (
+                    <>
+                      <label className="sr-only" htmlFor={`basis-${ingredient.food.id}`}>
+                        Tipo de peso de {ingredient.food.name}
+                      </label>
+                      <select
+                        id={`basis-${ingredient.food.id}`}
+                        value={ingredient.basis ?? "crudo"}
+                        onChange={(e) =>
+                          setIngredientBasis(ingredient.food.id, e.target.value as CookingBasis)
+                        }
+                        className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      >
+                        <option value="crudo">Crudo</option>
+                        <option value="cocido">Cocido</option>
+                      </select>
+                    </>
+                  )}
                   <button
                     type="button"
                     aria-label={`Eliminar ${ingredient.food.name}`}

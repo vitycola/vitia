@@ -24,6 +24,7 @@ function makeFood(): SearchResult {
     servingSizeG: null,
     source: "custom",
     category: null,
+    dataBasis: null,
     offProductCode: null,
     nameNormalized: "milanesa",
     imageUrl: null,

@@ -21,6 +21,11 @@ export interface OffProxyProduct {
   serving_quantity?: number; // grams
   image_front_small_url?: string;
   image_url?: string;
+  // OFF category taxonomy tags (e.g. "en:rices"). Consumed client-side by
+  // categoryFromOffTags (lib/offCategoryMap.ts) and basisFromOffTags
+  // (lib/offBasisMap.ts) — see design D3/D6. This proxy is a pass-through:
+  // it does NOT categorize server-side.
+  categories_tags?: string[];
 }
 
 /** Which upstream ultimately served the data — kept for observability. */

@@ -27,6 +27,7 @@ function makeFood(
     servingSizeG: null,
     source: "custom" as const,
     category: null,
+    dataBasis: null,
     offProductCode: null,
     nameNormalized: "arroz blanco",
     imageUrl: null,

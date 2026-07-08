@@ -62,8 +62,8 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Eight migrations: 0000, 0001, 0002, 0003, 0004, 0005, 0006, and 0007
-    expect(rows).toHaveLength(8);
+    // Nine migrations: 0000, 0001, 0002, 0003, 0004, 0005, 0006, 0007, and 0008
+    expect(rows).toHaveLength(9);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
     expect(rows[2].tag).toBe("0002_user_session_persistence");
@@ -72,6 +72,7 @@ describe("runWebMigrations", () => {
     expect(rows[5].tag).toBe("0005_composite_foods");
     expect(rows[6].tag).toBe("0006_progress_log");
     expect(rows[7].tag).toBe("0007_progress_measurements");
+    expect(rows[8].tag).toBe("0008_raw_cooked_conversion");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -79,11 +80,11 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly eight migration rows — no duplicate inserts
+    // Still exactly nine migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(8);
+    expect(rows.c).toBe(9);
   });
 
   it("records migration tag 0005_composite_foods and creates food_ingredients table (Phase 1)", async () => {

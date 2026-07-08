@@ -145,6 +145,7 @@ describe("useFoodSearchStore", () => {
         servingSizeG: null,
         source: "custom",
         category: null,
+        dataBasis: null,
         offProductCode: null,
         imageUrl: null,
         nameNormalized: "cached food",
