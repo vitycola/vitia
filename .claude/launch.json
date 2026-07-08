@@ -4,7 +4,12 @@
     {
       "name": "vitia-dev",
       "runtimeExecutable": "/opt/homebrew/bin/node",
-      "runtimeArgs": ["/Users/victor/Documents/CodeProjects/vitia-web/node_modules/.bin/vite"],
+      "runtimeArgs": [
+        "/Users/victor/Documents/CodeProjects/vitia-web/node_modules/.bin/vite",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
       "port": 5199,
       "autoPort": true
     }
