@@ -8,34 +8,15 @@ import { useEffect, useMemo, useState } from "react";
 export type DayStatus = "empty" | "partial" | "complete";
 
 /**
- * Goals-met thresholds — mirroring the design decision:
- * - Calories: within [90 %, 110 %] of goal
- * - Each macro (protein, carbs, fat): within [85 %, 115 %] of goal
+ * Goals-met threshold — calories only within [90 %, 110 %] of goal.
+ * Macros have their own per-macro bars (HeaderMacroRow/CalorieCard) and are
+ * not part of the day-status gate.
  */
 const CAL_LOW = 0.9;
 const CAL_HIGH = 1.1;
-const MACRO_LOW = 0.85;
-const MACRO_HIGH = 1.15;
 
-function goalsMet(
-  totals: DayTotals,
-  calorieGoal: number,
-  proteinGoalG: number,
-  carbsGoalG: number,
-  fatGoalG: number
-): boolean {
-  const calOk =
-    totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
-
-  const proteinOk =
-    totals.proteinG >= proteinGoalG * MACRO_LOW && totals.proteinG <= proteinGoalG * MACRO_HIGH;
-
-  const carbsOk =
-    totals.carbsG >= carbsGoalG * MACRO_LOW && totals.carbsG <= carbsGoalG * MACRO_HIGH;
-
-  const fatOk = totals.fatG >= fatGoalG * MACRO_LOW && totals.fatG <= fatGoalG * MACRO_HIGH;
-
-  return calOk && proteinOk && carbsOk && fatOk;
+function goalsMet(totals: DayTotals, calorieGoal: number): boolean {
+  return totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
 }
 
 /**
@@ -89,9 +70,6 @@ export function useWeekProgress(weekStart: string): Record<string, DayStatus> {
   return useMemo(() => {
     const today = todayISO();
     const calorieGoal = profile?.calorieGoal ?? 0;
-    const proteinGoalG = profile?.proteinGoalG ?? 0;
-    const carbsGoalG = profile?.carbsGoalG ?? 0;
-    const fatGoalG = profile?.fatGoalG ?? 0;
     const goalsConfigured = calorieGoal > 0;
 
     const result: Record<string, DayStatus> = {};
@@ -111,7 +89,7 @@ export function useWeekProgress(weekStart: string): Record<string, DayStatus> {
       }
 
       // Data logged — check goals
-      if (goalsConfigured && goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)) {
+      if (goalsConfigured && goalsMet(totals, calorieGoal)) {
         result[day] = "complete";
       } else {
         result[day] = "partial";

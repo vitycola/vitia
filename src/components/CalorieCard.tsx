@@ -116,9 +116,8 @@ export function CalorieCard({
   onEditGoals,
 }: CalorieCardProps) {
   // Arc spans 0 → 2×goal; goal sits at t=0.5 (the visual peak/center).
-  // Progress fills left-to-center proportionally.
-  const fraction = goal > 0 ? Math.min(consumed / goal, 1) : 0;
-  const progressT = fraction * 0.5;
+  // Progress fills across the full arc, past center once consumed > goal.
+  const progressT = goal > 0 ? Math.min(consumed / (goal * 2), 1) : 0;
 
   const trackStart = arcPoint(0);
   const trackEnd = arcPoint(1);

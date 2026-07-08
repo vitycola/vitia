@@ -18,28 +18,9 @@ import type { DayTotals } from "@/db/repos/mealEntries";
 
 const CAL_LOW = 0.9;
 const CAL_HIGH = 1.1;
-const MACRO_LOW = 0.85;
-const MACRO_HIGH = 1.15;
 
-function goalsMet(
-  totals: DayTotals,
-  calorieGoal: number,
-  proteinGoalG: number,
-  carbsGoalG: number,
-  fatGoalG: number
-): boolean {
-  const calOk =
-    totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
-
-  const proteinOk =
-    totals.proteinG >= proteinGoalG * MACRO_LOW && totals.proteinG <= proteinGoalG * MACRO_HIGH;
-
-  const carbsOk =
-    totals.carbsG >= carbsGoalG * MACRO_LOW && totals.carbsG <= carbsGoalG * MACRO_HIGH;
-
-  const fatOk = totals.fatG >= fatGoalG * MACRO_LOW && totals.fatG <= fatGoalG * MACRO_HIGH;
-
-  return calOk && proteinOk && carbsOk && fatOk;
+function goalsMet(totals: DayTotals, calorieGoal: number): boolean {
+  return totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
 }
 
 type DayStatus = "empty" | "partial" | "complete";
@@ -48,17 +29,14 @@ function deriveStatus(
   day: string,
   today: string,
   totals: DayTotals | undefined,
-  calorieGoal: number,
-  proteinGoalG: number,
-  carbsGoalG: number,
-  fatGoalG: number
+  calorieGoal: number
 ): DayStatus {
   if (day > today) return "empty";
   if (!totals || totals.calories === 0) return "empty";
 
   const goalsConfigured = calorieGoal > 0;
 
-  if (goalsConfigured && goalsMet(totals, calorieGoal, proteinGoalG, carbsGoalG, fatGoalG)) {
+  if (goalsConfigured && goalsMet(totals, calorieGoal)) {
     return "complete";
   }
 
@@ -69,12 +47,7 @@ function deriveStatus(
 // Goal values used across tests
 // ---------------------------------------------------------------------------
 
-const GOALS = {
-  calorieGoal: 2000,
-  proteinGoalG: 150,
-  carbsGoalG: 250,
-  fatGoalG: 70,
-};
+const CALORIE_GOAL = 2000;
 
 const PAST_DAY = "2020-01-01";
 const FUTURE_DAY = "2099-12-31";
@@ -86,12 +59,12 @@ const TODAY = "2024-06-24"; // fixed reference date for tests
 
 describe("deriveStatus", () => {
   it("returns empty when no totals data exists for a day", () => {
-    expect(deriveStatus(PAST_DAY, TODAY, undefined, ...Object.values(GOALS))).toBe("empty");
+    expect(deriveStatus(PAST_DAY, TODAY, undefined, CALORIE_GOAL)).toBe("empty");
   });
 
   it("returns empty when calories are 0", () => {
     const totals: DayTotals = { date: PAST_DAY, calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("empty");
+    expect(deriveStatus(PAST_DAY, TODAY, totals, CALORIE_GOAL)).toBe("empty");
   });
 
   it("returns empty for a future day even if data exists", () => {
@@ -102,29 +75,18 @@ describe("deriveStatus", () => {
       carbsG: 250,
       fatG: 70,
     };
-    expect(deriveStatus(FUTURE_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("empty");
+    expect(deriveStatus(FUTURE_DAY, TODAY, totals, CALORIE_GOAL)).toBe("empty");
   });
 
-  it("returns complete when calories and all macros are within tolerance", () => {
+  it("returns complete when calories are within tolerance, regardless of macros", () => {
     const totals: DayTotals = {
       date: PAST_DAY,
       calories: 2000, // exactly at goal
-      proteinG: 150,
-      carbsG: 250,
-      fatG: 70,
+      proteinG: 50, // macros are off, but no longer gate the day status
+      carbsG: 400,
+      fatG: 10,
     };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("complete");
-  });
-
-  it("returns partial when calories are logged but macros are out of tolerance", () => {
-    const totals: DayTotals = {
-      date: PAST_DAY,
-      calories: 2000,
-      proteinG: 50, // too low (< 85% of 150 = 127.5)
-      carbsG: 250,
-      fatG: 70,
-    };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("partial");
+    expect(deriveStatus(PAST_DAY, TODAY, totals, CALORIE_GOAL)).toBe("complete");
   });
 
   it("returns partial when calories are out of tolerance (too low)", () => {
@@ -135,7 +97,7 @@ describe("deriveStatus", () => {
       carbsG: 250,
       fatG: 70,
     };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("partial");
+    expect(deriveStatus(PAST_DAY, TODAY, totals, CALORIE_GOAL)).toBe("partial");
   });
 
   it("returns partial when calories are out of tolerance (too high)", () => {
@@ -146,12 +108,12 @@ describe("deriveStatus", () => {
       carbsG: 250,
       fatG: 70,
     };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, ...Object.values(GOALS))).toBe("partial");
+    expect(deriveStatus(PAST_DAY, TODAY, totals, CALORIE_GOAL)).toBe("partial");
   });
 
   it("returns partial when no goals are configured (calorieGoal = 0) and data exists", () => {
     const totals: DayTotals = { date: PAST_DAY, calories: 500, proteinG: 30, carbsG: 60, fatG: 15 };
-    expect(deriveStatus(PAST_DAY, TODAY, totals, 0, 0, 0, 0)).toBe("partial");
+    expect(deriveStatus(PAST_DAY, TODAY, totals, 0)).toBe("partial");
   });
 });
 
@@ -163,36 +125,18 @@ describe("goalsMet tolerance boundaries", () => {
   const base: DayTotals = { date: PAST_DAY, calories: 2000, proteinG: 150, carbsG: 250, fatG: 70 };
 
   it("accepts calories exactly at 90% lower bound", () => {
-    expect(goalsMet({ ...base, calories: 1800 }, 2000, 150, 250, 70)).toBe(true);
+    expect(goalsMet({ ...base, calories: 1800 }, 2000)).toBe(true);
   });
 
   it("rejects calories just below 90% lower bound", () => {
-    expect(goalsMet({ ...base, calories: 1799 }, 2000, 150, 250, 70)).toBe(false);
+    expect(goalsMet({ ...base, calories: 1799 }, 2000)).toBe(false);
   });
 
   it("accepts calories exactly at 110% upper bound", () => {
-    expect(goalsMet({ ...base, calories: 2200 }, 2000, 150, 250, 70)).toBe(true);
+    expect(goalsMet({ ...base, calories: 2200 }, 2000)).toBe(true);
   });
 
   it("rejects calories just above 110% upper bound", () => {
-    expect(goalsMet({ ...base, calories: 2201 }, 2000, 150, 250, 70)).toBe(false);
-  });
-
-  it("accepts macro exactly at 85% lower bound", () => {
-    // 85% of 150 = 127.5
-    expect(goalsMet({ ...base, proteinG: 127.5 }, 2000, 150, 250, 70)).toBe(true);
-  });
-
-  it("rejects macro just below 85% lower bound", () => {
-    expect(goalsMet({ ...base, proteinG: 127 }, 2000, 150, 250, 70)).toBe(false);
-  });
-
-  it("accepts macro exactly at 115% upper bound", () => {
-    // 115% of 150 = 172.5
-    expect(goalsMet({ ...base, proteinG: 172.5 }, 2000, 150, 250, 70)).toBe(true);
-  });
-
-  it("rejects macro just above 115% upper bound", () => {
-    expect(goalsMet({ ...base, proteinG: 173 }, 2000, 150, 250, 70)).toBe(false);
+    expect(goalsMet({ ...base, calories: 2201 }, 2000)).toBe(false);
   });
 });
