@@ -1,5 +1,5 @@
 import type { BarDatum, DashboardRange } from "@/lib/calorieDashboard";
-import { addDays, startOfWeek, todayISO } from "@/lib/date";
+import { todayISO } from "@/lib/date";
 
 const TRACK_COLOR = "#E5E5EA";
 const BAR_COLOR = "#F5A623";
@@ -10,17 +10,31 @@ const DAY_LABEL_ACCENT_COLOR = "#F5A623";
 
 const CHART_HEIGHT_PX = 96;
 
-// Monday-first day-of-week initials, matching lib/date.ts's Monday-based week convention.
-const WEEKDAY_INITIALS = ["L", "M", "X", "J", "V", "S", "D"];
+// Sunday-first day-of-week initials, indexed by JS Date#getDay() (0=Sun..6=Sat).
+// The window is a rolling 7-day span that may start on any weekday, so each
+// bar's label is derived from its own date rather than a fixed Monday-first
+// sequence.
+const WEEKDAY_INITIALS_BY_GET_DAY = ["D", "L", "M", "X", "J", "V", "S"];
+
+/**
+ * Return the Spanish single-letter day-of-week initial for an ISO
+ * (YYYY-MM-DD) date string, parsed as a local date to avoid timezone shift.
+ */
+function dayInitialForIsoDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return WEEKDAY_INITIALS_BY_GET_DAY[date.getDay()];
+}
 
 interface CalorieBarChartProps {
   bars: BarDatum[];
   goalLine: number;
   /**
-   * Active dashboard range. When "week", a row of Monday-first day-of-week
-   * initial labels renders below the bars, with today's label highlighted
-   * in accent color. Month and 3-month ranges never render these labels
-   * (3-month keeps its own existing bucket labels, unaffected).
+   * Active dashboard range. When "week", a row of day-of-week initial
+   * labels renders below the bars — one per bar, derived from that bar's
+   * own date (`bar.key`, an ISO date string) — with today's label
+   * highlighted in accent color. Month and 3-month ranges never render
+   * these labels (3-month keeps its own existing bucket labels, unaffected).
    */
   range?: DashboardRange;
 }
@@ -37,7 +51,6 @@ export function CalorieBarChart({ bars, goalLine, range }: CalorieBarChartProps)
 
   const showDayLabels = range === "week";
   const today = todayISO();
-  const weekStart = showDayLabels ? startOfWeek(today) : null;
 
   return (
     <div>
@@ -73,19 +86,18 @@ export function CalorieBarChart({ bars, goalLine, range }: CalorieBarChartProps)
         />
       </div>
 
-      {showDayLabels && weekStart && (
+      {showDayLabels && (
         <div className="flex gap-px pt-1">
-          {WEEKDAY_INITIALS.map((initial, index) => {
-            const date = addDays(weekStart, index);
-            const isToday = date === today;
+          {bars.map((bar) => {
+            const isToday = bar.key === today;
             return (
               <span
-                key={date}
+                key={bar.key}
                 data-testid="calorie-day-label"
                 className={`min-w-0 flex-1 text-center text-[11px] ${isToday ? "font-medium" : "font-normal"}`}
                 style={{ color: isToday ? DAY_LABEL_ACCENT_COLOR : DAY_LABEL_COLOR }}
               >
-                {initial}
+                {dayInitialForIsoDate(bar.key)}
               </span>
             );
           })}

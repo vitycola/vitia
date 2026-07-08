@@ -1,7 +1,7 @@
 import { getLoggedTotalsByDateRange } from "@/db/repos/mealEntries";
 import { buildBars, buildOverlayRows, imputedAverage } from "@/lib/calorieDashboard";
 import type { BarDatum, DashboardRange } from "@/lib/calorieDashboard";
-import { rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
+import { resolveDashboardWindow } from "@/lib/date";
 import { useProfileStore } from "@/stores/useProfileStore";
 import { useEffect, useMemo, useState } from "react";
 
@@ -22,26 +22,6 @@ export interface CalorieDashboardVM {
 }
 
 /**
- * Resolve the {from, to} fetch window for a given dashboard range:
- * - week: the calendar week (Mon–Sun) containing today, same convention as
- *   `useWeekProgress.ts`.
- * - month: rolling 30-day window ending today.
- * - 3month: rolling 90-day window ending today (further split into 3
- *   30-day buckets by `buildBars`).
- */
-function resolveWindow(range: DashboardRange): { from: string; to: string } {
-  if (range === "week") {
-    const weekStart = startOfWeek(todayISO());
-    const days = weekDays(weekStart);
-    return { from: days[0], to: days[6] };
-  }
-  if (range === "month") {
-    return rollingWindow(30);
-  }
-  return rollingWindow(90);
-}
-
-/**
  * Fetch+shape hook for the Progress > Calorías dashboard. Mirrors
  * `useWeekProgress.ts`'s fetch pattern: resolves the window for the active
  * range, calls `getLoggedTotalsByDateRange`, and derives bars + imputed-only
@@ -53,7 +33,7 @@ export function useCalorieDashboard(range: DashboardRange): CalorieDashboardVM {
 
   const profile = useProfileStore((s) => s.profile);
 
-  const window = useMemo(() => resolveWindow(range), [range]);
+  const window = useMemo(() => resolveDashboardWindow(range), [range]);
 
   useEffect(() => {
     let cancelled = false;

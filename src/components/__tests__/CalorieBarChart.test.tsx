@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type { BarDatum } from "@/lib/calorieDashboard";
-import { startOfWeek, todayISO } from "@/lib/date";
+import { addDays, rollingWindow, todayISO } from "@/lib/date";
 import { CalorieBarChart } from "../CalorieBarChart";
 
 function makeBars(count: number, kcal = 2000): BarDatum[] {
@@ -12,6 +12,27 @@ function makeBars(count: number, kcal = 2000): BarDatum[] {
     kcal,
     imputed: true,
   }));
+}
+
+/**
+ * Build `count` bars keyed by real ISO dates within a rolling window ending
+ * today, so day-of-week labels (derived per-bar from `bar.key`) can be
+ * asserted against known dates regardless of which weekday the window starts
+ * on.
+ */
+function makeDatedBars(count: number, kcal = 2000): BarDatum[] {
+  const { from } = rollingWindow(count);
+  return Array.from({ length: count }, (_, i) => {
+    const date = addDays(from, i);
+    return { key: date, label: date, kcal, imputed: true };
+  });
+}
+
+const WEEKDAY_INITIALS_BY_GET_DAY = ["D", "L", "M", "X", "J", "V", "S"];
+
+function dayInitialForIsoDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return WEEKDAY_INITIALS_BY_GET_DAY[new Date(year, month - 1, day).getDay()];
 }
 
 describe("CalorieBarChart", () => {
@@ -55,21 +76,22 @@ describe("CalorieBarChart", () => {
   });
 
   describe("week day-of-week labels", () => {
-    it("renders 7 day-of-week initial labels in Monday-first order for week range", () => {
-      render(<CalorieBarChart bars={makeBars(7)} goalLine={2000} range="week" />);
+    it("renders 7 day-of-week initial labels derived from each bar's own date", () => {
+      const bars = makeDatedBars(7);
+      render(<CalorieBarChart bars={bars} goalLine={2000} range="week" />);
       const labels = screen.getAllByTestId("calorie-day-label");
       expect(labels).toHaveLength(7);
-      expect(labels.map((l) => l.textContent)).toEqual(["L", "M", "X", "J", "V", "S", "D"]);
+      expect(labels.map((l) => l.textContent)).toEqual(
+        bars.map((bar) => dayInitialForIsoDate(bar.key))
+      );
     });
 
     it("highlights today's label in accent color with medium weight", () => {
       const today = todayISO();
-      const weekStart = startOfWeek(today);
-      const todayIndex = Math.round(
-        (new Date(today).getTime() - new Date(weekStart).getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const bars = makeDatedBars(7);
+      const todayIndex = bars.findIndex((bar) => bar.key === today);
 
-      render(<CalorieBarChart bars={makeBars(7)} goalLine={2000} range="week" />);
+      render(<CalorieBarChart bars={bars} goalLine={2000} range="week" />);
       const labels = screen.getAllByTestId("calorie-day-label");
 
       labels.forEach((label, index) => {

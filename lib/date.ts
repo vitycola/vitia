@@ -140,6 +140,33 @@ export function rollingWindow(
 }
 
 /**
+ * Dashboard range identifier shared by the Progress dashboards. Defined
+ * locally (not imported from stores/useProgressStore.ts) so lib/ never
+ * depends on stores/ — the store's DashboardRange type is structurally
+ * identical and TypeScript unifies them by shape.
+ */
+type DashboardRangeWindow = "week" | "month" | "3month";
+
+/**
+ * Resolve the {from, to} fetch window for a given dashboard range. All
+ * ranges are rolling windows ending today: week = 7 days, month = 30 days,
+ * 3month = 90 days. Shared by useCalorieDashboard, useMeasurementsDashboard,
+ * and useWeightDashboard so the window never diverges between cards.
+ */
+export function resolveDashboardWindow(range: DashboardRangeWindow): {
+  from: string;
+  to: string;
+} {
+  if (range === "week") {
+    return rollingWindow(7);
+  }
+  if (range === "month") {
+    return rollingWindow(30);
+  }
+  return rollingWindow(90);
+}
+
+/**
  * Return an inclusive list of ISO dates (YYYY-MM-DD) from `from` through `to`.
  */
 export function enumerateDays(from: string, to: string): string[] {

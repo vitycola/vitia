@@ -21,14 +21,15 @@ jest.mock("@/db/repos/progress", () => ({
 }));
 
 import * as progressRepo from "@/db/repos/progress";
-import { addDays, rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
+import { addDays, rollingWindow, todayISO } from "@/lib/date";
 import { useMeasurementsDashboard } from "../useMeasurementsDashboard";
 
 const mockGetRange = progressRepo.getRange as jest.Mock;
 
 const today = todayISO();
-const weekStart = startOfWeek(today);
-const weekEnd = weekDays(weekStart)[6];
+const weekWindow = rollingWindow(7, today);
+const weekStart = weekWindow.from;
+const weekEnd = weekWindow.to;
 const monthWindow = rollingWindow(30, today);
 const threeMonthWindow = rollingWindow(90, today);
 
@@ -37,7 +38,7 @@ describe("useMeasurementsDashboard", () => {
     mockGetRange.mockReset();
   });
 
-  it("week range: fetches the calendar-week window", async () => {
+  it("week range: fetches a rolling 7-day window ending today", async () => {
     mockGetRange.mockResolvedValue([]);
 
     const { result } = renderHook(() => useMeasurementsDashboard("week", "waistCm"));
