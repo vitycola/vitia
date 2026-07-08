@@ -1,5 +1,6 @@
 import { getLoggedTotalsByDateRange } from "@/db/repos/mealEntries";
 import type { DayTotals } from "@/db/repos/mealEntries";
+import { CAL_GOAL_HIGH, CAL_GOAL_LOW } from "@/lib/constants";
 import { todayISO, weekDays } from "@/lib/date";
 import { useDayStore } from "@/stores/useDayStore";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -8,15 +9,14 @@ import { useEffect, useMemo, useState } from "react";
 export type DayStatus = "empty" | "partial" | "complete";
 
 /**
- * Goals-met threshold — calories only within [90 %, 110 %] of goal.
- * Macros have their own per-macro bars (HeaderMacroRow/CalorieCard) and are
- * not part of the day-status gate.
+ * Goals-met check — calories only within [90 %, 110 %] of goal (see
+ * CAL_GOAL_LOW/HIGH). Macros have their own per-macro bars
+ * (HeaderMacroRow/CalorieCard) and are not part of the day-status gate.
  */
-const CAL_LOW = 0.9;
-const CAL_HIGH = 1.1;
-
 function goalsMet(totals: DayTotals, calorieGoal: number): boolean {
-  return totals.calories >= calorieGoal * CAL_LOW && totals.calories <= calorieGoal * CAL_HIGH;
+  return (
+    totals.calories >= calorieGoal * CAL_GOAL_LOW && totals.calories <= calorieGoal * CAL_GOAL_HIGH
+  );
 }
 
 /**

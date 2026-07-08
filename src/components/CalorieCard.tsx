@@ -1,3 +1,4 @@
+import { CAL_GOAL_HIGH, CAL_GOAL_LOW } from "@/lib/constants";
 import { MoreHorizontal, Pencil } from "lucide-react";
 
 // --- Arc geometry: wide shallow bow (like Fitia) ---
@@ -35,6 +36,7 @@ function svgArcPath(from: { x: number; y: number }, to: { x: number; y: number }
 
 const TRACK_COLOR = "#E5E5EA";
 const PROGRESS_COLOR = "#F5A623";
+const ON_TARGET_COLOR = "#22C55E";
 
 // --- Exported helpers (kept for any tests that import them) ---
 export function polarToCartesian(
@@ -118,6 +120,9 @@ export function CalorieCard({
   // Arc spans 0 → 2×goal; goal sits at t=0.5 (the visual peak/center).
   // Progress fills across the full arc, past center once consumed > goal.
   const progressT = goal > 0 ? Math.min(consumed / (goal * 2), 1) : 0;
+  const isOnTarget =
+    goal > 0 && consumed >= goal * CAL_GOAL_LOW && consumed <= goal * CAL_GOAL_HIGH;
+  const progressColor = isOnTarget ? ON_TARGET_COLOR : PROGRESS_COLOR;
 
   const trackStart = arcPoint(0);
   const trackEnd = arcPoint(1);
@@ -182,7 +187,7 @@ export function CalorieCard({
           <path
             d={progressPath}
             fill="none"
-            stroke={PROGRESS_COLOR}
+            stroke={progressColor}
             strokeWidth={STROKE}
             strokeLinecap="round"
           />
