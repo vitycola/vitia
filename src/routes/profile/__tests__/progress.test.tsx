@@ -40,6 +40,12 @@ jest.mock("@/src/components/WeightCard", () => ({
   WeightCard: ({ range }: { range: string }) => <div data-testid="weight-card">Peso:{range}</div>,
 }));
 
+jest.mock("@/src/components/BodyFatCard", () => ({
+  BodyFatCard: ({ range }: { range: string }) => (
+    <div data-testid="bodyfat-card">%Grasa:{range}</div>
+  ),
+}));
+
 // jsdom does not implement URL.createObjectURL/revokeObjectURL.
 if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-url");
 if (!URL.revokeObjectURL) URL.revokeObjectURL = jest.fn();
@@ -79,6 +85,7 @@ describe("ProgressRoute", () => {
     expect(screen.getByText("Peso")).toBeInTheDocument();
     expect(screen.getByText("% Grasa")).toBeInTheDocument();
     expect(screen.getByTestId("weight-card")).toBeInTheDocument();
+    expect(screen.getByTestId("bodyfat-card")).toBeInTheDocument();
     expect(screen.getByTestId("measurements-card")).toBeInTheDocument();
 
     const grid = container.querySelector(".grid.grid-cols-3");

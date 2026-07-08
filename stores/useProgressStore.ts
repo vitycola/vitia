@@ -4,17 +4,19 @@ import { create } from "zustand";
 
 // ── Dashboard range selection ──────────────────────────────────────────
 // Drives the Calorías chart's data range and historical overlay window
-// (see useCalorieDashboard / CalorieDashboardCard), AND the Medidas chart's
+// (see useCalorieDashboard / CalorieDashboardCard), the Peso chart's data
+// range and historical overlay window (see useWeightDashboard /
+// WeightCard), the % Grasa chart's data range and historical overlay
+// window (see useBodyFatDashboard / BodyFatCard), AND the Medidas chart's
 // data range and historical overlay window (see useMeasurementsDashboard /
-// MeasurementsCard). Remains inert for the Peso and % Grasa placeholder
-// cards.
+// MeasurementsCard).
 export type DashboardRange = "week" | "month" | "3month";
 
 // ── Store shape ────────────────────────────────────────────────────────
 interface ProgressState {
   /** The progress_entries record (with photos) for the last loaded date, or null. */
   current: ProgressEntryWithPhotos | null;
-  /** Segmented filter selection on Profile > Progreso — drives the Calorías and Medidas chart/overlay. */
+  /** Segmented filter selection on Profile > Progreso — drives the Calorías, Peso, % Grasa, and Medidas chart/overlay. */
   selectedRange: DashboardRange;
   isLoading: boolean;
 }
@@ -35,9 +37,10 @@ interface ProgressActions {
    */
   deleteEntry: (date: string) => Promise<void>;
   /**
-   * Update the selected dashboard range. `useCalorieDashboard` and
-   * `useMeasurementsDashboard` both react to this and refetch their
-   * windows; Peso/%Grasa are unaffected.
+   * Update the selected dashboard range. `useCalorieDashboard`,
+   * `useWeightDashboard`, `useBodyFatDashboard`, and
+   * `useMeasurementsDashboard` all react to this and refetch their
+   * windows.
    */
   setRange: (range: DashboardRange) => void;
 }

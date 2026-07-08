@@ -1,4 +1,5 @@
 import { todayISO } from "@/lib/date";
+import { BodyFatCard } from "@/src/components/BodyFatCard";
 import { CalorieDashboardCard } from "@/src/components/CalorieDashboardCard";
 import { MeasurementsCard } from "@/src/components/MeasurementsCard";
 import { ProgressEntrySheet } from "@/src/components/ProgressEntrySheet";
@@ -6,7 +7,7 @@ import { WeightCard } from "@/src/components/WeightCard";
 import { EmptyStateCard } from "@/src/components/ui/EmptyStateCard";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { useProgressStore } from "@/stores/useProgressStore";
-import { Percent, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
@@ -20,13 +21,13 @@ const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
  * full-width, driven by `useCalorieDashboard` via `CalorieDashboardCard`,
  * above a 3-column Peso/%Grasa/Medidas row. Medidas renders as a live
  * compact tile (metric picker + line chart + sparse historical overlay)
- * driven by `useMeasurementsDashboard` via `MeasurementsCard`; Peso now
- * renders as a live compact tile (line chart + sparse kg historical
- * overlay, no metric picker) driven by `useWeightDashboard` via
- * `WeightCard`. % Grasa remains a "Próximamente" empty-state placeholder
- * (no data model for it yet). The segmented range filter (`selectedRange`)
- * drives the Calorías, Peso, and Medidas chart/overlay windows; it remains
- * inert for %Grasa.
+ * driven by `useMeasurementsDashboard` via `MeasurementsCard`; Peso renders
+ * as a live compact tile (line chart + sparse kg historical overlay, no
+ * metric picker) driven by `useWeightDashboard` via `WeightCard`; % Grasa
+ * renders as a live compact tile (line chart + sparse % historical
+ * overlay, no metric picker) driven by `useBodyFatDashboard` via
+ * `BodyFatCard`. The segmented range filter (`selectedRange`) drives the
+ * Calorías, Peso, Medidas, and % Grasa chart/overlay windows.
  */
 export function ProgressRoute() {
   const { current, selectedRange, setRange, loadByDate, saveEntry } = useProgressStore();
@@ -91,7 +92,9 @@ export function ProgressRoute() {
         <EmptyStateCard title="Peso">
           <WeightCard range={selectedRange} />
         </EmptyStateCard>
-        <EmptyStateCard title="% Grasa" icon={<Percent size={24} />} />
+        <EmptyStateCard title="% Grasa">
+          <BodyFatCard range={selectedRange} />
+        </EmptyStateCard>
         <EmptyStateCard title="">
           <MeasurementsCard range={selectedRange} />
         </EmptyStateCard>
