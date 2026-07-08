@@ -1,4 +1,5 @@
-import { todayISO } from "@/lib/date";
+import { useProgressPhotoGallery } from "@/hooks/useProgressPhotoGallery";
+import { formatFullDayLabel, todayISO } from "@/lib/date";
 import { BodyFatCard } from "@/src/components/BodyFatCard";
 import { CalorieDashboardCard } from "@/src/components/CalorieDashboardCard";
 import { MeasurementsCard } from "@/src/components/MeasurementsCard";
@@ -7,8 +8,9 @@ import { WeightCard } from "@/src/components/WeightCard";
 import { EmptyStateCard } from "@/src/components/ui/EmptyStateCard";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { useProgressStore } from "@/stores/useProgressStore";
-import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronRight, Images, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
   { value: "week", label: "Semana" },
@@ -33,6 +35,17 @@ export function ProgressRoute() {
   const { current, selectedRange, setRange, loadByDate, saveEntry } = useProgressStore();
   const [sheetOpen, setSheetOpen] = useState(false);
   const today = todayISO();
+  const navigate = useNavigate();
+  const { months: photoMonths } = useProgressPhotoGallery();
+
+  // Photo count + most recent upload date for the entry-point card, derived
+  // from the same month-grouped VM the gallery route uses (months render
+  // newest-first, so the first item of the first month is the most recent).
+  const photoStats = useMemo(() => {
+    const totalCount = photoMonths.reduce((sum, month) => sum + month.items.length, 0);
+    const latestDate = photoMonths[0]?.items[0]?.entry.date ?? null;
+    return { totalCount, latestDate };
+  }, [photoMonths]);
 
   useEffect(() => {
     void loadByDate(today);
@@ -99,6 +112,32 @@ export function ProgressRoute() {
           <MeasurementsCard range={selectedRange} />
         </EmptyStateCard>
       </div>
+
+      {/* Fixed placement (spec: Entry-Point Card Placement and Content) —
+          MUST remain the last element of the content column, after
+          CalorieDashboardCard and the Peso/%Grasa/Medidas grid above. */}
+      <button
+        type="button"
+        data-testid="photos-entry-card"
+        onClick={() => navigate("/profile/progress/photos")}
+        className="flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+          <Images size={18} />
+        </span>
+        <span className="flex-1">
+          <span className="block text-sm font-semibold text-gray-900">Fotos de progreso</span>
+          {photoStats.totalCount > 0 && photoStats.latestDate ? (
+            <span className="block text-xs text-gray-500">
+              {photoStats.totalCount} {photoStats.totalCount === 1 ? "foto" : "fotos"} · última{" "}
+              {formatFullDayLabel(photoStats.latestDate)}
+            </span>
+          ) : (
+            <span className="block text-xs text-gray-400">Aún no hay fotos de progreso</span>
+          )}
+        </span>
+        <ChevronRight size={18} className="shrink-0 text-gray-300" />
+      </button>
 
       {sheetOpen && (
         <ProgressEntrySheet

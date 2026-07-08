@@ -3,6 +3,7 @@ import {
   enumerateDays,
   formatDayLabel,
   formatFullDayLabel,
+  formatMonthLabel,
   relativeBucketLabel,
   rollingWindow,
   splitBuckets,
@@ -241,5 +242,27 @@ describe("relativeBucketLabel", () => {
   it("labels are date-independent — same 3 strings regardless of todayISO()", () => {
     const labels = [0, 1, 2].map(relativeBucketLabel);
     expect(labels).toEqual(["Hace 61-90 días", "Hace 31-60 días", "Últimos 30 días"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatMonthLabel
+// ---------------------------------------------------------------------------
+
+describe("formatMonthLabel", () => {
+  it("formats a YYYY-MM-DD date into a capitalized es-AR 'Month Year' label", () => {
+    expect(formatMonthLabel("2026-07-08")).toBe("Julio 2026");
+  });
+
+  it("formats a YYYY-MM (no day) input the same way", () => {
+    expect(formatMonthLabel("2026-07")).toBe("Julio 2026");
+  });
+
+  it("handles January correctly (month index 0)", () => {
+    expect(formatMonthLabel("2026-01-15")).toBe("Enero 2026");
+  });
+
+  it("handles December correctly (month index 11)", () => {
+    expect(formatMonthLabel("2025-12-31")).toBe("Diciembre 2025");
   });
 });

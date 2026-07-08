@@ -198,6 +198,33 @@ export function splitBuckets(
   return buckets;
 }
 
+const MONTHS_ES_FULL = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+/**
+ * Format a date string (accepts YYYY-MM or YYYY-MM-DD) into a capitalized
+ * es-AR "Month Year" label (e.g. "Julio 2026") for gallery month-section
+ * headers. Parses the date parts directly (no `new Date(isoDate)`) to avoid
+ * timezone shifting, matching the other formatters in this module.
+ */
+export function formatMonthLabel(isoDate: string): string {
+  const [yearStr, monthStr] = isoDate.split("-");
+  const monthIndex = Number.parseInt(monthStr, 10) - 1;
+  return `${MONTHS_ES_FULL[monthIndex]} ${yearStr}`;
+}
+
 const BUCKET_LABELS = ["Hace 61-90 días", "Hace 31-60 días", "Últimos 30 días"];
 
 /**

@@ -82,6 +82,29 @@ export async function getRange(from: string, to: string): Promise<ProgressEntry[
 }
 
 /**
+ * Get all progress_entries rows whose date falls within [from, to] inclusive,
+ * each enriched with its photos (ordered by position), ordered by date
+ * ascending. Entries with zero photos are excluded from the result (spec:
+ * Range+Photos Query Contract — gallery use only, unlike getRange which
+ * includes photo-less entries for dashboard/list use).
+ */
+export async function getPhotosInRange(
+  from: string,
+  to: string
+): Promise<ProgressEntryWithPhotos[]> {
+  const entries = await db
+    .select()
+    .from(progressEntries)
+    .where(between(progressEntries.date, from, to))
+    .orderBy(asc(progressEntries.date));
+
+  const withPhotos = await Promise.all(
+    entries.map(async (entry) => ({ ...entry, photos: await getPhotos(entry.id) }))
+  );
+  return withPhotos.filter((entry) => entry.photos.length > 0);
+}
+
+/**
  * Get a progress_entries row's photos, ordered by position, with the stored
  * Buffer converted back to a Blob at the boundary.
  */

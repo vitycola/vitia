@@ -48,6 +48,10 @@ interface ProgressBackend {
   name: string;
   getByDate(date: string): Promise<(schema.ProgressEntry & { photos: unknown[] }) | null>;
   getRange(from: string, to: string): Promise<schema.ProgressEntry[]>;
+  getPhotosInRange(
+    from: string,
+    to: string
+  ): Promise<(schema.ProgressEntry & { photos: Array<{ id: string; blob: Blob }> })[]>;
   upsertByDate(
     input: ProgressUpsertInput,
     profile: ProgressProfileInput | null
@@ -201,6 +205,19 @@ function makeSqliteProxyBackend(): ProgressBackend & { _ready: Promise<void> } {
         .orderBy(asc(schema.progressEntries.date));
     },
 
+    async getPhotosInRange(from, to) {
+      const entries = await db
+        .select()
+        .from(schema.progressEntries)
+        .where(between(schema.progressEntries.date, from, to))
+        .orderBy(asc(schema.progressEntries.date));
+
+      const withPhotos = await Promise.all(
+        entries.map(async (entry) => ({ ...entry, photos: await getPhotos(entry.id) }))
+      );
+      return withPhotos.filter((entry) => entry.photos.length > 0);
+    },
+
     getPhotos,
     getLatestBodyFat,
 
@@ -325,6 +342,9 @@ function makeDexieBackend(): ProgressBackend & { _ready: Promise<void> } {
     },
     async getRange(from, to) {
       return adapter.progress.getRange(from, to);
+    },
+    async getPhotosInRange(from, to) {
+      return adapter.progress.getPhotosInRange(from, to);
     },
     async upsertByDate(input, profile) {
       return adapter.progress.upsertByDate(input, profile);
@@ -522,6 +542,57 @@ describe.each([
 
       const range = await backend.getRange("2026-04-01", "2026-04-03");
       expect(range.map((r) => r.date)).toEqual(["2026-04-01", "2026-04-02", "2026-04-03"]);
+    });
+  });
+
+  describe("getPhotosInRange (spec: Range+Photos Query Contract)", () => {
+    it("includes an entry with full metrics and photos", async () => {
+      await backend.upsertByDate(
+        {
+          date: "2026-07-01",
+          weightKg: 80,
+          neckCm: 38,
+          waistCm: 85,
+          photos: [makePhoto(), makePhoto()],
+        },
+        MALE_PROFILE
+      );
+
+      const rows = await backend.getPhotosInRange("2026-07-01", "2026-07-31");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].date).toBe("2026-07-01");
+      expect(rows[0].weightKg).toBe(80);
+      expect(rows[0].bodyFatPct).not.toBeNull();
+      expect(rows[0].photos).toHaveLength(2);
+    });
+
+    it("includes an entry with partial metrics (only weight) and a photo, other fields absent not crashing", async () => {
+      await backend.upsertByDate({ date: "2026-07-02", weightKg: 79, photos: [makePhoto()] }, null);
+
+      const rows = await backend.getPhotosInRange("2026-07-02", "2026-07-02");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].weightKg).toBe(79);
+      expect(rows[0].bodyFatPct).toBeNull();
+      expect(rows[0].photos).toHaveLength(1);
+    });
+
+    it("excludes an entry that has metrics but no photos", async () => {
+      await backend.upsertByDate(
+        { date: "2026-07-03", weightKg: 78, neckCm: 38, waistCm: 84, photos: [] },
+        MALE_PROFILE
+      );
+
+      const rows = await backend.getPhotosInRange("2026-07-03", "2026-07-03");
+      expect(rows).toHaveLength(0);
+    });
+
+    it("returns rows sorted ascending by date", async () => {
+      await backend.upsertByDate({ date: "2026-07-06", photos: [makePhoto()] }, null);
+      await backend.upsertByDate({ date: "2026-07-04", photos: [makePhoto()] }, null);
+      await backend.upsertByDate({ date: "2026-07-05", photos: [makePhoto()] }, null);
+
+      const rows = await backend.getPhotosInRange("2026-07-04", "2026-07-06");
+      expect(rows.map((r) => r.date)).toEqual(["2026-07-04", "2026-07-05", "2026-07-06"]);
     });
   });
 

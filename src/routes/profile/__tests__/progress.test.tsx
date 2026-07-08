@@ -1,6 +1,13 @@
 /** @jest-environment jsdom */
 import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import { MemoryRouter } from "react-router-dom";
+
+const mockNavigate = jest.fn();
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockNavigate,
+}));
 
 jest.mock("@/src/components/ProgressEntrySheet", () => ({
   ProgressEntrySheet: ({
@@ -50,6 +57,14 @@ jest.mock("@/src/components/BodyFatCard", () => ({
 if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-url");
 if (!URL.revokeObjectURL) URL.revokeObjectURL = jest.fn();
 
+let mockGalleryVM: {
+  months: Array<{ key: string; label: string; items: Array<{ entry: { date: string } }> }>;
+  isLoading: boolean;
+};
+jest.mock("@/hooks/useProgressPhotoGallery", () => ({
+  useProgressPhotoGallery: () => mockGalleryVM,
+}));
+
 const mockSetRange = jest.fn();
 const mockLoadByDate = jest.fn();
 let mockProgressState: { current: unknown; selectedRange: string } = {
@@ -75,11 +90,16 @@ describe("ProgressRoute", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockProgressState = { current: null, selectedRange: "week" };
+    mockGalleryVM = { months: [], isLoading: false };
     (URL.createObjectURL as jest.Mock).mockReturnValue("blob:mock-url");
   });
 
   it("renders the full-width Calorías card above a 3-column Peso/%Grasa/Medidas row", () => {
-    const { container } = render(<ProgressRoute />);
+    const { container } = render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     expect(screen.getByTestId("calorie-dashboard-card")).toBeInTheDocument();
     expect(screen.getByText("Peso")).toBeInTheDocument();
@@ -96,13 +116,21 @@ describe("ProgressRoute", () => {
   });
 
   it("does not render PhotoStubCard", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     expect(screen.queryByText(/agregar foto de progreso/i)).not.toBeInTheDocument();
   });
 
   it("renders the Semana/Mes/3 meses segmented filter", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     expect(screen.getByRole("button", { name: "Semana" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mes" })).toBeInTheDocument();
@@ -110,7 +138,11 @@ describe("ProgressRoute", () => {
   });
 
   it("clicking a filter option updates selectedRange state only — no query/chart side effect", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Mes" }));
 
@@ -120,7 +152,11 @@ describe("ProgressRoute", () => {
   });
 
   it("clicking each option maps to the correct DashboardRange value", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Semana" }));
     expect(mockSetRange).toHaveBeenCalledWith("week");
@@ -130,7 +166,11 @@ describe("ProgressRoute", () => {
   });
 
   it("renders a '+' button that opens ProgressEntrySheet in create mode when no record exists", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Añadir progreso" }));
 
@@ -143,7 +183,11 @@ describe("ProgressRoute", () => {
       selectedRange: "week",
     };
 
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Añadir progreso" }));
 
@@ -151,7 +195,11 @@ describe("ProgressRoute", () => {
   });
 
   it("renders the '+' entry point as a small icon-only button (no full-width label)", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     const button = screen.getByRole("button", { name: "Añadir progreso" });
     // Icon-only: no visible "Añadir progreso" text node inside the button,
@@ -160,7 +208,11 @@ describe("ProgressRoute", () => {
   });
 
   it("renders DOM order as [+ button] -> [segmented filter] -> [dashboard grid]", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     const addButton = screen.getByRole("button", { name: "Añadir progreso" });
     const filterButton = screen.getByRole("button", { name: "Semana" });
@@ -178,7 +230,11 @@ describe("ProgressRoute", () => {
   });
 
   it("renders the '+' button and the segmented filter as siblings in one shared row, above the dashboard grid", () => {
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     const addButton = screen.getByRole("button", { name: "Añadir progreso" });
     const filterButton = screen.getByRole("button", { name: "Semana" });
@@ -216,10 +272,85 @@ describe("ProgressRoute", () => {
       selectedRange: "week",
     };
 
-    render(<ProgressRoute />);
+    render(
+      <MemoryRouter>
+        <ProgressRoute />
+      </MemoryRouter>
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Añadir progreso" }));
 
     expect(screen.getAllByRole("img")).toHaveLength(2);
+  });
+
+  describe("Fotos de progreso entry-point card (spec: Entry-Point Card Placement and Content)", () => {
+    it("renders as the LAST element of the content column, after CalorieDashboardCard and the 3-column grid", () => {
+      const { container } = render(
+        <MemoryRouter>
+          <ProgressRoute />
+        </MemoryRouter>
+      );
+
+      const contentColumn = container.firstElementChild as Element;
+      const card = screen.getByTestId("photos-entry-card");
+      const grid = screen.getByText("Peso").closest(".grid.grid-cols-3") as Element;
+
+      expect(contentColumn.lastElementChild).toBe(card);
+      expect(grid.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("shows an empty-state message when no photos have ever been uploaded", () => {
+      mockGalleryVM = { months: [], isLoading: false };
+
+      render(
+        <MemoryRouter>
+          <ProgressRoute />
+        </MemoryRouter>
+      );
+
+      expect(screen.getByTestId("photos-entry-card")).toHaveTextContent(
+        /aún no hay fotos de progreso/i
+      );
+    });
+
+    it("shows the total photo count and most recent upload date when photos exist", () => {
+      mockGalleryVM = {
+        months: [
+          {
+            key: "2026-07",
+            label: "Julio 2026",
+            items: [{ entry: { date: "2026-07-05" } }, { entry: { date: "2026-07-01" } }],
+          },
+          {
+            key: "2026-06",
+            label: "Junio 2026",
+            items: [{ entry: { date: "2026-06-01" } }],
+          },
+        ],
+        isLoading: false,
+      };
+
+      render(
+        <MemoryRouter>
+          <ProgressRoute />
+        </MemoryRouter>
+      );
+
+      const card = screen.getByTestId("photos-entry-card");
+      expect(card).toHaveTextContent("3");
+      expect(card.textContent).toMatch(/5 jul/i);
+    });
+
+    it("navigates to /profile/progress/photos when tapped, regardless of photo state", () => {
+      render(
+        <MemoryRouter>
+          <ProgressRoute />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByTestId("photos-entry-card"));
+
+      expect(mockNavigate).toHaveBeenCalledWith("/profile/progress/photos");
+    });
   });
 });
