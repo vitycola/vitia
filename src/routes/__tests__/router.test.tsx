@@ -30,6 +30,9 @@ jest.mock("@/src/routes/profile/configuration", () => ({
 jest.mock("@/src/routes/profile/layout", () => ({ ProfileLayout: () => <div>ProfileLayout</div> }));
 jest.mock("@/src/routes/profile/plan", () => ({ PlanRoute: () => <div>Plan</div> }));
 jest.mock("@/src/routes/profile/progress", () => ({ ProgressRoute: () => <div>Progress</div> }));
+jest.mock("@/src/routes/profile/progressPhotos", () => ({
+  ProgressPhotosRoute: () => <div>ProgressPhotos</div>,
+}));
 jest.mock("@/src/routes/search", () => ({ SearchRoute: () => <div>Search</div> }));
 jest.mock("@/src/routes/createFood/ModeSelect", () => ({
   ModeSelectRoute: () => <div>ModeSelect</div>,
@@ -110,5 +113,22 @@ describe("router.tsx — composite-food-creation route registration", () => {
     const route = findRoute(router.routes, "/create-food/manual/:foodId");
     expect(route).toBeDefined();
     expect(isAuthGuarded(route)).toBe(true);
+  });
+});
+
+describe("router.tsx — progress-photos-gallery route registration", () => {
+  it("registers /profile/progress/photos as a TOP-LEVEL route (not nested under profile children), wrapped in AuthGuard", async () => {
+    const { router } = await import("@/src/router");
+
+    const route = findRoute(router.routes, "/profile/progress/photos");
+    expect(route).toBeDefined();
+    expect(isAuthGuarded(route)).toBe(true);
+
+    // Confirm it is NOT a child of the `profile` route (escapes ProfileLayout/TabLayout).
+    const profileRoute = findRoute(router.routes, "profile");
+    const isChildOfProfile = (profileRoute?.children ?? []).some(
+      (child: RouteObjectLike) => child.path === "/profile/progress/photos"
+    );
+    expect(isChildOfProfile).toBe(false);
   });
 });

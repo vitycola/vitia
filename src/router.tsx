@@ -14,6 +14,7 @@ import { ConfigurationRoute } from "@/src/routes/profile/configuration";
 import { ProfileLayout } from "@/src/routes/profile/layout";
 import { PlanRoute } from "@/src/routes/profile/plan";
 import { ProgressRoute } from "@/src/routes/profile/progress";
+import { ProgressPhotosRoute } from "@/src/routes/profile/progressPhotos";
 import { SearchRoute } from "@/src/routes/search";
 import { createBrowserRouter } from "react-router-dom";
 
@@ -56,6 +57,17 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <PortionRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    // Escapes TabLayout/ProfileLayout chrome (no bottom tab bar, no profile
+    // RouteTabs header) — a full-screen gallery/lightbox owns its own back
+    // header instead. Mirrors the /portion/:foodId escape pattern above.
+    path: "/profile/progress/photos",
+    element: (
+      <AuthGuard>
+        <ProgressPhotosRoute />
       </AuthGuard>
     ),
   },
