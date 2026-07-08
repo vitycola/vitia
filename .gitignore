@@ -21,3 +21,6 @@ coverage/
 # Vite / PWA
 *.local
 vite.config.ts.timestamp-*
+
+# Local/per-worktree tooling state (auto-regenerated, not meant to be shared)
+.atl/
