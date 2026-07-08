@@ -190,8 +190,8 @@ export function RecipeDetailRoute() {
             {preview && (
               <div className="mb-4 rounded-xl bg-white px-4 py-3 shadow-sm">
                 <p className="mb-1 text-sm font-semibold text-gray-900">
-                  {Math.round(preview.totalCalories)} kcal total (
-                  {Math.round(preview.totalWeightG)}g)
+                  {Math.round(preview.totalCalories)} kcal total ({Math.round(preview.totalWeightG)}
+                  g)
                 </p>
                 <p className="text-xs text-gray-400">
                   P {Math.round(preview.totalProteinG)}g · C {Math.round(preview.totalCarbsG)}g · G{" "}
