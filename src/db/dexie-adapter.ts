@@ -23,6 +23,7 @@ import type {
   NewMealEntry,
   NewSyncQueueRow,
   NewUserProfile,
+  OffCategoryCorrection,
   ProgressEntry,
   SyncQueueRow,
   UserFavoriteFood,
@@ -50,6 +51,7 @@ interface SyncQueueDexieRow extends SyncQueueRow {}
 interface UserFavoriteFoodRow extends UserFavoriteFood {}
 interface FoodIngredientRow extends FoodIngredient {}
 interface ProgressEntryRow extends ProgressEntry {}
+interface OffCategoryCorrectionRow extends OffCategoryCorrection {}
 
 /**
  * Dexie photo row. Unlike the OPFS/drizzle path (which stores a Buffer in a
@@ -80,7 +82,7 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 /**
  * The tags applied by the OPFS migrator (journal order).
@@ -96,6 +98,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0005_composite_foods", when: 1805000000000 },
   { tag: "0006_progress_log", when: 1810000000000 },
   { tag: "0007_progress_measurements", when: 1815000000000 },
+  { tag: "0008_raw_cooked_conversion", when: 1820000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -107,6 +110,7 @@ class VitiaDb extends Dexie {
   food_ingredients!: Table<FoodIngredientRow, string>;
   progress_entries!: Table<ProgressEntryRow, string>;
   progress_photos!: Table<ProgressPhotoRow, string>;
+  off_category_corrections!: Table<OffCategoryCorrectionRow, number>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -208,7 +212,7 @@ class VitiaDb extends Dexie {
 
     // Version 8: adds chestCm/armCm/thighCm to progress_entries
     // (0007_progress_measurements migration)
-    this.version(DB_VERSION).stores({
+    this.version(8).stores({
       foods: "id, name, nameNormalized, source, offProductCode, category",
       meal_entries: "id, date, [date+mealType], foodId, userId",
       users_profile: "id, userId",
@@ -221,6 +225,24 @@ class VitiaDb extends Dexie {
     });
     // No upgrade() needed: chestCm/armCm/thighCm are new optional columns on
     // an existing store — no index change (mirrors v7/v6 rollout style).
+
+    // Version 9: adds dataBasis to foods + off_category_corrections table
+    // (0008_raw_cooked_conversion migration)
+    this.version(DB_VERSION).stores({
+      foods: "id, name, nameNormalized, source, offProductCode, category, dataBasis",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      food_ingredients: "id, parentFoodId, ingredientFoodId",
+      progress_entries: "id, date, userId",
+      progress_photos: "id, entryId",
+      off_category_corrections: "id",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: dataBasis is a new optional column and
+    // off_category_corrections is a brand-new store (additive, mirrors v6-v8
+    // rollout style).
   }
 }
 
@@ -339,6 +361,15 @@ export interface ProgressRepo {
   deleteByDate(date: string): Promise<void>;
 }
 
+/**
+ * OFF category-correction telemetry counter — single aggregate row, no
+ * per-event history. Design: raw-cooked-conversion D5.
+ */
+export interface OffCategoryCorrectionsRepo {
+  increment(): Promise<void>;
+  getCount(): Promise<number>;
+}
+
 /** SyncQueue repository surface — durable outbound operation queue */
 export interface SyncQueueRepo {
   enqueue(op: NewSyncQueueRow): Promise<void>;
@@ -376,6 +407,7 @@ export interface DexieAdapter {
   readonly syncQueue: SyncQueueRepo;
   readonly favorites: FavoritesRepo;
   readonly progress: ProgressRepo;
+  readonly offCategoryCorrections: OffCategoryCorrectionsRepo;
   /** Exposed for testing: returns the list of applied migration tags (W2/S1). */
   getAppliedMigrationTags(): Promise<string[]>;
   /** Close the underlying Dexie connection (useful in tests). */
@@ -461,6 +493,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         offProductCode: food.offProductCode ?? null,
         imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
         category: food.category ?? existing?.category ?? null,
+        dataBasis: food.dataBasis ?? existing?.dataBasis ?? null,
         createdAt: existing?.createdAt ?? food.createdAt ?? now(),
       };
       await db.foods.put(row);
@@ -482,6 +515,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         offProductCode: food.offProductCode ?? null,
         imageUrl: food.imageUrl ?? null,
         category: food.category ?? null,
+        dataBasis: food.dataBasis ?? null,
         createdAt: food.createdAt ?? now(),
       };
       // Dexie .add() throws ConstraintError on duplicate key, matching SQL behaviour
@@ -515,6 +549,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
             offProductCode: food.offProductCode ?? null,
             imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
             category: food.category ?? existing?.category ?? null,
+            dataBasis: food.dataBasis ?? existing?.dataBasis ?? null,
             createdAt: existing?.createdAt ?? food.createdAt ?? now(),
           };
         });
@@ -560,6 +595,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
           offProductCode: food.offProductCode ?? null,
           imageUrl: food.imageUrl ?? null,
           category: food.category ?? null,
+          dataBasis: food.dataBasis ?? null,
           createdAt: food.createdAt ?? now(),
         };
         await db.foods.add(row);
@@ -1080,6 +1116,28 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     },
   };
 
+  // ── OFF category corrections (single aggregate row) ────────────────────────
+
+  const OFF_CATEGORY_CORRECTIONS_ID = 1;
+
+  const offCategoryCorrections: OffCategoryCorrectionsRepo = {
+    async increment() {
+      await db.transaction("rw", db.off_category_corrections, async () => {
+        const existing = await db.off_category_corrections.get(OFF_CATEGORY_CORRECTIONS_ID);
+        await db.off_category_corrections.put({
+          id: OFF_CATEGORY_CORRECTIONS_ID,
+          correctionCount: (existing?.correctionCount ?? 0) + 1,
+          updatedAt: now(),
+        });
+      });
+    },
+
+    async getCount() {
+      const row = await db.off_category_corrections.get(OFF_CATEGORY_CORRECTIONS_ID);
+      return row?.correctionCount ?? 0;
+    },
+  };
+
   // ── Public adapter ────────────────────────────────────────────────────────
 
   return {
@@ -1090,6 +1148,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     syncQueue,
     favorites,
     progress,
+    offCategoryCorrections,
 
     async getAppliedMigrationTags() {
       const rows = await db.__drizzle_migrations.toArray();

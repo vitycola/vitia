@@ -50,6 +50,11 @@ export const foods = sqliteTable(
     // keys at the app layer (not a SQL enum) because the category list is
     // expected to grow — see design.md "category column type".
     category: text("category"),
+    // Nullable: null = unknown/unresolved basis (fail-closed — same discipline
+    // as an unknown category). Reuses the "crudo"/"cocido" domain vocabulary
+    // (see lib/cookingConversion.ts CookingBasis). Design: raw-cooked-conversion
+    // D6.1 (sdd/raw-cooked-conversion/design).
+    dataBasis: text("data_basis", { enum: ["crudo", "cocido"] }),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
@@ -194,6 +199,19 @@ export const syncQueue = sqliteTable("sync_queue", {
   updatedAt: text("updated_at").notNull(), // ISO string; used for LWW ordering
 });
 
+// ── off_category_corrections (single aggregate row; device-local telemetry) ──
+// Records how often a user manually corrects an auto-assigned OFF `category`
+// (signal for a possible future manual-confirm UI — counter only, no UI in
+// this change). Deliberately NOT in sync_queue's `table` enum — this is
+// device-local telemetry, not user content (mirrors how progress_photos is
+// intentionally excluded from sync). Design: raw-cooked-conversion D5
+// (sdd/raw-cooked-conversion/design).
+export const offCategoryCorrections = sqliteTable("off_category_corrections", {
+  id: integer("id").primaryKey(), // always 1 — single aggregate row
+  correctionCount: integer("correction_count").notNull().default(0),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+
 // Inferred types (single source of truth for the app)
 export type UserProfile = typeof usersProfile.$inferSelect;
 export type NewUserProfile = typeof usersProfile.$inferInsert;
@@ -211,3 +229,5 @@ export type ProgressEntry = typeof progressEntries.$inferSelect;
 export type NewProgressEntry = typeof progressEntries.$inferInsert;
 export type ProgressPhoto = typeof progressPhotos.$inferSelect;
 export type NewProgressPhoto = typeof progressPhotos.$inferInsert;
+export type OffCategoryCorrection = typeof offCategoryCorrections.$inferSelect;
+export type NewOffCategoryCorrection = typeof offCategoryCorrections.$inferInsert;

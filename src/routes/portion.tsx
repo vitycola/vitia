@@ -2,6 +2,8 @@ import { getById, getIngredients } from "@/db/repos/foods";
 import type { Food, MealEntry } from "@/db/schema";
 import { useFavorite } from "@/hooks/useFavorite";
 import { MEAL_LABELS } from "@/lib/constants";
+import { canConvert, convertWeight, directionFor } from "@/lib/cookingConversion";
+import type { CookingBasis } from "@/lib/cookingConversion";
 import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
 import { scalePortion } from "@/lib/nutrition";
@@ -16,10 +18,9 @@ import { MoreVertical } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-// Display-only alternate units — grams-only math (Product Decision, confirmed).
-// Selecting these never recomputes quantityG or macros.
+// Display-only alternate unit — grams-only math (Product Decision, confirmed).
+// Selecting this never recomputes quantityG or macros.
 type DisplayUnit = "g" | "cup" | "tbsp";
-type DisplayWeightType = "crudo" | "cocido";
 
 export function PortionRoute() {
   const { foodId } = useParams<{ foodId: string }>();
@@ -37,7 +38,11 @@ export function PortionRoute() {
   const [mealType, setMealType] = useState<MealType>(requestedMealType);
   const [saving, setSaving] = useState(false);
   const [displayUnit, setDisplayUnit] = useState<DisplayUnit>("g");
-  const [displayWeightType, setDisplayWeightType] = useState<DisplayWeightType>("crudo");
+  // Functional basis control (repurposed from the former display-only
+  // selector — design D4): the entered grams is what the user weighed;
+  // `basis` says which basis that weight is in. Direction is derived (D6.5)
+  // from this vs. the food's resolved dataBasis, never assumed.
+  const [basis, setBasis] = useState<CookingBasis>("crudo");
 
   // Edit mode: `entryId` must resolve to an entry already loaded in the day
   // store. If it doesn't (invalid/stale deep link), fall back to create mode
@@ -119,7 +124,20 @@ export function PortionRoute() {
   }
 
   const grams = Number(quantityStr) || 0;
-  const portion = grams > 0 ? scalePortion(food, grams) : null;
+  const showConversionToggle = canConvert(food);
+  // Convert the entered weight to the food's stored basis before deriving
+  // macros (design D4/D6.5). `directionFor` returns null when the gate is
+  // false (dataBasis unresolved) or when the entered basis already matches
+  // the stored basis — in either case the entered grams are used unchanged.
+  const conversionDirection = showConversionToggle ? directionFor(food.dataBasis, basis) : null;
+  const conversionResult = conversionDirection
+    ? convertWeight(food.category, grams, conversionDirection)
+    : null;
+  // showConversionToggle (canConvert) already guarantees hasCookingFactor(food.category)
+  // whenever conversionDirection is non-null, so "converted" is always the
+  // actual branch here — the fallback keeps this expression total.
+  const effectiveGrams = conversionResult?.kind === "converted" ? conversionResult.grams : grams;
+  const portion = grams > 0 ? scalePortion(food, effectiveGrams) : null;
   const mealLabel = MEAL_LABELS[mealType];
   const ctaLabel = isEditMode ? "Actualizar" : `Añadir a ${mealLabel}`;
 
@@ -127,13 +145,13 @@ export function PortionRoute() {
     if (!food || grams <= 0) return;
     setSaving(true);
     try {
-      const macros = scalePortion(food, grams);
+      const macros = scalePortion(food, effectiveGrams);
       if (isEditMode && entryId) {
         await updateEntry(entryId, {
           mealType,
           foodId: food.id,
           foodName: food.name,
-          quantityG: grams,
+          quantityG: effectiveGrams,
           calories: macros.calories,
           proteinG: macros.proteinG,
           carbsG: macros.carbsG,
@@ -146,7 +164,7 @@ export function PortionRoute() {
           mealType,
           foodId: food.id,
           foodName: food.name,
-          quantityG: grams,
+          quantityG: effectiveGrams,
           calories: macros.calories,
           proteinG: macros.proteinG,
           carbsG: macros.carbsG,
@@ -288,12 +306,15 @@ export function PortionRoute() {
           </div>
         </CollapsibleSection>
 
-        {/* Quantity + display-only unit/weight-type selectors */}
+        {/* Quantity + unit selector + (when convertible) the functional
+            crudo/cocido basis toggle */}
         <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
           <label htmlFor="quantity" className="mb-2 block text-sm font-medium text-gray-700">
             Cantidad
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div
+            className={showConversionToggle ? "grid grid-cols-3 gap-2" : "grid grid-cols-2 gap-2"}
+          >
             <input
               id="quantity"
               type="number"
@@ -314,16 +335,21 @@ export function PortionRoute() {
               <option value="cup">Tazas</option>
               <option value="tbsp">Cucharadas</option>
             </select>
-            {/* Display-only — never recomputes quantityG or macros */}
-            <select
-              aria-label="Tipo de peso (solo visual)"
-              value={displayWeightType}
-              onChange={(e) => setDisplayWeightType(e.target.value as DisplayWeightType)}
-              className="col-span-1 rounded-xl border border-gray-300 bg-white px-2 py-2.5 text-sm text-gray-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-            >
-              <option value="crudo">Crudo</option>
-              <option value="cocido">Cocido</option>
-            </select>
+            {/* Functional — repurposed from display-only (design D4). Hidden
+                when canConvert(food) is false: no known factor OR unresolved
+                dataBasis (fail-closed, BR-5). Drives real conversion of the
+                entered grams before macros are computed/persisted. */}
+            {showConversionToggle && (
+              <select
+                aria-label="Tipo de peso"
+                value={basis}
+                onChange={(e) => setBasis(e.target.value as CookingBasis)}
+                className="col-span-1 rounded-xl border border-gray-300 bg-white px-2 py-2.5 text-sm text-gray-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              >
+                <option value="crudo">Crudo</option>
+                <option value="cocido">Cocido</option>
+              </select>
+            )}
           </div>
         </div>
 

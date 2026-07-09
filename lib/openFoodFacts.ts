@@ -1,5 +1,7 @@
 import { upsert, upsertMany } from "@/db/repos/foods";
 import type { NewFood } from "@/db/schema";
+import { basisFromOffTags } from "@/lib/offBasisMap";
+import { categoryFromOffTags } from "@/lib/offCategoryMap";
 import type { OffProxyProduct, OffProxyResponse } from "@/lib/offTypes";
 
 // ── OFF API constants ──────────────────────────────────────────────────
@@ -12,7 +14,7 @@ const OFF_SEARCH_TIMEOUT_MS = 7000; // 6-8s bound (spec: Bounded Request Timeout
 
 // Required fields to avoid fetching the full product blob.
 const OFF_FIELDS =
-  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url";
+  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url,categories_tags";
 
 // ── Food with missing-data flag (for UI warning) ───────────────────────
 export interface SearchResult extends NewFood {
@@ -60,6 +62,12 @@ export function normalizeOffProduct(
     source: "openfoodfacts",
     offProductCode: p.code,
     imageUrl: p.image_front_small_url ?? p.image_url ?? null,
+    // Design D3/D6: single insertion point — both search() and
+    // getByBarcode() call normalizeOffProduct, so both inherit category and
+    // dataBasis resolution for free. Unmapped/unresolved tags leave these
+    // null (fail-closed — never a guessed category or a guessed "crudo").
+    category: categoryFromOffTags(p.categories_tags) ?? null,
+    dataBasis: basisFromOffTags(p.categories_tags) ?? null,
     hasMissingData,
   };
 }
