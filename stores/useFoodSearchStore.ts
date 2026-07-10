@@ -96,6 +96,10 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
         genericSettled.reason instanceof DOMException && genericSettled.reason.name === "AbortError"
       );
 
+    if (genericFailed) {
+      console.warn("[genericFoods] search failed (non-fatal):", genericSettled.reason);
+    }
+
     // Non-fatal AbortError from either remote — stop processing silently.
     const offAborted =
       offSettled.status === "rejected" &&
