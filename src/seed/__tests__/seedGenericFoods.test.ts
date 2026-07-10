@@ -30,9 +30,15 @@ describe("GENERIC_FOODS", () => {
     }
   });
 
-  it("every entry has a resolved dataBasis of crudo or cocido", () => {
+  it("every entry is crudo — no separate cocido row (the toggle covers cocido logging)", () => {
     for (const food of GENERIC_FOODS) {
-      expect(["crudo", "cocido"]).toContain(food.dataBasis);
+      expect(food.dataBasis).toBe("crudo");
+    }
+  });
+
+  it("every entry's name has no crudo/cocido qualifier — it's implied", () => {
+    for (const food of GENERIC_FOODS) {
+      expect(food.name.toLowerCase()).not.toMatch(/crudo|cocido|hervid|plancha/);
     }
   });
 
@@ -60,17 +66,9 @@ describe("GENERIC_FOODS", () => {
     }
   });
 
-  it("each category present has both a crudo and a cocido entry", () => {
-    const byCategory = new Map<string, Set<string>>();
-    for (const food of GENERIC_FOODS) {
-      const bases = byCategory.get(food.category) ?? new Set<string>();
-      bases.add(food.dataBasis);
-      byCategory.set(food.category, bases);
-    }
-    for (const bases of byCategory.values()) {
-      expect(bases.has("crudo")).toBe(true);
-      expect(bases.has("cocido")).toBe(true);
-    }
+  it("each category appears exactly once — no duplicate crudo/cocido pair per food", () => {
+    const categories = GENERIC_FOODS.map((food) => food.category);
+    expect(new Set(categories).size).toBe(categories.length);
   });
 
   it("intentionally excludes legumbres (no BEDCA cocido pair passed the Atwater check)", () => {
