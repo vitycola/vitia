@@ -93,8 +93,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
     const genericFailed =
       genericSettled.status === "rejected" &&
       !(
-        genericSettled.reason instanceof DOMException &&
-        genericSettled.reason.name === "AbortError"
+        genericSettled.reason instanceof DOMException && genericSettled.reason.name === "AbortError"
       );
 
     // Non-fatal AbortError from either remote — stop processing silently.
@@ -117,7 +116,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
       offSettled.status === "fulfilled"
         ? offSettled.value.filter((r) => !existingIds.has(r.id)).map((r) => r as SearchResult)
         : [];
-    offItems.forEach((r) => existingIds.add(r.id));
+    for (const r of offItems) existingIds.add(r.id);
 
     const genericItems =
       genericSettled.status === "fulfilled"

@@ -25,8 +25,8 @@ jest.mock("@/lib/genericFoods", () => ({
 }));
 
 import * as foodsRepo from "@/db/repos/foods";
-import * as offFacts from "@/lib/openFoodFacts";
 import * as genericFoods from "@/lib/genericFoods";
+import * as offFacts from "@/lib/openFoodFacts";
 // Imported after mocks so the store module picks up the mocked deps.
 import { useFoodSearchStore } from "@/stores/useFoodSearchStore";
 

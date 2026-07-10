@@ -77,12 +77,7 @@
       "^@/(.+\\.sql)\\?raw$": "<rootDir>/$1",
       "^@/(.*)$": "<rootDir>/$1"
     },
-    "testMatch": [
-      "**/__tests__/**/*.test.ts",
-      "**/__tests__/**/*.test.tsx"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.ts"
-    ]
+    "testMatch": ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.tsx"],
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
   }
 }

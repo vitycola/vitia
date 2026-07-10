@@ -14,9 +14,9 @@ jest.mock("@/db/repos/foods", () => ({
   upsertMany: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { getSupabasePublicClient } from "@/src/lib/supabase";
 import { upsertMany } from "@/db/repos/foods";
-import { normalizeGenericRow, search, type GenericFoodRow } from "@/lib/genericFoods";
+import { type GenericFoodRow, normalizeGenericRow, search } from "@/lib/genericFoods";
+import { getSupabasePublicClient } from "@/src/lib/supabase";
 
 const mockedGetClient = getSupabasePublicClient as jest.MockedFunction<
   typeof getSupabasePublicClient
@@ -107,6 +107,7 @@ function makeMockClient(result: { data: unknown; error: unknown }) {
     limit: jest.fn().mockReturnThis(),
     abortSignal: jest.fn().mockReturnThis(),
     // Make the chain itself thenable so `await query` works without abortSignal.
+    // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for Supabase query chain
     then: jest.fn((resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve)),
   };
   return { from: jest.fn(() => chain), _chain: chain };
@@ -142,10 +143,7 @@ describe("search()", () => {
     // Uppercase with accent — should be normalized to lowercase ascii.
     await search("PECHUGA");
 
-    expect(_chain.ilike).toHaveBeenCalledWith(
-      "name_normalized",
-      expect.stringMatching(/pechuga/)
-    );
+    expect(_chain.ilike).toHaveBeenCalledWith("name_normalized", expect.stringMatching(/pechuga/));
   });
 
   it("(c) network error causes the function to throw", async () => {
@@ -156,6 +154,7 @@ describe("search()", () => {
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       abortSignal: jest.fn().mockReturnThis(),
+      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for Supabase query chain
       then: jest.fn((resolve: (v: unknown) => unknown) =>
         Promise.resolve(errorResult).then(resolve)
       ),
@@ -175,6 +174,7 @@ describe("search()", () => {
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       abortSignal: jest.fn().mockReturnThis(),
+      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for Supabase query chain
       then: jest.fn((_resolve: unknown, reject: (e: unknown) => unknown) =>
         Promise.reject(abortError).catch(reject)
       ),
