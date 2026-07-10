@@ -40,8 +40,8 @@
     "semantic_hash": "019a9def628dd107f19ec4c0f9d7833c"
   },
   "db/schema.ts": {
-    "mtime": 1783692999.8108835,
-    "ast_hash": "d88e678bb25fbf70fae7209fe8a702a3",
+    "mtime": 1783683382.979263,
+    "ast_hash": "f5991dda261c7c284c090e4cab916000",
     "semantic_hash": ""
   },
   "hooks/useDailyTotals.ts": {
@@ -90,8 +90,8 @@
     "semantic_hash": "6a37a9b81c77be54d4c31e756b24a60a"
   },
   "package.json": {
-    "mtime": 1783718640.9728684,
-    "ast_hash": "6a5e8aac64656d5a9dc9898badf9732e",
+    "mtime": 1783683383.025034,
+    "ast_hash": "44afcb21265b72a6099269479fdef127",
     "semantic_hash": ""
   },
   "postcss.config.ts": {
@@ -200,8 +200,8 @@
     "semantic_hash": "a90527a20be406ba5764fc51ed93cdf7"
   },
   "stores/useFoodSearchStore.ts": {
-    "mtime": 1783693052.3512938,
-    "ast_hash": "708cc175863b78475134f48ab988083c",
+    "mtime": 1783683383.066908,
+    "ast_hash": "bca7ca3241d536ed294f0d253196827d",
     "semantic_hash": ""
   },
   "stores/useMealClipboardStore.ts": {
@@ -430,9 +430,9 @@
     "semantic_hash": "cf41f7f84764733a3b627320016d92c9"
   },
   "src/lib/supabase.ts": {
-    "mtime": 1783692994.04636,
-    "ast_hash": "927ce834f1745b0f4f8442a48420f712",
-    "semantic_hash": ""
+    "mtime": 1783683383.0488584,
+    "ast_hash": "bf94d6828f9c361e51603ab61fccbd56",
+    "semantic_hash": "bf94d6828f9c361e51603ab61fccbd56"
   },
   "src/routes/__tests__/routes.test.ts": {
     "mtime": 1783683383.052932,
@@ -1080,8 +1080,8 @@
     "semantic_hash": ""
   },
   "stores/__tests__/useFoodSearchStore.test.ts": {
-    "mtime": 1783693309.2188046,
-    "ast_hash": "a3cb9f7e284b04bc546ee04395fd07b8",
+    "mtime": 1783683383.065831,
+    "ast_hash": "f1463249efdb2c9f2b9182c16a371443",
     "semantic_hash": ""
   },
   "stores/__tests__/useProfileStore.test.ts": {
@@ -1207,71 +1207,6 @@
   "stores/__tests__/useRecipeBuilderStore.test.ts": {
     "mtime": 1783683383.0665574,
     "ast_hash": "081b420916170f15d7816ba36f2f6067",
-    "semantic_hash": ""
-  },
-  "db/generic-food-setup.sql": {
-    "mtime": 1783692984.4538736,
-    "ast_hash": "c0399bf1e147a3b069a8258b584d06ef",
-    "semantic_hash": ""
-  },
-  "lib/__tests__/genericFoods.test.ts": {
-    "mtime": 1783693628.5545123,
-    "ast_hash": "cfb6ae6b1b77c1a58037756af4bb763b",
-    "semantic_hash": ""
-  },
-  "lib/genericFoods.ts": {
-    "mtime": 1783694788.2967281,
-    "ast_hash": "487c90017b6211428ae4c169025e30c6",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/__tests__/mapBasis.test.ts": {
-    "mtime": 1783693422.2087746,
-    "ast_hash": "b2588c8716fb84177c851110f5670dd2",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/__tests__/mapCategory.test.ts": {
-    "mtime": 1783693419.4399767,
-    "ast_hash": "99e8e02324a52db1a38f2355c67ec7fd",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/__tests__/toSql.test.ts": {
-    "mtime": 1783700171.9019272,
-    "ast_hash": "ff05e1774bb1941da692e841f768a2f6",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/fetchBedca.ts": {
-    "mtime": 1783719969.098127,
-    "ast_hash": "a5bedf69b310ad9d47da8757f6110fad",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/mapBasis.ts": {
-    "mtime": 1783693151.72697,
-    "ast_hash": "a3f7d9ee58f60ceb41cb6c1dc95e79dd",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/mapCategory.ts": {
-    "mtime": 1783720700.1114962,
-    "ast_hash": "790ba8109dbbed14054618bba21d67ef",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/run.ts": {
-    "mtime": 1783719345.9176965,
-    "ast_hash": "3882a356556ab5a5fa6b1bec55e2d823",
-    "semantic_hash": ""
-  },
-  "scripts/seed-bedca/toSql.ts": {
-    "mtime": 1783693522.3156035,
-    "ast_hash": "9e400b4b592f2d7e3e1c1ceeb2a285a0",
-    "semantic_hash": ""
-  },
-  "src/lib/__tests__/supabase.test.ts": {
-    "mtime": 1783693225.2563555,
-    "ast_hash": "a250a87467548be2cc5f39a65abddcba",
-    "semantic_hash": ""
-  },
-  "db/generic-food-setup-checklist.md": {
-    "mtime": 1783700743.880276,
-    "ast_hash": "2448479d9b66268873dd6ffedb10e5bd",
     "semantic_hash": ""
   }
 }
