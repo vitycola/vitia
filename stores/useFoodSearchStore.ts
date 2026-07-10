@@ -1,5 +1,6 @@
 import * as foodsRepo from "@/db/repos/foods";
 import type { Food } from "@/db/schema";
+import { search as genericSearch } from "@/lib/genericFoods";
 import { search as offSearch } from "@/lib/openFoodFacts";
 import { create } from "zustand";
 
@@ -70,43 +71,78 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
       // Cache miss is non-fatal — OFF may still return results.
     }
 
-    // 2. OFF network call — status transitions reflect async phase.
+    // 2. OFF + generic concurrent network calls — status transitions reflect async phase.
     const controller = new AbortController();
     activeController = controller;
 
     set({ status: "loading" });
-    try {
-      const offResults = await offSearch(query, controller.signal);
 
-      // If this request was superseded/aborted after resolving (race
-      // between abort() and the promise settling), do not apply its result.
-      if (controller.signal.aborted) return;
+    const [offSettled, genericSettled] = await Promise.allSettled([
+      offSearch(query, controller.signal),
+      genericSearch(query, controller.signal),
+    ]);
 
-      // Merge: combine local + OFF results, deduplicate by food id.
-      const currentResults = get().results;
-      const existingIds = new Set(currentResults.map((r) => r.id));
+    // If this request was superseded/aborted after resolving (race
+    // between abort() and the promise settling), do not apply its result.
+    if (controller.signal.aborted) return;
 
-      const newItems = offResults
-        .filter((r) => !existingIds.has(r.id))
-        .map((r) => r as SearchResult);
+    // Check if both remotes failed (excluding AbortErrors).
+    const offFailed =
+      offSettled.status === "rejected" &&
+      !(offSettled.reason instanceof DOMException && offSettled.reason.name === "AbortError");
+    const genericFailed =
+      genericSettled.status === "rejected" &&
+      !(
+        genericSettled.reason instanceof DOMException &&
+        genericSettled.reason.name === "AbortError"
+      );
 
-      const merged = [...currentResults, ...newItems];
-      set({
-        results: merged,
-        status: merged.length > 0 ? "results" : "empty",
-      });
-    } catch (err) {
-      // Aborted requests (superseded by a newer query) must never surface
-      // as an error state (spec: Aborted request does not update state).
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      if (controller.signal.aborted) return;
+    // Non-fatal AbortError from either remote — stop processing silently.
+    const offAborted =
+      offSettled.status === "rejected" &&
+      offSettled.reason instanceof DOMException &&
+      offSettled.reason.name === "AbortError";
+    const genericAborted =
+      genericSettled.status === "rejected" &&
+      genericSettled.reason instanceof DOMException &&
+      genericSettled.reason.name === "AbortError";
+    if (offAborted || genericAborted) return;
 
-      // OFF threw — surface error state; keep any cached results visible.
+    // Merge: combine local + OFF + generic results, deduplicate by food id.
+    // Local results win on id conflict (existingIds check filters duplicates).
+    const currentResults = get().results;
+    const existingIds = new Set(currentResults.map((r) => r.id));
+
+    const offItems =
+      offSettled.status === "fulfilled"
+        ? offSettled.value.filter((r) => !existingIds.has(r.id)).map((r) => r as SearchResult)
+        : [];
+    offItems.forEach((r) => existingIds.add(r.id));
+
+    const genericItems =
+      genericSettled.status === "fulfilled"
+        ? genericSettled.value
+            .filter((r) => !existingIds.has(r.id))
+            .map((r) => ({ ...r, hasMissingData: false }) as SearchResult)
+        : [];
+
+    const merged = [...currentResults, ...offItems, ...genericItems];
+
+    // Error only when BOTH remotes fail AND local cache is empty.
+    if (offFailed && genericFailed && merged.length === 0) {
+      const offErr = offSettled.status === "rejected" ? offSettled.reason : null;
       set({
         status: "error",
-        error: err instanceof Error ? err.message : "OFF search failed",
+        error:
+          offErr instanceof Error ? offErr.message : "Search failed: all remote sources failed",
       });
+      return;
     }
+
+    set({
+      results: merged,
+      status: merged.length > 0 ? "results" : "empty",
+    });
   },
 
   clear: () => {

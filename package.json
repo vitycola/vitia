@@ -11,6 +11,7 @@
     "test": "jest --passWithNoTests --forceExit",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
+    "seed:bedca": "tsx scripts/seed-bedca/run.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.31.1",
     "fake-indexeddb": "^6.2.5",
+    "fast-xml-parser": "^5.9.3",
     "husky": "^9.1.7",
     "jest": "~29.7.0",
     "jest-environment-jsdom": "^30.4.1",
@@ -75,7 +77,12 @@
       "^@/(.+\\.sql)\\?raw$": "<rootDir>/$1",
       "^@/(.*)$": "<rootDir>/$1"
     },
-    "testMatch": ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.tsx"],
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
+    "testMatch": [
+      "**/__tests__/**/*.test.ts",
+      "**/__tests__/**/*.test.tsx"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ]
   }
 }

@@ -52,3 +52,41 @@ export function getSupabaseClient(): SupabaseClient {
 export function isSyncEnabled(): boolean {
   return import.meta.env.VITE_SYNC_ENABLED === "true";
 }
+
+// ── Public read-only client (catalog access) ───────────────────────────────
+//
+// Intentionally separate from getSupabaseClient(). This client is used for
+// read-only catalog queries (e.g. generic_foods) and does NOT check
+// VITE_SYNC_ENABLED — catalog access must work even when sync is disabled.
+// No session persistence or auth token refresh needed for public SELECT.
+
+let _publicClient: SupabaseClient | null = null;
+
+/**
+ * Returns a Supabase client configured for read-only catalog access.
+ * Does NOT check VITE_SYNC_ENABLED — catalog reads are always available.
+ * Throws if VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY are missing.
+ */
+export function getSupabasePublicClient(): SupabaseClient {
+  if (!_publicClient) {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url) {
+      throw new Error("[supabase] VITE_SUPABASE_URL is not set.");
+    }
+    if (!anonKey) {
+      throw new Error("[supabase] VITE_SUPABASE_ANON_KEY is not set.");
+    }
+
+    _publicClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+
+  return _publicClient;
+}
