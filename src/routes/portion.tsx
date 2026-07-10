@@ -237,7 +237,9 @@ export function PortionRoute() {
           <FoodAvatar imageUrl={food.imageUrl} name={food.name} />
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold">{food.name}</h1>
-            {food.brand && <p className="truncate text-sm text-white/80">{food.brand}</p>}
+            <p className="truncate text-sm text-white/80">
+              {food.brand ?? (food.source === "generic" ? "Genérico" : null)}
+            </p>
           </div>
         </div>
 

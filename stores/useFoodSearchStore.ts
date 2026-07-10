@@ -71,81 +71,77 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
       // Cache miss is non-fatal — OFF may still return results.
     }
 
-    // 2. OFF + generic concurrent network calls — status transitions reflect async phase.
+    // 2. OFF + generic concurrent network calls.
+    // Each source streams results into the store as soon as it resolves —
+    // no waiting for the slower one. allSettled is used only to finalize
+    // error/empty status after both have settled.
     const controller = new AbortController();
     activeController = controller;
 
     set({ status: "loading" });
 
-    const [offSettled, genericSettled] = await Promise.allSettled([
-      offSearch(query, controller.signal),
-      genericSearch(query, controller.signal),
-    ]);
+    const isAbortError = (e: unknown) =>
+      e instanceof DOMException && e.name === "AbortError";
 
-    // If this request was superseded/aborted after resolving (race
-    // between abort() and the promise settling), do not apply its result.
+    // Stream generic results as soon as Supabase responds (usually fast).
+    const genericPromise = genericSearch(query, controller.signal).then((items) => {
+      if (controller.signal.aborted) return;
+      set((state) => {
+        const seen = new Set(state.results.map((r) => r.id));
+        const next = items
+          .filter((r) => !seen.has(r.id))
+          .map((r) => ({ ...r, hasMissingData: false }) as SearchResult);
+        if (next.length === 0) return state;
+        return { results: [...state.results, ...next], status: "results" as const };
+      });
+    });
+
+    // Stream OFF results as soon as the network responds.
+    const offPromise = offSearch(query, controller.signal).then((items) => {
+      if (controller.signal.aborted) return;
+      set((state) => {
+        const seen = new Set(state.results.map((r) => r.id));
+        const next = items
+          .filter((r) => !seen.has(r.id))
+          .map((r) => r as SearchResult);
+        if (next.length === 0) return state;
+        return { results: [...state.results, ...next], status: "results" as const };
+      });
+    });
+
+    const [genericSettled, offSettled] = await Promise.allSettled([genericPromise, offPromise]);
+
     if (controller.signal.aborted) return;
 
-    // Check if both remotes failed (excluding AbortErrors).
-    const offFailed =
-      offSettled.status === "rejected" &&
-      !(offSettled.reason instanceof DOMException && offSettled.reason.name === "AbortError");
+    // Abort errors from either source — stop processing silently.
+    if (
+      (genericSettled.status === "rejected" && isAbortError(genericSettled.reason)) ||
+      (offSettled.status === "rejected" && isAbortError(offSettled.reason))
+    ) return;
+
     const genericFailed =
-      genericSettled.status === "rejected" &&
-      !(
-        genericSettled.reason instanceof DOMException && genericSettled.reason.name === "AbortError"
-      );
+      genericSettled.status === "rejected" && !isAbortError(genericSettled.reason);
+    const offFailed =
+      offSettled.status === "rejected" && !isAbortError(offSettled.reason);
 
     if (genericFailed) {
       console.warn("[genericFoods] search failed (non-fatal):", genericSettled.reason);
     }
 
-    // Non-fatal AbortError from either remote — stop processing silently.
-    const offAborted =
-      offSettled.status === "rejected" &&
-      offSettled.reason instanceof DOMException &&
-      offSettled.reason.name === "AbortError";
-    const genericAborted =
-      genericSettled.status === "rejected" &&
-      genericSettled.reason instanceof DOMException &&
-      genericSettled.reason.name === "AbortError";
-    if (offAborted || genericAborted) return;
-
-    // Merge: combine local + OFF + generic results, deduplicate by food id.
-    // Local results win on id conflict (existingIds check filters duplicates).
-    const currentResults = get().results;
-    const existingIds = new Set(currentResults.map((r) => r.id));
-
-    const genericItems =
-      genericSettled.status === "fulfilled"
-        ? genericSettled.value
-            .filter((r) => !existingIds.has(r.id))
-            .map((r) => ({ ...r, hasMissingData: false }) as SearchResult)
-        : [];
-    for (const r of genericItems) existingIds.add(r.id);
-
-    const offItems =
-      offSettled.status === "fulfilled"
-        ? offSettled.value.filter((r) => !existingIds.has(r.id)).map((r) => r as SearchResult)
-        : [];
-
-    const merged = [...currentResults, ...genericItems, ...offItems];
-
-    // Error only when BOTH remotes fail AND local cache is empty.
-    if (offFailed && genericFailed && merged.length === 0) {
-      const offErr = offSettled.status === "rejected" ? offSettled.reason : null;
+    // Error only when BOTH remotes fail AND no results at all (cache + streaming).
+    const finalResults = get().results;
+    if (offFailed && genericFailed && finalResults.length === 0) {
+      const err = offSettled.status === "rejected" ? offSettled.reason : null;
       set({
         status: "error",
-        error:
-          offErr instanceof Error ? offErr.message : "Search failed: all remote sources failed",
+        error: err instanceof Error ? err.message : "Search failed: all remote sources failed",
       });
       return;
     }
 
-    set({
-      results: merged,
-      status: merged.length > 0 ? "results" : "empty",
-    });
+    if (finalResults.length === 0) {
+      set({ status: "empty" });
+    }
   },
 
   clear: () => {

@@ -54,7 +54,9 @@ export function FoodResultRow({
                 <AlertTriangle size={14} className="shrink-0 text-amber-500" />
               )}
             </div>
-            {food.brand && <p className="truncate text-xs text-gray-400">{food.brand}</p>}
+            <p className="truncate text-xs text-gray-400">
+              {food.brand ?? (food.source === "generic" ? "Genérico" : null)}
+            </p>
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-0.5">
