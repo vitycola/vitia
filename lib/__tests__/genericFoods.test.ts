@@ -116,7 +116,7 @@ function makeMockClient(result: { data: unknown; error: unknown }) {
 describe("search()", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedUpsertMany.mockResolvedValue(undefined);
+    mockedUpsertMany.mockResolvedValue([]);
   });
 
   it("(a) returns normalized results on partial name match", async () => {
