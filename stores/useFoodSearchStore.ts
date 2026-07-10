@@ -80,8 +80,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
 
     set({ status: "loading" });
 
-    const isAbortError = (e: unknown) =>
-      e instanceof DOMException && e.name === "AbortError";
+    const isAbortError = (e: unknown) => e instanceof DOMException && e.name === "AbortError";
 
     // Stream generic results as soon as Supabase responds (usually fast).
     const genericPromise = genericSearch(query, controller.signal).then((items) => {
@@ -101,9 +100,7 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
       if (controller.signal.aborted) return;
       set((state) => {
         const seen = new Set(state.results.map((r) => r.id));
-        const next = items
-          .filter((r) => !seen.has(r.id))
-          .map((r) => r as SearchResult);
+        const next = items.filter((r) => !seen.has(r.id)).map((r) => r as SearchResult);
         if (next.length === 0) return state;
         return { results: [...state.results, ...next], status: "results" as const };
       });
@@ -117,12 +114,12 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
     if (
       (genericSettled.status === "rejected" && isAbortError(genericSettled.reason)) ||
       (offSettled.status === "rejected" && isAbortError(offSettled.reason))
-    ) return;
+    )
+      return;
 
     const genericFailed =
       genericSettled.status === "rejected" && !isAbortError(genericSettled.reason);
-    const offFailed =
-      offSettled.status === "rejected" && !isAbortError(offSettled.reason);
+    const offFailed = offSettled.status === "rejected" && !isAbortError(offSettled.reason);
 
     if (genericFailed) {
       console.warn("[genericFoods] search failed (non-fatal):", genericSettled.reason);
