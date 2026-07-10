@@ -7,17 +7,13 @@
  * searches.
  */
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 // Node-compatible normalizeForSearch: same algorithm as lib/search.ts.
 // Kept in sync by test 5.7 (any divergence from lib/search.ts will be caught).
 function normalizeForSearch(s: string): string {
-  return s
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  return s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -43,23 +39,14 @@ function sqlStr(value: string | null): string {
 
 function sqlNum(value: number): string {
   // Guard against NaN/Infinity — default to 0.
-  if (!isFinite(value)) return "0";
+  if (!Number.isFinite(value)) return "0";
   return String(value);
 }
 
 function buildInsert(record: SeedRecord): string {
   const nameNormalized = normalizeForSearch(record.name);
 
-  return (
-    `INSERT INTO generic_foods ` +
-    `(id, name, name_normalized, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, category, data_basis, source) ` +
-    `VALUES ` +
-    `(${sqlStr(record.id)}, ${sqlStr(record.name)}, ${sqlStr(nameNormalized)}, ` +
-    `${sqlNum(record.calories_per_100g)}, ${sqlNum(record.protein_per_100g)}, ` +
-    `${sqlNum(record.carbs_per_100g)}, ${sqlNum(record.fat_per_100g)}, ` +
-    `${sqlStr(record.category)}, ${sqlStr(record.data_basis)}, 'bedca') ` +
-    `ON CONFLICT (id) DO NOTHING;`
-  );
+  return `INSERT INTO generic_foods (id, name, name_normalized, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, category, data_basis, source) VALUES (${sqlStr(record.id)}, ${sqlStr(record.name)}, ${sqlStr(nameNormalized)}, ${sqlNum(record.calories_per_100g)}, ${sqlNum(record.protein_per_100g)}, ${sqlNum(record.carbs_per_100g)}, ${sqlNum(record.fat_per_100g)}, ${sqlStr(record.category)}, ${sqlStr(record.data_basis)}, 'bedca') ON CONFLICT (id) DO NOTHING;`;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -93,7 +80,7 @@ export function generateSeedSql(records: SeedRecord[], outputFile: string): numb
     "",
     "COMMIT;",
     "",
-    `-- Verify: SELECT count(*), source FROM generic_foods GROUP BY source;`,
+    "-- Verify: SELECT count(*), source FROM generic_foods GROUP BY source;",
   ].join("\n");
 
   writeFileSync(outputFile, header + inserts + footer, "utf8");

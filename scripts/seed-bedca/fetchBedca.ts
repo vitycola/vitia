@@ -11,17 +11,15 @@
  * Results are cached in scripts/seed-bedca/.cache/ for idempotent re-runs.
  */
 
-import { XMLParser } from "fast-xml-parser";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { XMLParser } from "fast-xml-parser";
 
 const BEDCA_URL = "https://www.bedca.net/bdpub/procquery.php";
 
 const _dirname =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : dirname(fileURLToPath(import.meta.url));
+  typeof __dirname !== "undefined" ? __dirname : dirname(fileURLToPath(import.meta.url));
 
 const CACHE_DIR = join(_dirname, ".cache");
 const RATE_LIMIT_MS = 300;
@@ -47,7 +45,7 @@ export interface BedcaComponent {
   c_id: string;
   name_es: string;
   name_en: string;
-  value: number;       // sourced from best_location field (not moex, which is often "W")
+  value: number; // sourced from best_location field (not moex, which is often "W")
   unit: string;
   component_group: string;
 }
@@ -86,7 +84,7 @@ async function postXml(body: string): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "text/xml",
-      "Connection": "close",
+      Connection: "close",
     },
     body,
   });

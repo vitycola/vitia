@@ -44,7 +44,7 @@ const BEDCA_GROUP_CATEGORY_MAP: Record<string, string> = {
   "Huevos y derivados": "huevos",
 
   // ── Meat, fish, deli ─────────────────────────────────────────────────────
-  "Cárnicos y derivados": "carnes",   // BEDCA actual group name (differs from "Carnes y derivados")
+  "Cárnicos y derivados": "carnes", // BEDCA actual group name (differs from "Carnes y derivados")
   "Carnes y derivados": "carnes",
   Carnes: "carnes",
   "Pescados y mariscos": "pescados_y_mariscos",
@@ -65,7 +65,7 @@ const BEDCA_GROUP_CATEGORY_MAP: Record<string, string> = {
   "Refrescos y zumos": "bebidas",
 
   // ── Sweets & snacks ──────────────────────────────────────────────────────
-  "Azúcar, chocolate y derivados": "dulces_y_snacks",  // BEDCA actual group name
+  "Azúcar, chocolate y derivados": "dulces_y_snacks", // BEDCA actual group name
   "Dulces y snacks": "dulces_y_snacks",
   "Azúcares y dulces": "dulces_y_snacks",
   "Bollería y pastelería": "dulces_y_snacks",

@@ -7,19 +7,15 @@
  *   - SQL injection via single quotes in food names is escaped
  */
 
-import { readFileSync, rmSync, mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { generateSeedSql, type SeedRecord } from "../toSql";
+import { type SeedRecord, generateSeedSql } from "../toSql";
 
 // normalizeForSearch re-implemented inline (same logic as lib/search.ts).
 // Kept in sync via this test: if the implementations diverge, the
 // name_normalized assertion below will catch it.
 function normalizeForSearch(s: string): string {
-  return s
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  return s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }
 
 // Tests pass an explicit output path so generateSeedSql never needs import.meta.

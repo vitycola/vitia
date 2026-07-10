@@ -16,12 +16,12 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getFoodGroups, getFoodsInGroup, getFood, type BedcaFood } from "./fetchBedca.ts";
-import { mapCategory } from "./mapCategory.ts";
+import { type BedcaFood, getFood, getFoodGroups, getFoodsInGroup } from "./fetchBedca.ts";
 import { mapBasis } from "./mapBasis.ts";
-import { generateSeedSql, type SeedRecord } from "./toSql.ts";
+import { mapCategory } from "./mapCategory.ts";
+import { type SeedRecord, generateSeedSql } from "./toSql.ts";
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT_FILE = join(_dirname, "out", "generic_foods_seed.sql");
@@ -30,11 +30,11 @@ const OUTPUT_FILE = join(_dirname, "out", "generic_foods_seed.sql");
 // Sourced from inspecting live API responses (foodresponse > food > foodvalue).
 // Energy is reported in kJ (c_id 409); convert to kcal (÷ 4.184).
 
-const C_ENERGY_KJ = "409";   // energía, total (kJ)
-const C_PROTEIN   = "416";   // proteina, total (g)
-const C_CARBS     = "53";    // carbohidratos (g)
-const C_FAT       = "410";   // grasa, total (g)
-const KJ_TO_KCAL  = 4.184;
+const C_ENERGY_KJ = "409"; // energía, total (kJ)
+const C_PROTEIN = "416"; // proteina, total (g)
+const C_CARBS = "53"; // carbohidratos (g)
+const C_FAT = "410"; // grasa, total (g)
+const KJ_TO_KCAL = 4.184;
 
 function extractMacros(food: BedcaFood): {
   calories: number;
@@ -49,9 +49,9 @@ function extractMacros(food: BedcaFood): {
 
   return {
     calories: Math.round(findById(C_ENERGY_KJ) / KJ_TO_KCAL),
-    protein:  findById(C_PROTEIN),
-    carbs:    findById(C_CARBS),
-    fat:      findById(C_FAT),
+    protein: findById(C_PROTEIN),
+    carbs: findById(C_CARBS),
+    fat: findById(C_FAT),
   };
 }
 
@@ -79,7 +79,7 @@ async function run(): Promise<void> {
 
     console.log(`\n[group] "${groupName}" → ${category}`);
 
-    let foodList;
+    let foodList: Awaited<ReturnType<typeof getFoodsInGroup>>;
     try {
       foodList = await getFoodsInGroup(group.id);
     } catch (err) {
@@ -103,12 +103,7 @@ async function run(): Promise<void> {
       const macros = extractMacros(food);
 
       // Skip foods with no macro data at all (likely non-standard entries).
-      if (
-        macros.calories === 0 &&
-        macros.protein === 0 &&
-        macros.carbs === 0 &&
-        macros.fat === 0
-      ) {
+      if (macros.calories === 0 && macros.protein === 0 && macros.carbs === 0 && macros.fat === 0) {
         console.warn(`  [SKIP] No macros for "${foodName}" (id: ${food.id})`);
         continue;
       }
