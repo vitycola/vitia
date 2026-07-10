@@ -5,6 +5,7 @@ import "./index.css";
 import { dbReady } from "@/db/client";
 import { UpdateToast } from "@/src/components/UpdateToast";
 import { seedDemoProfile } from "@/src/seed/seedDemoProfile";
+import { seedGenericFoods } from "@/src/seed/seedGenericFoods";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { router } from "./router";
 
@@ -25,6 +26,10 @@ dbReady
     // seedDemoProfile() never rejects (internal try/catch), so no additional
     // try/catch is needed at this call site.
     await seedDemoProfile();
+    // Generic BEDCA foods seed — runs for every user/environment (real
+    // reference data, not a demo fixture). seedGenericFoods() never rejects
+    // (internal try/catch) for the same reason.
+    await seedGenericFoods();
     rootEl.innerHTML = "";
     createRoot(rootEl).render(
       <StrictMode>
