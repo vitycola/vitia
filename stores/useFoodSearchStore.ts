@@ -112,20 +112,20 @@ export const useFoodSearchStore = create<FoodSearchState & FoodSearchActions>()(
     const currentResults = get().results;
     const existingIds = new Set(currentResults.map((r) => r.id));
 
-    const offItems =
-      offSettled.status === "fulfilled"
-        ? offSettled.value.filter((r) => !existingIds.has(r.id)).map((r) => r as SearchResult)
-        : [];
-    for (const r of offItems) existingIds.add(r.id);
-
     const genericItems =
       genericSettled.status === "fulfilled"
         ? genericSettled.value
             .filter((r) => !existingIds.has(r.id))
             .map((r) => ({ ...r, hasMissingData: false }) as SearchResult)
         : [];
+    for (const r of genericItems) existingIds.add(r.id);
 
-    const merged = [...currentResults, ...offItems, ...genericItems];
+    const offItems =
+      offSettled.status === "fulfilled"
+        ? offSettled.value.filter((r) => !existingIds.has(r.id)).map((r) => r as SearchResult)
+        : [];
+
+    const merged = [...currentResults, ...genericItems, ...offItems];
 
     // Error only when BOTH remotes fail AND local cache is empty.
     if (offFailed && genericFailed && merged.length === 0) {
