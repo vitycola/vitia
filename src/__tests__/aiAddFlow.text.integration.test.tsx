@@ -3,7 +3,7 @@
  * Integration test: AI Add Flow — text happy path.
  * Same scenario as the photo test but using text input mode and parseText mock.
  */
-import { fireEvent, render, screen, act, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 jest.mock("@/services/aiFood", () => ({
@@ -23,10 +23,10 @@ jest.mock("react-router-dom", () => ({
 jest.mock("@/db/repos/mealEntries", () => ({}));
 
 import * as aiService from "@/services/aiFood";
+import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
+import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useDayStore } from "@/stores/useDayStore";
 import type { AIFoodItem } from "@/types/aiFood";
-import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
-import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
 
 const mockParseText = aiService.parseText as jest.MockedFunction<typeof aiService.parseText>;
 const mockAddEntry = jest.fn().mockResolvedValue(undefined);
