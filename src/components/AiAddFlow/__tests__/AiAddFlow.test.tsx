@@ -8,7 +8,9 @@ jest.mock("@/stores/useAiAddFlowStore", () => ({
 jest.mock("../SelectionScreen", () => ({ SelectionScreen: () => <div>SelectionScreen</div> }));
 jest.mock("../InputScreen", () => ({ InputScreen: () => <div>InputScreen</div> }));
 jest.mock("../ResultsScreen", () => ({ ResultsScreen: () => <div>ResultsScreen</div> }));
-jest.mock("../ConfirmationScreen", () => ({ ConfirmationScreen: () => <div>ConfirmationScreen</div> }));
+jest.mock("../ConfirmationScreen", () => ({
+  ConfirmationScreen: () => <div>ConfirmationScreen</div>,
+}));
 
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { AiAddFlow } from "../AiAddFlow";

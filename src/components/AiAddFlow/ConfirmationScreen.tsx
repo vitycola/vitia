@@ -1,13 +1,13 @@
-import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
-import { useShallow } from "zustand/shallow";
-import { useDayStore } from "@/stores/useDayStore";
+import { getConfidenceMeta } from "@/lib/aiConfidence";
+import { scaleAiMacros } from "@/lib/aiMacros";
 import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
-import { scaleAiMacros } from "@/lib/aiMacros";
-import type { AIFoodItem } from "@/types/aiFood";
+import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
+import { useDayStore } from "@/stores/useDayStore";
 import type { MealType, NewMealEntry } from "@/types";
+import type { AIFoodItem } from "@/types/aiFood";
 import { useNavigate } from "react-router-dom";
-import { getConfidenceMeta } from "@/lib/aiConfidence";
+import { useShallow } from "zustand/shallow";
 
 const MEAL_OPTIONS: { value: MealType; label: string }[] = [
   { value: "breakfast", label: "Desayuno" },
@@ -73,9 +73,7 @@ export function ConfirmationScreen() {
   async function handleAdd() {
     if (!canAdd || !selectedMeal) return;
     const addEntry = useDayStore.getState().addEntry;
-    const checkedItems = results
-      .map((item, i) => ({ item, i }))
-      .filter(({ i }) => selections[i]);
+    const checkedItems = results.map((item, i) => ({ item, i })).filter(({ i }) => selections[i]);
 
     for (const { item, i } of checkedItems) {
       const qty = quantities[i] ?? item.quantity;
@@ -120,7 +118,7 @@ export function ConfirmationScreen() {
 
           return (
             <div
-              key={i}
+              key={`${item.foodId}-${i}`}
               className={[
                 "flex flex-col gap-2 rounded-2xl border p-4",
                 highlight ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-white",
@@ -144,7 +142,7 @@ export function ConfirmationScreen() {
                   min={0.1}
                   step={1}
                   value={qty}
-                  onChange={(e) => setQuantity(i, parseFloat(e.target.value))}
+                  onChange={(e) => setQuantity(i, Number.parseFloat(e.target.value))}
                   className={[
                     "w-20 rounded-lg border px-2 py-1 text-sm",
                     isInvalidQty ? "border-red-400" : "border-gray-300",
@@ -152,9 +150,7 @@ export function ConfirmationScreen() {
                 />
                 <span className="text-sm text-gray-500">{item.unit}</span>
               </div>
-              {isInvalidQty && (
-                <p className="text-xs text-red-500">Ingresá una cantidad válida</p>
-              )}
+              {isInvalidQty && <p className="text-xs text-red-500">Ingresá una cantidad válida</p>}
               <div className="flex gap-3 text-xs text-gray-500">
                 <span>{Math.round(scaled.kcal)} kcal</span>
                 <span>P: {scaled.protein.toFixed(1)}g</span>

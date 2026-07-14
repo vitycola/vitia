@@ -17,9 +17,9 @@ export function AiAddFlow({ mealType }: AiAddFlowProps) {
   );
 
   // Seed meal selector from route param when provided.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   useEffect(() => {
     if (mealType) setMeal(mealType);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

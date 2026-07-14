@@ -13,8 +13,28 @@ import { ResultsScreen } from "../ResultsScreen";
 const mockGoToConfirmation = jest.fn();
 
 const ITEMS: AIFoodItem[] = [
-  { foodId: "f1", name: "Manzana", kcal: 80, protein: 0.4, carbs: 21, fat: 0.2, quantity: 150, unit: "g", confidence: "high" },
-  { foodId: "f2", name: "Arroz", kcal: 200, protein: 4, carbs: 44, fat: 0.4, quantity: 100, unit: "g", confidence: "medium" },
+  {
+    foodId: "f1",
+    name: "Manzana",
+    kcal: 80,
+    protein: 0.4,
+    carbs: 21,
+    fat: 0.2,
+    quantity: 150,
+    unit: "g",
+    confidence: "high",
+  },
+  {
+    foodId: "f2",
+    name: "Arroz",
+    kcal: 200,
+    protein: 4,
+    carbs: 44,
+    fat: 0.4,
+    quantity: 100,
+    unit: "g",
+    confidence: "medium",
+  },
 ];
 
 function setupStore(results: AIFoodItem[]) {

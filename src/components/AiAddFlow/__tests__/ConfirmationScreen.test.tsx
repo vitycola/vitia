@@ -45,8 +45,12 @@ const mockReset = jest.fn();
 const mockToggleItem = jest.fn();
 const mockSetQuantity = jest.fn();
 const mockSetMeal = jest.fn();
-const mockCheckedMacroTotals = jest.fn().mockReturnValue({ kcal: 80, protein: 0.4, carbs: 21, fat: 0.2 });
-const mockPerItemScaledMacros = jest.fn().mockReturnValue({ kcal: 80, protein: 0.4, carbs: 21, fat: 0.2 });
+const mockCheckedMacroTotals = jest
+  .fn()
+  .mockReturnValue({ kcal: 80, protein: 0.4, carbs: 21, fat: 0.2 });
+const mockPerItemScaledMacros = jest
+  .fn()
+  .mockReturnValue({ kcal: 80, protein: 0.4, carbs: 21, fat: 0.2 });
 const mockAddEntry = jest.fn().mockResolvedValue(undefined);
 
 function setupStore(overrides: Record<string, unknown> = {}) {

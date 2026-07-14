@@ -63,7 +63,11 @@ describe("InputScreen — text mode", () => {
 
 describe("InputScreen — error state", () => {
   it("shows inline error message when status=error", () => {
-    setupStore({ inputMode: "text", status: "error", error: "No se pudo conectar con el asistente IA." });
+    setupStore({
+      inputMode: "text",
+      status: "error",
+      error: "No se pudo conectar con el asistente IA.",
+    });
     render(<InputScreen />);
     expect(screen.getByText("No se pudo conectar con el asistente IA.")).toBeInTheDocument();
   });

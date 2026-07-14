@@ -76,15 +76,11 @@ export function InputScreen() {
             className="hidden"
             onChange={handleFileChange}
           />
-          {selectedFile && (
-            <p className="text-xs text-gray-500">Archivo: {selectedFile.name}</p>
-          )}
+          {selectedFile && <p className="text-xs text-gray-500">Archivo: {selectedFile.name}</p>}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-gray-700">
-            Escribí los alimentos que comiste
-          </p>
+          <p className="text-sm font-medium text-gray-700">Escribí los alimentos que comiste</p>
           <textarea
             value={textValue}
             onChange={(e) => setTextValue(e.target.value)}
