@@ -42,7 +42,7 @@ export class AiServiceError extends Error {
   readonly type = "AiServiceError" as const;
   constructor(
     message = "AI service request failed",
-    public readonly statusCode?: number,
+    public readonly statusCode?: number
   ) {
     super(message);
     this.name = "AiServiceError";

@@ -4,7 +4,7 @@
  * Mocks the AI service and useDayStore.addEntry; verifies the full wizard
  * from selecting photo → submitting → confirming → diary write.
  */
-import { fireEvent, render, screen, act, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 // Mock the AI service
@@ -28,12 +28,14 @@ jest.mock("react-router-dom", () => ({
 jest.mock("@/db/repos/mealEntries", () => ({}));
 
 import * as aiService from "@/services/aiFood";
+import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
+import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useDayStore } from "@/stores/useDayStore";
 import type { AIFoodItem } from "@/types/aiFood";
-import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
-import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
 
-const mockAnalyzePhoto = aiService.analyzePhoto as jest.MockedFunction<typeof aiService.analyzePhoto>;
+const mockAnalyzePhoto = aiService.analyzePhoto as jest.MockedFunction<
+  typeof aiService.analyzePhoto
+>;
 const mockAddEntry = jest.fn().mockResolvedValue(undefined);
 
 const FOOD_ITEM: AIFoodItem = {

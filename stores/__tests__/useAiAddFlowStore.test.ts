@@ -10,11 +10,13 @@ jest.mock("@/services/aiFood", () => ({
 }));
 
 import * as aiService from "@/services/aiFood";
+import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { AiServiceError } from "@/types/aiFood";
 import type { AIFoodItem } from "@/types/aiFood";
-import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 
-const mockAnalyzePhoto = aiService.analyzePhoto as jest.MockedFunction<typeof aiService.analyzePhoto>;
+const mockAnalyzePhoto = aiService.analyzePhoto as jest.MockedFunction<
+  typeof aiService.analyzePhoto
+>;
 const mockParseText = aiService.parseText as jest.MockedFunction<typeof aiService.parseText>;
 
 const HIGH_ITEM: AIFoodItem = {

@@ -1,5 +1,5 @@
-import type { AIFoodItem } from "@/types/aiFood";
 import { scaleAiMacros } from "@/lib/aiMacros";
+import type { AIFoodItem } from "@/types/aiFood";
 
 const baseItem: AIFoodItem = {
   foodId: "food-arroz",
