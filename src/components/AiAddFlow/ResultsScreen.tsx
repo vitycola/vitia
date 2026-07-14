@@ -12,7 +12,7 @@ export function ResultsScreen() {
       <div className="flex flex-col items-center gap-4 p-8 text-center">
         <span className="text-4xl">🔍</span>
         <p className="text-gray-600">
-          No se identificaron alimentos. Intentá con otra foto o descripción.
+          No se han identificado alimentos. Prueba con otra foto o descripción.
         </p>
       </div>
     );

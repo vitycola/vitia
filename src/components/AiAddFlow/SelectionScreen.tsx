@@ -7,7 +7,7 @@ export function SelectionScreen() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <h2 className="text-center text-lg font-semibold text-gray-900">
-        ¿Cómo querés agregar tus alimentos?
+        ¿Cómo quieres añadir tus alimentos?
       </h2>
       <div className="flex flex-col gap-3">
         <button
@@ -18,7 +18,7 @@ export function SelectionScreen() {
           <span className="text-3xl">📷</span>
           <div>
             <p className="font-semibold text-gray-900">Foto</p>
-            <p className="text-sm text-gray-500">Sacá una foto de tu comida</p>
+            <p className="text-sm text-gray-500">Haz una foto de tu comida</p>
           </div>
         </button>
         <button
@@ -29,7 +29,7 @@ export function SelectionScreen() {
           <span className="text-3xl">📝</span>
           <div>
             <p className="font-semibold text-gray-900">Lista de texto</p>
-            <p className="text-sm text-gray-500">Escribí lo que comiste</p>
+            <p className="text-sm text-gray-500">Escribe lo que has comido</p>
           </div>
         </button>
       </div>

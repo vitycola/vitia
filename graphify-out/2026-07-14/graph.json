@@ -4,6 +4,356 @@
   "graph": {},
   "nodes": [
     {
+      "label": "aiConfidence.test.ts",
+      "file_type": "code",
+      "source_file": "lib/__tests__/aiConfidence.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_aiconfidence_test",
+      "community": 64,
+      "norm_label": "aiconfidence.test.ts"
+    },
+    {
+      "label": "aiMacros.test.ts",
+      "file_type": "code",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_aimacros_test",
+      "community": 63,
+      "norm_label": "aimacros.test.ts"
+    },
+    {
+      "label": "baseItem",
+      "file_type": "code",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "tests_aimacros_test_baseitem",
+      "community": 63,
+      "norm_label": "baseitem"
+    },
+    {
+      "label": "aiConfidence.ts",
+      "file_type": "code",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_aiconfidence",
+      "community": 64,
+      "norm_label": "aiconfidence.ts"
+    },
+    {
+      "label": "ConfidenceMeta",
+      "file_type": "code",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "lib_aiconfidence_confidencemeta",
+      "community": 64,
+      "norm_label": "confidencemeta"
+    },
+    {
+      "label": "CONFIDENCE_MAP",
+      "file_type": "code",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "lib_aiconfidence_confidence_map",
+      "community": 64,
+      "norm_label": "confidence_map"
+    },
+    {
+      "label": "getConfidenceMeta()",
+      "file_type": "code",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "lib_aiconfidence_getconfidencemeta",
+      "community": 64,
+      "norm_label": "getconfidencemeta()"
+    },
+    {
+      "label": "aiMacros.ts",
+      "file_type": "code",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_aimacros",
+      "community": 63,
+      "norm_label": "aimacros.ts"
+    },
+    {
+      "label": "ScaledMacros",
+      "file_type": "code",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "lib_aimacros_scaledmacros",
+      "community": 63,
+      "norm_label": "scaledmacros"
+    },
+    {
+      "label": "scaleAiMacros()",
+      "file_type": "code",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "lib_aimacros_scaleaimacros",
+      "community": 63,
+      "norm_label": "scaleaimacros()"
+    },
+    {
+      "label": "env.ts",
+      "file_type": "code",
+      "source_file": "lib/env.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_env",
+      "community": 58,
+      "norm_label": "env.ts"
+    },
+    {
+      "label": "aiFood.test.ts",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_aifood_test",
+      "community": 58,
+      "norm_label": "aifood.test.ts"
+    },
+    {
+      "label": "RAW_FOOD",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "tests_aifood_test_raw_food",
+      "community": 58,
+      "norm_label": "raw_food"
+    },
+    {
+      "label": "NORMALIZED",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "tests_aifood_test_normalized",
+      "community": 58,
+      "norm_label": "normalized"
+    },
+    {
+      "label": "mockFetchOk()",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "tests_aifood_test_mockfetchok",
+      "community": 58,
+      "norm_label": "mockfetchok()"
+    },
+    {
+      "label": "mockFetchError()",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "tests_aifood_test_mockfetcherror",
+      "community": 58,
+      "norm_label": "mockfetcherror()"
+    },
+    {
+      "label": "mockFetchReject()",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "tests_aifood_test_mockfetchreject",
+      "community": 58,
+      "norm_label": "mockfetchreject()"
+    },
+    {
+      "label": "setOnline()",
+      "file_type": "code",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L57",
+      "_origin": "ast",
+      "id": "tests_aifood_test_setonline",
+      "community": 58,
+      "norm_label": "setonline()"
+    },
+    {
+      "label": "aiFood.ts",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "services_aifood",
+      "community": 58,
+      "norm_label": "aifood.ts"
+    },
+    {
+      "label": "VALID_CONFIDENCE",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "services_aifood_valid_confidence",
+      "community": 58,
+      "norm_label": "valid_confidence"
+    },
+    {
+      "label": "getBaseUrl()",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "services_aifood_getbaseurl",
+      "community": 58,
+      "norm_label": "getbaseurl()"
+    },
+    {
+      "label": "normalize()",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "services_aifood_normalize",
+      "community": 58,
+      "norm_label": "normalize()"
+    },
+    {
+      "label": "request()",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "services_aifood_request",
+      "community": 58,
+      "norm_label": "request()"
+    },
+    {
+      "label": "analyzePhoto()",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "services_aifood_analyzephoto",
+      "community": 58,
+      "norm_label": "analyzephoto()"
+    },
+    {
+      "label": "parseText()",
+      "file_type": "code",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L73",
+      "_origin": "ast",
+      "id": "services_aifood_parsetext",
+      "community": 58,
+      "norm_label": "parsetext()"
+    },
+    {
+      "label": "aiAddFlow.photo.integration.test.tsx",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_photo_integration_test",
+      "community": 94,
+      "norm_label": "aiaddflow.photo.integration.test.tsx"
+    },
+    {
+      "label": "mockNavigate",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_photo_integration_test_mocknavigate",
+      "community": 94,
+      "norm_label": "mocknavigate"
+    },
+    {
+      "label": "mockAnalyzePhoto",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_photo_integration_test_mockanalyzephoto",
+      "community": 94,
+      "norm_label": "mockanalyzephoto"
+    },
+    {
+      "label": "mockAddEntry",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_photo_integration_test_mockaddentry",
+      "community": 94,
+      "norm_label": "mockaddentry"
+    },
+    {
+      "label": "FOOD_ITEM",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_photo_integration_test_food_item",
+      "community": 94,
+      "norm_label": "food_item"
+    },
+    {
+      "label": "aiAddFlow.text.integration.test.tsx",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_text_integration_test",
+      "community": 95,
+      "norm_label": "aiaddflow.text.integration.test.tsx"
+    },
+    {
+      "label": "mockNavigate",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_text_integration_test_mocknavigate",
+      "community": 95,
+      "norm_label": "mocknavigate"
+    },
+    {
+      "label": "mockParseText",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_text_integration_test_mockparsetext",
+      "community": 95,
+      "norm_label": "mockparsetext"
+    },
+    {
+      "label": "mockAddEntry",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_text_integration_test_mockaddentry",
+      "community": 95,
+      "norm_label": "mockaddentry"
+    },
+    {
+      "label": "FOOD_ITEM",
+      "file_type": "code",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "tests_aiaddflow_text_integration_test_food_item",
+      "community": 95,
+      "norm_label": "food_item"
+    },
+    {
       "label": "AiAddFlow.tsx",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
@@ -32,6 +382,36 @@
       "id": "aiaddflow_aiaddflow_aiaddflow",
       "community": 15,
       "norm_label": "aiaddflow()"
+    },
+    {
+      "label": "ConfidenceBadge.tsx",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "aiaddflow_confidencebadge",
+      "community": 64,
+      "norm_label": "confidencebadge.tsx"
+    },
+    {
+      "label": "ConfidenceBadgeProps",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "aiaddflow_confidencebadge_confidencebadgeprops",
+      "community": 64,
+      "norm_label": "confidencebadgeprops"
+    },
+    {
+      "label": "ConfidenceBadge()",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "aiaddflow_confidencebadge_confidencebadge",
+      "community": 64,
+      "norm_label": "confidencebadge()"
     },
     {
       "label": "ConfirmationScreen.tsx",
@@ -114,6 +494,26 @@
       "norm_label": "resultsscreen()"
     },
     {
+      "label": "SelectionScreen.tsx",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "aiaddflow_selectionscreen",
+      "community": 15,
+      "norm_label": "selectionscreen.tsx"
+    },
+    {
+      "label": "SelectionScreen()",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "aiaddflow_selectionscreen_selectionscreen",
+      "community": 15,
+      "norm_label": "selectionscreen()"
+    },
+    {
       "label": "AiAddFlow.test.tsx",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
@@ -127,7 +527,7 @@
       "label": "mockBack",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L18",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "tests_aiaddflow_test_mockback",
       "community": 15,
@@ -137,7 +537,7 @@
       "label": "mockSetMeal",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L19",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "tests_aiaddflow_test_mocksetmeal",
       "community": 15,
@@ -147,11 +547,21 @@
       "label": "setupStore()",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L21",
+      "source_location": "L19",
       "_origin": "ast",
       "id": "tests_aiaddflow_test_setupstore",
       "community": 15,
       "norm_label": "setupstore()"
+    },
+    {
+      "label": "ConfidenceBadge.test.tsx",
+      "file_type": "code",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_confidencebadge_test",
+      "community": 64,
+      "norm_label": "confidencebadge.test.tsx"
     },
     {
       "label": "ConfirmationScreen.test.tsx",
@@ -237,7 +647,7 @@
       "label": "mockPerItemScaledMacros",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L51",
+      "source_location": "L49",
       "_origin": "ast",
       "id": "tests_confirmationscreen_test_mockperitemscaledmacros",
       "community": 70,
@@ -247,7 +657,7 @@
       "label": "mockAddEntry",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L54",
+      "source_location": "L50",
       "_origin": "ast",
       "id": "tests_confirmationscreen_test_mockaddentry",
       "community": 70,
@@ -257,7 +667,7 @@
       "label": "setupStore()",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L56",
+      "source_location": "L52",
       "_origin": "ast",
       "id": "tests_confirmationscreen_test_setupstore",
       "community": 70,
@@ -337,421 +747,11 @@
       "label": "setupStore()",
       "file_type": "code",
       "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L40",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "tests_resultsscreen_test_setupstore",
       "community": 15,
       "norm_label": "setupstore()"
-    },
-    {
-      "label": "aiConfidence.test.ts",
-      "file_type": "code",
-      "source_file": "lib/__tests__/aiConfidence.test.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "aiconfidence.test.ts",
-      "id": "tests_aiconfidence_test"
-    },
-    {
-      "label": "aiMacros.test.ts",
-      "file_type": "code",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 63,
-      "norm_label": "aimacros.test.ts",
-      "id": "tests_aimacros_test"
-    },
-    {
-      "label": "baseItem",
-      "file_type": "code",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L4",
-      "_origin": "ast",
-      "community": 63,
-      "norm_label": "baseitem",
-      "id": "tests_aimacros_test_baseitem"
-    },
-    {
-      "label": "aiConfidence.ts",
-      "file_type": "code",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "aiconfidence.ts",
-      "id": "lib_aiconfidence"
-    },
-    {
-      "label": "ConfidenceMeta",
-      "file_type": "code",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L3",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidencemeta",
-      "id": "lib_aiconfidence_confidencemeta"
-    },
-    {
-      "label": "CONFIDENCE_MAP",
-      "file_type": "code",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L13",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidence_map",
-      "id": "lib_aiconfidence_confidence_map"
-    },
-    {
-      "label": "getConfidenceMeta()",
-      "file_type": "code",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L19",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "getconfidencemeta()",
-      "id": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "label": "aiMacros.ts",
-      "file_type": "code",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 63,
-      "norm_label": "aimacros.ts",
-      "id": "lib_aimacros"
-    },
-    {
-      "label": "ScaledMacros",
-      "file_type": "code",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L3",
-      "_origin": "ast",
-      "community": 63,
-      "norm_label": "scaledmacros",
-      "id": "lib_aimacros_scaledmacros"
-    },
-    {
-      "label": "scaleAiMacros()",
-      "file_type": "code",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L14",
-      "_origin": "ast",
-      "community": 63,
-      "norm_label": "scaleaimacros()",
-      "id": "lib_aimacros_scaleaimacros"
-    },
-    {
-      "label": "env.ts",
-      "file_type": "code",
-      "source_file": "lib/env.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "env.ts",
-      "id": "lib_env"
-    },
-    {
-      "label": "aiFood.test.ts",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "aifood.test.ts",
-      "id": "tests_aifood_test"
-    },
-    {
-      "label": "RAW_FOOD",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L13",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "raw_food",
-      "id": "tests_aifood_test_raw_food"
-    },
-    {
-      "label": "NORMALIZED",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L25",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "normalized",
-      "id": "tests_aifood_test_normalized"
-    },
-    {
-      "label": "mockFetchOk()",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L37",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "mockfetchok()",
-      "id": "tests_aifood_test_mockfetchok"
-    },
-    {
-      "label": "mockFetchError()",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L45",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "mockfetcherror()",
-      "id": "tests_aifood_test_mockfetcherror"
-    },
-    {
-      "label": "mockFetchReject()",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L53",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "mockfetchreject()",
-      "id": "tests_aifood_test_mockfetchreject"
-    },
-    {
-      "label": "setOnline()",
-      "file_type": "code",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L57",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "setonline()",
-      "id": "tests_aifood_test_setonline"
-    },
-    {
-      "label": "aiFood.ts",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "aifood.ts",
-      "id": "services_aifood"
-    },
-    {
-      "label": "VALID_CONFIDENCE",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L6",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "valid_confidence",
-      "id": "services_aifood_valid_confidence"
-    },
-    {
-      "label": "getBaseUrl()",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L8",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "getbaseurl()",
-      "id": "services_aifood_getbaseurl"
-    },
-    {
-      "label": "normalize()",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L14",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "normalize()",
-      "id": "services_aifood_normalize"
-    },
-    {
-      "label": "request()",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L32",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "request()",
-      "id": "services_aifood_request"
-    },
-    {
-      "label": "analyzePhoto()",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L62",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "analyzephoto()",
-      "id": "services_aifood_analyzephoto"
-    },
-    {
-      "label": "parseText()",
-      "file_type": "code",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L73",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "parsetext()",
-      "id": "services_aifood_parsetext"
-    },
-    {
-      "label": "aiAddFlow.photo.integration.test.tsx",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 94,
-      "norm_label": "aiaddflow.photo.integration.test.tsx",
-      "id": "tests_aiaddflow_photo_integration_test"
-    },
-    {
-      "label": "mockNavigate",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L22",
-      "_origin": "ast",
-      "community": 94,
-      "norm_label": "mocknavigate",
-      "id": "tests_aiaddflow_photo_integration_test_mocknavigate"
-    },
-    {
-      "label": "mockAnalyzePhoto",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L36",
-      "_origin": "ast",
-      "community": 94,
-      "norm_label": "mockanalyzephoto",
-      "id": "tests_aiaddflow_photo_integration_test_mockanalyzephoto"
-    },
-    {
-      "label": "mockAddEntry",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L37",
-      "_origin": "ast",
-      "community": 94,
-      "norm_label": "mockaddentry",
-      "id": "tests_aiaddflow_photo_integration_test_mockaddentry"
-    },
-    {
-      "label": "FOOD_ITEM",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L39",
-      "_origin": "ast",
-      "community": 94,
-      "norm_label": "food_item",
-      "id": "tests_aiaddflow_photo_integration_test_food_item"
-    },
-    {
-      "label": "aiAddFlow.text.integration.test.tsx",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 95,
-      "norm_label": "aiaddflow.text.integration.test.tsx",
-      "id": "tests_aiaddflow_text_integration_test"
-    },
-    {
-      "label": "mockNavigate",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L18",
-      "_origin": "ast",
-      "community": 95,
-      "norm_label": "mocknavigate",
-      "id": "tests_aiaddflow_text_integration_test_mocknavigate"
-    },
-    {
-      "label": "mockParseText",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L31",
-      "_origin": "ast",
-      "community": 95,
-      "norm_label": "mockparsetext",
-      "id": "tests_aiaddflow_text_integration_test_mockparsetext"
-    },
-    {
-      "label": "mockAddEntry",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L32",
-      "_origin": "ast",
-      "community": 95,
-      "norm_label": "mockaddentry",
-      "id": "tests_aiaddflow_text_integration_test_mockaddentry"
-    },
-    {
-      "label": "FOOD_ITEM",
-      "file_type": "code",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L34",
-      "_origin": "ast",
-      "community": 95,
-      "norm_label": "food_item",
-      "id": "tests_aiaddflow_text_integration_test_food_item"
-    },
-    {
-      "label": "ConfidenceBadge.tsx",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidencebadge.tsx",
-      "id": "aiaddflow_confidencebadge"
-    },
-    {
-      "label": "ConfidenceBadgeProps",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L4",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidencebadgeprops",
-      "id": "aiaddflow_confidencebadge_confidencebadgeprops"
-    },
-    {
-      "label": "ConfidenceBadge()",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L8",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidencebadge()",
-      "id": "aiaddflow_confidencebadge_confidencebadge"
-    },
-    {
-      "label": "SelectionScreen.tsx",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 15,
-      "norm_label": "selectionscreen.tsx",
-      "id": "aiaddflow_selectionscreen"
-    },
-    {
-      "label": "SelectionScreen()",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
-      "source_location": "L4",
-      "_origin": "ast",
-      "community": 15,
-      "norm_label": "selectionscreen()",
-      "id": "aiaddflow_selectionscreen_selectionscreen"
-    },
-    {
-      "label": "ConfidenceBadge.test.tsx",
-      "file_type": "code",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 64,
-      "norm_label": "confidencebadge.test.tsx",
-      "id": "tests_confidencebadge_test"
     },
     {
       "label": "SelectionScreen.test.tsx",
@@ -759,9 +759,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "tests_selectionscreen_test",
       "community": 15,
-      "norm_label": "selectionscreen.test.tsx",
-      "id": "tests_selectionscreen_test"
+      "norm_label": "selectionscreen.test.tsx"
     },
     {
       "label": "mockChooseMode",
@@ -769,9 +769,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L12",
       "_origin": "ast",
+      "id": "tests_selectionscreen_test_mockchoosemode",
       "community": 15,
-      "norm_label": "mockchoosemode",
-      "id": "tests_selectionscreen_test_mockchoosemode"
+      "norm_label": "mockchoosemode"
     },
     {
       "label": "setupStore()",
@@ -779,9 +779,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L14",
       "_origin": "ast",
+      "id": "tests_selectionscreen_test_setupstore",
       "community": 15,
-      "norm_label": "setupstore()",
-      "id": "tests_selectionscreen_test_setupstore"
+      "norm_label": "setupstore()"
     },
     {
       "label": "search.tsx",
@@ -789,9 +789,9 @@
       "source_file": "src/routes/search.tsx",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "routes_search",
       "community": 9,
-      "norm_label": "search.tsx",
-      "id": "routes_search"
+      "norm_label": "search.tsx"
     },
     {
       "label": "SearchRoute()",
@@ -799,9 +799,9 @@
       "source_file": "src/routes/search.tsx",
       "source_location": "L13",
       "_origin": "ast",
+      "id": "routes_search_searchroute",
       "community": 9,
-      "norm_label": "searchroute()",
-      "id": "routes_search_searchroute"
+      "norm_label": "searchroute()"
     },
     {
       "label": "useAiAddFlowStore.test.ts",
@@ -809,9 +809,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test",
       "community": 86,
-      "norm_label": "useaiaddflowstore.test.ts",
-      "id": "tests_useaiaddflowstore_test"
+      "norm_label": "useaiaddflowstore.test.ts"
     },
     {
       "label": "mockAnalyzePhoto",
@@ -819,9 +819,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L17",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_mockanalyzephoto",
       "community": 86,
-      "norm_label": "mockanalyzephoto",
-      "id": "tests_useaiaddflowstore_test_mockanalyzephoto"
+      "norm_label": "mockanalyzephoto"
     },
     {
       "label": "mockParseText",
@@ -829,9 +829,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L18",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_mockparsetext",
       "community": 86,
-      "norm_label": "mockparsetext",
-      "id": "tests_useaiaddflowstore_test_mockparsetext"
+      "norm_label": "mockparsetext"
     },
     {
       "label": "HIGH_ITEM",
@@ -839,9 +839,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L20",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_high_item",
       "community": 86,
-      "norm_label": "high_item",
-      "id": "tests_useaiaddflowstore_test_high_item"
+      "norm_label": "high_item"
     },
     {
       "label": "MEDIUM_ITEM",
@@ -849,9 +849,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L32",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_medium_item",
       "community": 86,
-      "norm_label": "medium_item",
-      "id": "tests_useaiaddflowstore_test_medium_item"
+      "norm_label": "medium_item"
     },
     {
       "label": "LOW_ITEM",
@@ -859,9 +859,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L44",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_low_item",
       "community": 86,
-      "norm_label": "low_item",
-      "id": "tests_useaiaddflowstore_test_low_item"
+      "norm_label": "low_item"
     },
     {
       "label": "getStore()",
@@ -869,9 +869,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L56",
       "_origin": "ast",
+      "id": "tests_useaiaddflowstore_test_getstore",
       "community": 86,
-      "norm_label": "getstore()",
-      "id": "tests_useaiaddflowstore_test_getstore"
+      "norm_label": "getstore()"
     },
     {
       "label": "useAiAddFlowStore.ts",
@@ -879,9 +879,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore",
       "community": 63,
-      "norm_label": "useaiaddflowstore.ts",
-      "id": "stores_useaiaddflowstore"
+      "norm_label": "useaiaddflowstore.ts"
     },
     {
       "label": "Step",
@@ -889,9 +889,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L9",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_step",
       "community": 63,
-      "norm_label": "step",
-      "id": "stores_useaiaddflowstore_step"
+      "norm_label": "step"
     },
     {
       "label": "InputMode",
@@ -899,9 +899,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L10",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_inputmode",
       "community": 63,
-      "norm_label": "inputmode",
-      "id": "stores_useaiaddflowstore_inputmode"
+      "norm_label": "inputmode"
     },
     {
       "label": "Status",
@@ -909,9 +909,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L11",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_status",
       "community": 63,
-      "norm_label": "status",
-      "id": "stores_useaiaddflowstore_status"
+      "norm_label": "status"
     },
     {
       "label": "AiAddFlowState",
@@ -919,9 +919,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L13",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_aiaddflowstate",
       "community": 63,
-      "norm_label": "aiaddflowstate",
-      "id": "stores_useaiaddflowstore_aiaddflowstate"
+      "norm_label": "aiaddflowstate"
     },
     {
       "label": "AiAddFlowActions",
@@ -929,9 +929,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L26",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_aiaddflowactions",
       "community": 63,
-      "norm_label": "aiaddflowactions",
-      "id": "stores_useaiaddflowstore_aiaddflowactions"
+      "norm_label": "aiaddflowactions"
     },
     {
       "label": "INITIAL_STATE",
@@ -939,9 +939,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L43",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_initial_state",
       "community": 63,
-      "norm_label": "initial_state",
-      "id": "stores_useaiaddflowstore_initial_state"
+      "norm_label": "initial_state"
     },
     {
       "label": "STEP_ORDER",
@@ -949,9 +949,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L54",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_step_order",
       "community": 63,
-      "norm_label": "step_order",
-      "id": "stores_useaiaddflowstore_step_order"
+      "norm_label": "step_order"
     },
     {
       "label": "mapError()",
@@ -959,9 +959,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L56",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_maperror",
       "community": 63,
-      "norm_label": "maperror()",
-      "id": "stores_useaiaddflowstore_maperror"
+      "norm_label": "maperror()"
     },
     {
       "label": "useAiAddFlowStore",
@@ -969,9 +969,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L63",
       "_origin": "ast",
+      "id": "stores_useaiaddflowstore_useaiaddflowstore",
       "community": 15,
-      "norm_label": "useaiaddflowstore",
-      "id": "stores_useaiaddflowstore_useaiaddflowstore"
+      "norm_label": "useaiaddflowstore"
     },
     {
       "label": "aiFood.ts",
@@ -979,9 +979,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "types_aifood",
       "community": 64,
-      "norm_label": "aifood.ts",
-      "id": "types_aifood"
+      "norm_label": "aifood.ts"
     },
     {
       "label": "AiConfidence",
@@ -989,9 +989,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L3",
       "_origin": "ast",
+      "id": "types_aifood_aiconfidence",
       "community": 64,
-      "norm_label": "aiconfidence",
-      "id": "types_aifood_aiconfidence"
+      "norm_label": "aiconfidence"
     },
     {
       "label": "AIFoodItem",
@@ -999,9 +999,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L5",
       "_origin": "ast",
+      "id": "types_aifood_aifooditem",
       "community": 63,
-      "norm_label": "aifooditem",
-      "id": "types_aifood_aifooditem"
+      "norm_label": "aifooditem"
     },
     {
       "label": "ConfidenceLabel",
@@ -1009,9 +1009,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L18",
       "_origin": "ast",
+      "id": "types_aifood_confidencelabel",
       "community": 64,
-      "norm_label": "confidencelabel",
-      "id": "types_aifood_confidencelabel"
+      "norm_label": "confidencelabel"
     },
     {
       "label": "ConfigurationError",
@@ -1019,9 +1019,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L23",
       "_origin": "ast",
+      "id": "types_aifood_configurationerror",
       "community": 58,
-      "norm_label": "configurationerror",
-      "id": "types_aifood_configurationerror"
+      "norm_label": "configurationerror"
     },
     {
       "label": ".constructor()",
@@ -1029,9 +1029,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L25",
       "_origin": "ast",
+      "id": "types_aifood_configurationerror_constructor",
       "community": 58,
-      "norm_label": ".constructor()",
-      "id": "types_aifood_configurationerror_constructor"
+      "norm_label": ".constructor()"
     },
     {
       "label": "OfflineError",
@@ -1039,9 +1039,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L32",
       "_origin": "ast",
+      "id": "types_aifood_offlineerror",
       "community": 58,
-      "norm_label": "offlineerror",
-      "id": "types_aifood_offlineerror"
+      "norm_label": "offlineerror"
     },
     {
       "label": ".constructor()",
@@ -1049,9 +1049,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L34",
       "_origin": "ast",
+      "id": "types_aifood_offlineerror_constructor",
       "community": 58,
-      "norm_label": ".constructor()",
-      "id": "types_aifood_offlineerror_constructor"
+      "norm_label": ".constructor()"
     },
     {
       "label": "AiServiceError",
@@ -1059,9 +1059,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L41",
       "_origin": "ast",
+      "id": "types_aifood_aiserviceerror",
       "community": 86,
-      "norm_label": "aiserviceerror",
-      "id": "types_aifood_aiserviceerror"
+      "norm_label": "aiserviceerror"
     },
     {
       "label": ".constructor()",
@@ -1069,9 +1069,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L43",
       "_origin": "ast",
+      "id": "types_aifood_aiserviceerror_constructor",
       "community": 86,
-      "norm_label": ".constructor()",
-      "id": "types_aifood_aiserviceerror_constructor"
+      "norm_label": ".constructor()"
     },
     {
       "label": "generic-food-setup-checklist.md",
@@ -14232,156 +14232,712 @@
   ],
   "links": [
     {
-      "relation": "contains",
+      "relation": "imports_from",
+      "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L14",
+      "source_file": "lib/__tests__/aiConfidence.test.ts",
+      "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_aiaddflow_aiaddflow"
+      "source": "tests_aiconfidence_test",
+      "target": "lib_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/__tests__/aiConfidence.test.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "tests_aiconfidence_test",
+      "target": "lib_aiconfidence_getconfidencemeta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "tests_aimacros_test",
+      "target": "lib_aimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "tests_aimacros_test",
+      "target": "lib_aimacros_scaleaimacros",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "tests_aimacros_test",
+      "target": "tests_aimacros_test_baseitem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "tests_aimacros_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/__tests__/aiMacros.test.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "tests_aimacros_test",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge",
+      "target": "lib_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_aiaddflow_aiaddflowprops"
+      "source": "aiaddflow_confirmationscreen",
+      "target": "lib_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "lib_aiconfidence",
+      "target": "lib_aiconfidence_confidence_map",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "lib_aiconfidence",
+      "target": "lib_aiconfidence_confidencemeta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "lib_aiconfidence",
+      "target": "lib_aiconfidence_getconfidencemeta",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_confirmationscreen"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_confirmationscreen_confirmationscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_inputscreen"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_inputscreen_inputscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_resultsscreen"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_resultsscreen_resultsscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_selectionscreen"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "aiaddflow_selectionscreen_selectionscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_file": "lib/aiConfidence.ts",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "stores_useaiaddflowstore"
+      "source": "lib_aiconfidence",
+      "target": "types_aifood",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_file": "lib/aiConfidence.ts",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "source": "lib_aiconfidence",
+      "target": "types_aifood_aiconfidence",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
-      "source_location": "L2",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_aiaddflow",
-      "target": "types_index_mealtype"
+      "source": "lib_aiconfidence",
+      "target": "types_aifood_confidencelabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/routes/search.tsx",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "lib_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "field",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiConfidence.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "lib_aiconfidence_confidencemeta",
+      "target": "types_aifood_confidencelabel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge",
+      "target": "lib_aiconfidence_getconfidencemeta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge_confidencebadge",
+      "target": "lib_aiconfidence_getconfidencemeta"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "aiaddflow_confirmationscreen",
+      "target": "lib_aiconfidence_getconfidencemeta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "lib_aiconfidence_getconfidencemeta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "aiaddflow_confirmationscreen",
+      "target": "lib_aimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "lib_aimacros",
+      "target": "lib_aimacros_scaleaimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "lib_aimacros",
+      "target": "lib_aimacros_scaledmacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "lib_aimacros",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/aiMacros.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "lib_aimacros",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "lib_aimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "aiaddflow_confirmationscreen",
+      "target": "lib_aimacros_scaleaimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "aiaddflow_confirmationscreen_maptonewmealentry",
+      "target": "lib_aimacros_scaleaimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "lib_aimacros_scaleaimacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "lib_env",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "services_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "services_aifood_analyzephoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "services_aifood_parsetext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_mockfetcherror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_mockfetchok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_mockfetchreject",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_normalized",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_raw_food",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L57",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "tests_aifood_test_setonline",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "types_aifood_aiserviceerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "types_aifood_configurationerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/__tests__/aiFood.test.ts",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_aifood_test",
+      "target": "types_aifood_offlineerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_analyzephoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_getbaseurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_normalize",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_parsetext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "services_aifood_valid_confidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "types_aifood_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_search",
-      "target": "aiaddflow_aiaddflow"
+      "source": "services_aifood",
+      "target": "types_aifood_aiserviceerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "types_aifood_configurationerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "services_aifood",
+      "target": "types_aifood_offlineerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "services_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "services_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "services_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "tests_useaiaddflowstore_test",
+      "target": "services_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "services_aifood_analyzephoto",
+      "target": "services_aifood_getbaseurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "services_aifood_parsetext",
+      "target": "services_aifood_getbaseurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "services_aifood_analyzephoto",
+      "target": "services_aifood_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "services/aiFood.ts",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "services_aifood_parsetext",
+      "target": "services_aifood_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "services_aifood_analyzephoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "stores/useAiAddFlowStore.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "stores_useaiaddflowstore",
+      "target": "services_aifood_parsetext",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14390,20 +14946,115 @@
       "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
       "source_location": "L34",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_aiaddflow_photo_integration_test",
-      "target": "aiaddflow_aiaddflow"
+      "target": "aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "aiaddflow_aiaddflow_aiaddflow",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L14",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L33",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "aiaddflow_aiaddflow"
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "stores_usedaystore_usedaystore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "tests_aiaddflow_photo_integration_test_food_item",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "tests_aiaddflow_photo_integration_test_mockaddentry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "tests_aiaddflow_photo_integration_test_mockanalyzephoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "tests_aiaddflow_photo_integration_test_mocknavigate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_photo_integration_test",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14412,9 +15063,278 @@
       "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_aiaddflow_text_integration_test",
-      "target": "aiaddflow_aiaddflow"
+      "target": "aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "aiaddflow_aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "stores_usedaystore_usedaystore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "tests_aiaddflow_text_integration_test_food_item",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "tests_aiaddflow_text_integration_test_mockaddentry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "tests_aiaddflow_text_integration_test_mocknavigate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "tests_aiaddflow_text_integration_test_mockparsetext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_text_integration_test",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_aiaddflow_aiaddflowprops",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_confirmationscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_confirmationscreen_confirmationscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_inputscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_inputscreen_inputscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_resultsscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_resultsscreen_resultsscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_selectionscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "aiaddflow_selectionscreen_selectionscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/AiAddFlow.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "aiaddflow_aiaddflow",
+      "target": "types_index_mealtype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/routes/search.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "routes_search",
+      "target": "aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "aiaddflow_aiaddflow",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14434,20 +15354,9 @@
       "source_file": "src/routes/search.tsx",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routes_search",
-      "target": "aiaddflow_aiaddflow_aiaddflow"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L34",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "aiaddflow_aiaddflow_aiaddflow"
+      "target": "aiaddflow_aiaddflow_aiaddflow",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14456,20 +15365,106 @@
       "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
       "source_location": "L14",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_aiaddflow_test",
-      "target": "aiaddflow_aiaddflow_aiaddflow"
+      "target": "aiaddflow_aiaddflow_aiaddflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge",
+      "target": "aiaddflow_confidencebadge_confidencebadge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge",
+      "target": "aiaddflow_confidencebadge_confidencebadgeprops",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge",
+      "target": "types_aifood",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L29",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "aiaddflow_aiaddflow_aiaddflow"
+      "source": "aiaddflow_confidencebadge",
+      "target": "types_aifood_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "aiaddflow_resultsscreen",
+      "target": "aiaddflow_confidencebadge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "tests_confidencebadge_test",
+      "target": "aiaddflow_confidencebadge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "field",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "aiaddflow_confidencebadge_confidencebadgeprops",
+      "target": "types_aifood_aiconfidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "aiaddflow_resultsscreen",
+      "target": "aiaddflow_confidencebadge_confidencebadge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "tests_confidencebadge_test",
+      "target": "aiaddflow_confidencebadge_confidencebadge",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14477,9 +15472,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L36",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "aiaddflow_confirmationscreen_confirmationscreen"
+      "target": "aiaddflow_confirmationscreen_confirmationscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14487,9 +15482,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L19",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "aiaddflow_confirmationscreen_maptonewmealentry"
+      "target": "aiaddflow_confirmationscreen_maptonewmealentry",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14497,53 +15492,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L12",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "aiaddflow_confirmationscreen_meal_options"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confirmationscreen",
-      "target": "lib_aiconfidence"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confirmationscreen",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confirmationscreen",
-      "target": "lib_aimacros"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confirmationscreen",
-      "target": "lib_aimacros_scaleaimacros"
+      "target": "aiaddflow_confirmationscreen_meal_options",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14552,9 +15503,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "lib_date_todayiso"
+      "target": "lib_date_todayiso",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14563,9 +15514,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "lib_id_generateid"
+      "target": "lib_id_generateid",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14574,9 +15525,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14585,9 +15536,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14596,9 +15547,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "stores_usedaystore_usedaystore"
+      "target": "stores_usedaystore_usedaystore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14607,9 +15558,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "types_aifood"
+      "target": "types_aifood",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14618,9 +15569,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14629,9 +15580,9 @@
       "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_confirmationscreen",
-      "target": "types_index_mealtype"
+      "target": "types_index_mealtype",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14640,20 +15591,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_confirmationscreen_test",
-      "target": "aiaddflow_confirmationscreen"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfirmationScreen.tsx",
-      "source_location": "L20",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confirmationscreen_maptonewmealentry",
-      "target": "lib_aimacros_scaleaimacros"
+      "target": "aiaddflow_confirmationscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14673,9 +15613,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_confirmationscreen_test",
-      "target": "aiaddflow_confirmationscreen_confirmationscreen"
+      "target": "aiaddflow_confirmationscreen_confirmationscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14683,9 +15623,9 @@
       "source_file": "src/components/AiAddFlow/InputScreen.tsx",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_inputscreen",
-      "target": "aiaddflow_inputscreen_inputscreen"
+      "target": "aiaddflow_inputscreen_inputscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14694,9 +15634,9 @@
       "source_file": "src/components/AiAddFlow/InputScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_inputscreen",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14705,9 +15645,9 @@
       "source_file": "src/components/AiAddFlow/InputScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_inputscreen",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14716,9 +15656,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_inputscreen_test",
-      "target": "aiaddflow_inputscreen"
+      "target": "aiaddflow_inputscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14738,31 +15678,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_inputscreen_test",
-      "target": "aiaddflow_inputscreen_inputscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_resultsscreen",
-      "target": "aiaddflow_confidencebadge"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_resultsscreen",
-      "target": "aiaddflow_confidencebadge_confidencebadge"
+      "target": "aiaddflow_inputscreen_inputscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14770,9 +15688,9 @@
       "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_resultsscreen",
-      "target": "aiaddflow_resultsscreen_resultsscreen"
+      "target": "aiaddflow_resultsscreen_resultsscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14781,9 +15699,9 @@
       "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_resultsscreen",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -14792,9 +15710,9 @@
       "source_file": "src/components/AiAddFlow/ResultsScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_resultsscreen",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -14803,9 +15721,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
       "source_location": "L11",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_resultsscreen_test",
-      "target": "aiaddflow_resultsscreen"
+      "target": "aiaddflow_resultsscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14825,1260 +15743,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
       "source_location": "L11",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_resultsscreen_test",
-      "target": "aiaddflow_resultsscreen_resultsscreen"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L16",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "tests_aiaddflow_test_mockback"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "tests_aiaddflow_test_mocksetmeal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
-      "source_location": "L19",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_test",
-      "target": "tests_aiaddflow_test_setupstore"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L16",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "stores_usedaystore_usedaystore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L20",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_high_item"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_low_item"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L50",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mockaddentry"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L48",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mockcheckedmacrototals"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L49",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mockperitemscaledmacros"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L44",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mockreset"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L47",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mocksetmeal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L46",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mocksetquantity"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L45",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_mocktoggleitem"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L52",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "tests_confirmationscreen_test_setupstore"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confirmationscreen_test",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inputscreen_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inputscreen_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
-      "source_location": "L12",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inputscreen_test",
-      "target": "tests_inputscreen_test_mocksubmitphoto"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inputscreen_test",
-      "target": "tests_inputscreen_test_mocksubmittext"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inputscreen_test",
-      "target": "tests_inputscreen_test_setupstore"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "tests_resultsscreen_test_items"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "tests_resultsscreen_test_mockgotoconfirmation"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L20",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "tests_resultsscreen_test_setupstore"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_resultsscreen_test",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiConfidence.test.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiconfidence_test",
-      "target": "lib_aiconfidence"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiConfidence.test.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiconfidence_test",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aimacros_test",
-      "target": "lib_aimacros"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aimacros_test",
-      "target": "lib_aimacros_scaleaimacros"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aimacros_test",
-      "target": "tests_aimacros_test_baseitem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aimacros_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/__tests__/aiMacros.test.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aimacros_test",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "lib_aiconfidence"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "lib_aiconfidence_confidence_map"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "lib_aiconfidence_confidencemeta"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "types_aifood_aiconfidence"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence",
-      "target": "types_aifood_confidencelabel"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "lib_aiconfidence"
-    },
-    {
-      "relation": "references",
-      "context": "field",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiConfidence.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aiconfidence_confidencemeta",
-      "target": "types_aifood_confidencelabel"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L9",
-      "weight": 1.0,
-      "source": "aiaddflow_confidencebadge_confidencebadge",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "lib_aiconfidence_getconfidencemeta"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aimacros",
-      "target": "lib_aimacros_scaleaimacros"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aimacros",
-      "target": "lib_aimacros_scaledmacros"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aimacros",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/aiMacros.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_aimacros",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "lib_aimacros"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "lib_aimacros_scaleaimacros"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "lib_env"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "services_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "services_aifood_analyzephoto"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "services_aifood_parsetext"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L45",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_mockfetcherror"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L37",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_mockfetchok"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L53",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_mockfetchreject"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L25",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_normalized"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_raw_food"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L57",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "tests_aifood_test_setonline"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "types_aifood_aiserviceerror"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "types_aifood_configurationerror"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/__tests__/aiFood.test.ts",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aifood_test",
-      "target": "types_aifood_offlineerror"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L62",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_analyzephoto"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_getbaseurl"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_normalize"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L73",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_parsetext"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_request"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "services_aifood_valid_confidence"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood_aiconfidence"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood_aiserviceerror"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood_configurationerror"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood",
-      "target": "types_aifood_offlineerror"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "services_aifood"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L30",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "services_aifood"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L25",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "services_aifood"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
-      "source_location": "L12",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_useaiaddflowstore_test",
-      "target": "services_aifood"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood_analyzephoto",
-      "target": "services_aifood_getbaseurl"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L74",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood_parsetext",
-      "target": "services_aifood_getbaseurl"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L66",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood_analyzephoto",
-      "target": "services_aifood_request"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "services/aiFood.ts",
-      "source_location": "L75",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_aifood_parsetext",
-      "target": "services_aifood_request"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "services_aifood_analyzephoto"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "stores/useAiAddFlowStore.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useaiaddflowstore",
-      "target": "services_aifood_parsetext"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L33",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L33",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L31",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "stores_usedaystore_usedaystore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L39",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "tests_aiaddflow_photo_integration_test_food_item"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L37",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "tests_aiaddflow_photo_integration_test_mockaddentry"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L36",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "tests_aiaddflow_photo_integration_test_mockanalyzephoto"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L22",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "tests_aiaddflow_photo_integration_test_mocknavigate"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.photo.integration.test.tsx",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_photo_integration_test",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L28",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "stores_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L28",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L26",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "stores_usedaystore_usedaystore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L34",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "tests_aiaddflow_text_integration_test_food_item"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "tests_aiaddflow_text_integration_test_mockaddentry"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L18",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "tests_aiaddflow_text_integration_test_mocknavigate"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L31",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "tests_aiaddflow_text_integration_test_mockparsetext"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L27",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/__tests__/aiAddFlow.text.integration.test.tsx",
-      "source_location": "L27",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_aiaddflow_text_integration_test",
-      "target": "types_aifood_aifooditem"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "aiaddflow_confidencebadge_confidencebadge"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "aiaddflow_confidencebadge_confidencebadgeprops"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "types_aifood"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge",
-      "target": "types_aifood_aiconfidence"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confidencebadge_test",
-      "target": "aiaddflow_confidencebadge"
-    },
-    {
-      "relation": "references",
-      "context": "field",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/ConfidenceBadge.tsx",
-      "source_location": "L5",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "aiaddflow_confidencebadge_confidencebadgeprops",
-      "target": "types_aifood_aiconfidence"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/AiAddFlow/__tests__/ConfidenceBadge.test.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_confidencebadge_test",
-      "target": "aiaddflow_confidencebadge_confidencebadge"
+      "target": "aiaddflow_resultsscreen_resultsscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16086,9 +15753,9 @@
       "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_selectionscreen",
-      "target": "aiaddflow_selectionscreen_selectionscreen"
+      "target": "aiaddflow_selectionscreen_selectionscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16097,9 +15764,9 @@
       "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_selectionscreen",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16108,9 +15775,9 @@
       "source_file": "src/components/AiAddFlow/SelectionScreen.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "aiaddflow_selectionscreen",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16119,9 +15786,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "aiaddflow_selectionscreen"
+      "target": "aiaddflow_selectionscreen",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -16141,9 +15808,342 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "aiaddflow_selectionscreen_selectionscreen"
+      "target": "aiaddflow_selectionscreen_selectionscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "tests_aiaddflow_test_mockback",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "tests_aiaddflow_test_mocksetmeal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_aiaddflow_test",
+      "target": "tests_aiaddflow_test_setupstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "stores_usedaystore_usedaystore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_high_item",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_low_item",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L50",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mockaddentry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mockcheckedmacrototals",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mockperitemscaledmacros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mockreset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mocksetmeal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mocksetquantity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_mocktoggleitem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "tests_confirmationscreen_test_setupstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ConfirmationScreen.test.tsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "tests_confirmationscreen_test",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_inputscreen_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_inputscreen_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "tests_inputscreen_test",
+      "target": "tests_inputscreen_test_mocksubmitphoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_inputscreen_test",
+      "target": "tests_inputscreen_test_mocksubmittext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/InputScreen.test.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "tests_inputscreen_test",
+      "target": "tests_inputscreen_test_setupstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "tests_resultsscreen_test_items",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "tests_resultsscreen_test_mockgotoconfirmation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "tests_resultsscreen_test_setupstore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "types_aifood",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "tests_resultsscreen_test",
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16152,9 +16152,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L9",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16163,9 +16163,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L9",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16173,9 +16173,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L12",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "tests_selectionscreen_test_mockchoosemode"
+      "target": "tests_selectionscreen_test_mockchoosemode",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16183,9 +16183,9 @@
       "source_file": "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx",
       "source_location": "L14",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_selectionscreen_test",
-      "target": "tests_selectionscreen_test_setupstore"
+      "target": "tests_selectionscreen_test_setupstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16435,9 +16435,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L15",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "stores_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16446,9 +16446,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L15",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16456,9 +16456,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L56",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_getstore"
+      "target": "tests_useaiaddflowstore_test_getstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16466,9 +16466,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L20",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_high_item"
+      "target": "tests_useaiaddflowstore_test_high_item",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16476,9 +16476,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L44",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_low_item"
+      "target": "tests_useaiaddflowstore_test_low_item",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16486,9 +16486,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_medium_item"
+      "target": "tests_useaiaddflowstore_test_medium_item",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16496,9 +16496,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L17",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_mockanalyzephoto"
+      "target": "tests_useaiaddflowstore_test_mockanalyzephoto",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16506,9 +16506,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "tests_useaiaddflowstore_test_mockparsetext"
+      "target": "tests_useaiaddflowstore_test_mockparsetext",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16517,9 +16517,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L14",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "types_aifood"
+      "target": "types_aifood",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16528,9 +16528,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L14",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16539,9 +16539,9 @@
       "source_file": "stores/__tests__/useAiAddFlowStore.test.ts",
       "source_location": "L13",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_useaiaddflowstore_test",
-      "target": "types_aifood_aiserviceerror"
+      "target": "types_aifood_aiserviceerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16549,9 +16549,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L26",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_aiaddflowactions"
+      "target": "stores_useaiaddflowstore_aiaddflowactions",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16559,9 +16559,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L13",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_aiaddflowstate"
+      "target": "stores_useaiaddflowstore_aiaddflowstate",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16569,9 +16569,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L43",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_initial_state"
+      "target": "stores_useaiaddflowstore_initial_state",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16579,9 +16579,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_inputmode"
+      "target": "stores_useaiaddflowstore_inputmode",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16589,9 +16589,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L56",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_maperror"
+      "target": "stores_useaiaddflowstore_maperror",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16599,9 +16599,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L11",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_status"
+      "target": "stores_useaiaddflowstore_status",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16609,9 +16609,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L9",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_step"
+      "target": "stores_useaiaddflowstore_step",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16619,9 +16619,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L54",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_step_order"
+      "target": "stores_useaiaddflowstore_step_order",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16629,9 +16629,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L63",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "stores_useaiaddflowstore_useaiaddflowstore"
+      "target": "stores_useaiaddflowstore_useaiaddflowstore",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16640,9 +16640,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_aifood"
+      "target": "types_aifood",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16651,9 +16651,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16662,9 +16662,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_aifood_aiserviceerror"
+      "target": "types_aifood_aiserviceerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16673,9 +16673,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_aifood_configurationerror"
+      "target": "types_aifood_configurationerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16684,9 +16684,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_aifood_offlineerror"
+      "target": "types_aifood_offlineerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16695,9 +16695,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore",
-      "target": "types_index_mealtype"
+      "target": "types_index_mealtype",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16706,9 +16706,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L16",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore_aiaddflowstate",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -16717,9 +16717,9 @@
       "source_file": "stores/useAiAddFlowStore.ts",
       "source_location": "L30",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "stores_useaiaddflowstore_aiaddflowactions",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16727,9 +16727,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_aiconfidence"
+      "target": "types_aifood_aiconfidence",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16737,9 +16737,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_aifooditem"
+      "target": "types_aifood_aifooditem",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16747,9 +16747,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L41",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_aiserviceerror"
+      "target": "types_aifood_aiserviceerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16757,9 +16757,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_confidencelabel"
+      "target": "types_aifood_confidencelabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16767,9 +16767,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L23",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_configurationerror"
+      "target": "types_aifood_configurationerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16777,9 +16777,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood",
-      "target": "types_aifood_offlineerror"
+      "target": "types_aifood_offlineerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -16787,9 +16787,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L25",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood_configurationerror",
-      "target": "types_aifood_configurationerror_constructor"
+      "target": "types_aifood_configurationerror_constructor",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -16797,9 +16797,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L34",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood_offlineerror",
-      "target": "types_aifood_offlineerror_constructor"
+      "target": "types_aifood_offlineerror_constructor",
+      "confidence_score": 1.0
     },
     {
       "relation": "method",
@@ -16807,9 +16807,9 @@
       "source_file": "types/aiFood.ts",
       "source_location": "L43",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "types_aifood_aiserviceerror",
-      "target": "types_aifood_aiserviceerror_constructor"
+      "target": "types_aifood_aiserviceerror_constructor",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -43704,5 +43704,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "083553c8b246f08f10c893be6822347bff590762"
+  "built_at_commit": "3004d62cd7805254042742e2135bca6d0765330d"
 }

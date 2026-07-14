@@ -150,7 +150,9 @@ export function ConfirmationScreen() {
                 />
                 <span className="text-sm text-gray-500">{item.unit}</span>
               </div>
-              {isInvalidQty && <p className="text-xs text-red-500">Ingresá una cantidad válida</p>}
+              {isInvalidQty && (
+                <p className="text-xs text-red-500">Introduce una cantidad válida</p>
+              )}
               <div className="flex gap-3 text-xs text-gray-500">
                 <span>{Math.round(scaled.kcal)} kcal</span>
                 <span>P: {scaled.protein.toFixed(1)}g</span>

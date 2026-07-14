@@ -61,7 +61,7 @@ describe("ResultsScreen", () => {
   it("shows empty state when results is empty", () => {
     setupStore([]);
     render(<ResultsScreen />);
-    expect(screen.getByText(/no se identificaron alimentos/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se han identificado alimentos/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /revisar y confirmar/i })).not.toBeInTheDocument();
   });
 

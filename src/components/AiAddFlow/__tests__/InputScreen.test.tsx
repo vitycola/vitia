@@ -53,10 +53,11 @@ describe("InputScreen — text mode", () => {
     expect(screen.getByRole("button", { name: /analizar con ia/i })).toBeDisabled();
   });
 
-  it("CTA is enabled when textarea has text", () => {
+  it("CTA is enabled when any meal textarea has text", () => {
     setupStore({ inputMode: "text" });
     render(<InputScreen />);
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "100g de arroz" } });
+    // There are 4 textareas (one per meal); type in the first one
+    fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "100g de arroz" } });
     expect(screen.getByRole("button", { name: /analizar con ia/i })).not.toBeDisabled();
   });
 });
@@ -78,7 +79,7 @@ describe("InputScreen — offline", () => {
     Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
     setupStore({ inputMode: "text" });
     render(<InputScreen />);
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "algo" } });
+    fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "algo" } });
     fireEvent.click(screen.getByRole("button", { name: /analizar con ia/i }));
     expect(mockSubmitText).not.toHaveBeenCalled();
     expect(screen.getByText(/requiere conexión/i)).toBeInTheDocument();

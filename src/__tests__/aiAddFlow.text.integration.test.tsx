@@ -61,9 +61,9 @@ describe("Text happy path integration", () => {
     expect(screen.getByText("Lista de texto")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Lista de texto"));
 
-    // Screen 2: InputScreen (text mode) — type food description
-    await waitFor(() => expect(screen.getByRole("textbox")).toBeInTheDocument());
-    fireEvent.change(screen.getByRole("textbox"), {
+    // Screen 2: InputScreen (text mode) — type in the first meal section (Desayuno)
+    await waitFor(() => expect(screen.getAllByRole("textbox")[0]).toBeInTheDocument());
+    fireEvent.change(screen.getAllByRole("textbox")[0], {
       target: { value: "100g de arroz cocido" },
     });
 

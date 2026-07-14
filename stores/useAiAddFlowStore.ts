@@ -1,9 +1,9 @@
-import { analyzePhoto, parseText } from "@/services/aiFood";
-import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
-import type { AIFoodItem } from "@/types/aiFood";
 import { getConfidenceMeta } from "@/lib/aiConfidence";
 import { scaleAiMacros } from "@/lib/aiMacros";
+import { analyzePhoto, parseText } from "@/services/aiFood";
 import type { MealType } from "@/types";
+import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
+import type { AIFoodItem } from "@/types/aiFood";
 import { create } from "zustand";
 
 type Step = "selection" | "input" | "results" | "confirmation";
@@ -37,7 +37,12 @@ interface AiAddFlowActions {
   /** Derived: sum of scaled macros for checked items. */
   checkedMacroTotals: () => { kcal: number; protein: number; carbs: number; fat: number };
   /** Derived: scaled macros for a single item at its current quantity. */
-  perItemScaledMacros: (index: number) => { kcal: number; protein: number; carbs: number; fat: number };
+  perItemScaledMacros: (index: number) => {
+    kcal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 const INITIAL_STATE: AiAddFlowState = {
@@ -54,10 +59,11 @@ const INITIAL_STATE: AiAddFlowState = {
 const STEP_ORDER: Step[] = ["selection", "input", "results", "confirmation"];
 
 function mapError(err: unknown): string {
-  if (err instanceof OfflineError) return "IA requiere conexión a internet.";
+  if (err instanceof OfflineError) return "La IA requiere conexión a internet.";
   if (err instanceof ConfigurationError) return "El servicio de IA no está disponible.";
-  if (err instanceof AiServiceError) return "No se pudo conectar con el asistente IA. Intentá de nuevo.";
-  return "No se pudo conectar con el asistente IA. Intentá de nuevo.";
+  if (err instanceof AiServiceError)
+    return "No se pudo conectar con el asistente de IA. Inténtalo de nuevo.";
+  return "No se pudo conectar con el asistente de IA. Inténtalo de nuevo.";
 }
 
 export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((set, get) => ({
@@ -134,7 +140,7 @@ export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((se
           fat: acc.fat + scaled.fat,
         };
       },
-      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 }
     );
   },
 

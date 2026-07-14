@@ -1,7 +1,7 @@
 # Graph Report - loving-banzai-bdfc59  (2026-07-14)
 
 ## Corpus Check
-- 273 files · ~119,180 words
+- 273 files · ~119,181 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `083553c8`
+- Built from commit: `3004d62c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -441,7 +441,7 @@ Cohesion: 0.40
 Nodes (4): mockedDeleteByDate, mockedGetByDate, mockedUpsertByDate, sampleEntry
 
 ## Knowledge Gaps
-- **503 isolated node(s):** `AiAddFlowProps`, `MEAL_OPTIONS`, `mockBack`, `mockSetMeal`, `HIGH_ITEM` (+498 more)
+- **503 isolated node(s):** `baseItem`, `CONFIDENCE_MAP`, `ScaledMacros`, `RAW_FOOD`, `NORMALIZED` (+498 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -449,12 +449,12 @@ Nodes (4): mockedDeleteByDate, mockedGetByDate, mockedUpsertByDate, sampleEntry
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `MealType` connect `Community 36` to `Community 65`, `Dexie IndexedDB Adapter`, `OPFS Worker & DB Client`, `Community 39`, `TypeScript Config`, `Jest SQL Transform`, `Community 81`, `Community 53`, `Community 89`, `Community 63`?**
-  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+  _High betweenness centrality (0.055) - this node is a cross-community bridge._
 - **Why does `todayISO()` connect `Community 93` to `Dexie IndexedDB Adapter`, `Community 66`, `Community 34`, `Community 35`, `Community 43`, `Node TS Config`, `Jest Test Config`, `Community 81`, `Community 53`, `Community 85`, `Community 92`, `Community 63`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Why does `generateId()` connect `Community 39` to `Dexie IndexedDB Adapter`, `Community 67`, `Community 40`, `Nutrition Domain & Profile`, `Community 41`, `Community 74`, `Community 46`, `Community 81`, `Community 55`, `Community 63`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **What connects `AiAddFlowProps`, `MEAL_OPTIONS`, `mockBack` to the rest of the system?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **What connects `baseItem`, `CONFIDENCE_MAP`, `ScaledMacros` to the rest of the system?**
   _503 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `OPFS Worker & DB Client` be split into smaller, more focused modules?**
   _Cohesion score 0.08374384236453201 - nodes in this community are weakly interconnected._
