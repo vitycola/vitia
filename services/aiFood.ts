@@ -1,12 +1,11 @@
 import { VITIA_AI_URL } from "@/lib/env";
-import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
+import { getSupabasePublicClient } from "@/src/lib/supabase";
 import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
 import type { AIFoodItem, AiConfidence } from "@/types/aiFood";
 
 async function getAuthToken(): Promise<string | null> {
-  if (!isSyncEnabled()) return null;
   try {
-    const { data } = await getSupabaseClient().auth.getSession();
+    const { data } = await getSupabasePublicClient().auth.getSession();
     return data.session?.access_token ?? null;
   } catch {
     return null;
