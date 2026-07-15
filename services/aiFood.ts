@@ -1,6 +1,17 @@
 import { VITIA_AI_URL } from "@/lib/env";
+import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
 import type { AIFoodItem, AiConfidence } from "@/types/aiFood";
+
+async function getAuthToken(): Promise<string | null> {
+  if (!isSyncEnabled()) return null;
+  try {
+    const { data } = await getSupabaseClient().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const TIMEOUT_MS = 30_000;
 const VALID_CONFIDENCE = new Set<string>(["high", "medium", "low"]);
@@ -32,11 +43,20 @@ function normalize(raw: Record<string, any>): AIFoodItem {
 async function request(url: string, init: RequestInit): Promise<AIFoodItem[]> {
   if (navigator.onLine === false) throw new OfflineError();
 
+  const token = await getAuthToken();
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+  const mergedInit: RequestInit = {
+    ...init,
+    headers: { ...(init.headers as Record<string, string> | undefined), ...authHeaders },
+    signal: controller.signal,
+  };
+
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
+    const res = await fetch(url, mergedInit);
     if (!res.ok) throw new AiServiceError(`HTTP ${res.status}`, res.status);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (await res.json()) as { foods: Record<string, any>[] };
