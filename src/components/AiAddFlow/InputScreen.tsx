@@ -1,3 +1,4 @@
+import { compressImage } from "@/lib/compressImage";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useRef, useState } from "react";
 import { useShallow } from "zustand/shallow";
@@ -59,7 +60,7 @@ export function InputScreen() {
     }
     setOfflineWarning(false);
     if (inputMode === "photo" && selectedFile) {
-      void submitPhoto(selectedFile);
+      void compressImage(selectedFile).then((compressed) => submitPhoto(compressed));
     } else if (inputMode === "text" && canSubmitText) {
       void submitText(combinedText);
     }
