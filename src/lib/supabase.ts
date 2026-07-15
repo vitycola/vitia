@@ -90,3 +90,30 @@ export function getSupabasePublicClient(): SupabaseClient {
 
   return _publicClient;
 }
+
+// ── Auth-aware client (session reading, no sync dependency) ────────────────
+//
+// Used by services that need the user's JWT (e.g. vitia-ia requests) but
+// cannot depend on VITE_SYNC_ENABLED. persistSession: true so it can read
+// the session stored in localStorage by the main auth client.
+
+let _authClient: SupabaseClient | null = null;
+
+export function getSupabaseAuthClient(): SupabaseClient {
+  if (!_authClient) {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) return getSupabasePublicClient();
+
+    _authClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+
+  return _authClient;
+}
