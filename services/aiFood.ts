@@ -22,19 +22,18 @@ function getBaseUrl(): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalize(raw: Record<string, any>): AIFoodItem {
-  const confidence: AiConfidence = VALID_CONFIDENCE.has(raw.confidence)
-    ? (raw.confidence as AiConfidence)
-    : "low";
+  const macros = (raw.macros_actual ?? {}) as Record<string, number>;
+  const confidence: AiConfidence = raw.low_confidence ? "low" : raw.source === "unmatched" ? "low" : "high";
 
   return {
-    foodId: String(raw.foodId ?? ""),
-    name: String(raw.name ?? ""),
-    kcal: Number(raw.kcal ?? 0),
-    protein: Number(raw.protein ?? 0),
-    carbs: Number(raw.carbs ?? 0),
-    fat: Number(raw.fat ?? 0),
-    quantity: Number(raw.quantity ?? 0),
-    unit: raw.unit ? String(raw.unit) : "g",
+    foodId: String(raw.matched_name ?? raw.query_name ?? ""),
+    name: String(raw.matched_name ?? raw.query_name ?? ""),
+    kcal: Number(macros.calories ?? 0),
+    protein: Number(macros.protein ?? 0),
+    carbs: Number(macros.carbs ?? 0),
+    fat: Number(macros.fat ?? 0),
+    quantity: Number(raw.grams ?? 0),
+    unit: "g",
     confidence,
   };
 }
@@ -58,8 +57,8 @@ async function request(url: string, init: RequestInit): Promise<AIFoodItem[]> {
     const res = await fetch(url, mergedInit);
     if (!res.ok) throw new AiServiceError(`HTTP ${res.status}`, res.status);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (await res.json()) as { foods: Record<string, any>[] };
-    return (data.foods ?? []).map(normalize);
+    const data = (await res.json()) as { items: Record<string, any>[] };
+    return (data.items ?? []).map(normalize);
   } catch (err) {
     if (
       err instanceof ConfigurationError ||
