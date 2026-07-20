@@ -1,12 +1,25 @@
 import { VITIA_AI_URL } from "@/lib/env";
-import { getSupabaseAuthClient } from "@/src/lib/supabase";
+import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
 import type { AIFoodItem, AiConfidence } from "@/types/aiFood";
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { data } = await getSupabaseAuthClient().auth.getSession();
-    return data.session?.access_token ?? null;
+    if (isSyncEnabled()) {
+      const { data } = await getSupabaseClient().auth.getSession();
+      return data.session?.access_token ?? null;
+    }
+    // Fallback: read directly from localStorage when sync client is unavailable
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
+    );
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as { access_token?: string; expires_at?: number };
+    if (!session.access_token) return null;
+    if (session.expires_at && session.expires_at < Date.now() / 1000) return null;
+    return session.access_token;
   } catch {
     return null;
   }
