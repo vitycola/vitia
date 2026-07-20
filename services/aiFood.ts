@@ -20,10 +20,22 @@ function getBaseUrl(): string {
   return VITIA_AI_URL;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalize(raw: Record<string, any>): AIFoodItem {
-  const macros = (raw.macros_actual ?? {}) as Record<string, number>;
-  const confidence: AiConfidence = raw.low_confidence ? "low" : raw.source === "unmatched" ? "low" : "high";
+type RawMatchedFood = {
+  query_name?: string;
+  matched_name?: string;
+  grams?: number;
+  source?: string;
+  low_confidence?: boolean;
+  macros_actual?: Record<string, number>;
+};
+
+function normalize(raw: RawMatchedFood): AIFoodItem {
+  const macros = raw.macros_actual ?? {};
+  const confidence: AiConfidence = raw.low_confidence
+    ? "low"
+    : raw.source === "unmatched"
+      ? "low"
+      : "high";
 
   return {
     foodId: String(raw.matched_name ?? raw.query_name ?? ""),
@@ -56,8 +68,7 @@ async function request(url: string, init: RequestInit): Promise<AIFoodItem[]> {
   try {
     const res = await fetch(url, mergedInit);
     if (!res.ok) throw new AiServiceError(`HTTP ${res.status}`, res.status);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (await res.json()) as { items: Record<string, any>[] };
+    const data = (await res.json()) as { items: RawMatchedFood[] };
     return (data.items ?? []).map(normalize);
   } catch (err) {
     if (

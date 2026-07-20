@@ -104,7 +104,10 @@ export function getSupabaseAuthClient(): SupabaseClient {
     const url = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    if (!url || !anonKey) throw new Error("[supabase] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for auth client.");
+    if (!url || !anonKey)
+      throw new Error(
+        "[supabase] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for auth client."
+      );
 
     _authClient = createClient(url, anonKey, {
       auth: {
