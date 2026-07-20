@@ -13,7 +13,6 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 const TIMEOUT_MS = 30_000;
-const VALID_CONFIDENCE = new Set<string>(["high", "medium", "low"]);
 
 function getBaseUrl(): string {
   if (!VITIA_AI_URL) throw new ConfigurationError();
