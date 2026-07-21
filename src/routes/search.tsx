@@ -1,8 +1,8 @@
 import type { Food } from "@/db/schema";
+import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
 import { CreatedFoodsTab } from "@/src/components/search/CreatedFoodsTab";
 import { FavoritesTab } from "@/src/components/search/FavoritesTab";
 import { FoodDatabaseTab } from "@/src/components/search/FoodDatabaseTab";
-import { PlaceholderTab } from "@/src/components/search/PlaceholderTab";
 import { SearchTabs } from "@/src/components/search/SearchTabs";
 import type { SearchTabId } from "@/src/components/search/SearchTabs";
 import { useFoodSearchStore } from "@/stores/useFoodSearchStore";
@@ -87,7 +87,7 @@ export function SearchRoute() {
           <FavoritesTab mealType={mealType} onSelect={handleSelect} query={query} />
         )}
         {activeTab === "created" && <CreatedFoodsTab onSelect={handleSelect} query={query} />}
-        {activeTab === "ai" && <PlaceholderTab label="Añadir con IA" />}
+        {activeTab === "ai" && <AiAddFlow mealType={mealType} />}
       </div>
     </div>
   );

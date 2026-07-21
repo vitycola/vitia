@@ -1315,8 +1315,8 @@
     "semantic_hash": ""
   },
   "src/__tests__/aiAddFlow.text.integration.test.tsx": {
-    "mtime": 1784038866.643712,
-    "ast_hash": "7f7835a4cf0b7d0dae4ff02596c1a015",
+    "mtime": 1784022110.6028104,
+    "ast_hash": "de8ffda0261586fd230aa3e2e9eb2f73",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/AiAddFlow.tsx": {
@@ -1330,23 +1330,23 @@
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/ConfirmationScreen.tsx": {
-    "mtime": 1784032204.5158832,
-    "ast_hash": "c2e7e71f4410a89fda36a1b14764c731",
+    "mtime": 1784027449.1026056,
+    "ast_hash": "0054392190d9bc52d7f6f31a1084feed",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/InputScreen.tsx": {
-    "mtime": 1784032204.5160604,
-    "ast_hash": "a493c7b73e59a299948837d5ccf2dd59",
+    "mtime": 1784027416.2307844,
+    "ast_hash": "59662ef11ec2158c05671da721d2ff1b",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/ResultsScreen.tsx": {
-    "mtime": 1784032191.1042202,
-    "ast_hash": "e99503a48a8d97a6a536f9aeeeef14e6",
+    "mtime": 1784027445.6736639,
+    "ast_hash": "a8e5e0f0563d807eafa0efebaf482c87",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/SelectionScreen.tsx": {
-    "mtime": 1784032165.7005043,
-    "ast_hash": "3efaa90604956b65dd79c4e86ac176fc",
+    "mtime": 1784020699.07179,
+    "ast_hash": "504032eae5c1cc37275d10c52fe80ce3",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/__tests__/AiAddFlow.test.tsx": {
@@ -1365,13 +1365,13 @@
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/__tests__/InputScreen.test.tsx": {
-    "mtime": 1784032241.4792778,
-    "ast_hash": "c5a347436402b808d4f5e541eb2aa93e",
+    "mtime": 1784027416.2336268,
+    "ast_hash": "b92794e40361fc6ffff67133959291c3",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/__tests__/ResultsScreen.test.tsx": {
-    "mtime": 1784032332.1112068,
-    "ast_hash": "59c5b636477d2e76d924232275f175ac",
+    "mtime": 1784027416.232441,
+    "ast_hash": "4abd747fc67210abaa2832f9c0a9d21d",
     "semantic_hash": ""
   },
   "src/components/AiAddFlow/__tests__/SelectionScreen.test.tsx": {
@@ -1385,8 +1385,8 @@
     "semantic_hash": ""
   },
   "stores/useAiAddFlowStore.ts": {
-    "mtime": 1784032204.5162919,
-    "ast_hash": "ac669adf3299f2d7b6bc0dfc22c445af",
+    "mtime": 1784020061.3611233,
+    "ast_hash": "eb34e907d5af819930d0b6b6491d67d6",
     "semantic_hash": ""
   },
   "types/aiFood.ts": {
