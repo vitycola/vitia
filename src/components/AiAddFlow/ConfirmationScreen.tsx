@@ -1,3 +1,4 @@
+import { createComposite } from "@/db/repos/foods";
 import { getConfidenceMeta } from "@/lib/aiConfidence";
 import { scaleAiMacros } from "@/lib/aiMacros";
 import { todayISO } from "@/lib/date";
@@ -16,13 +17,18 @@ const MEAL_OPTIONS: { value: MealType; label: string }[] = [
   { value: "snack", label: "Merienda" },
 ];
 
-function mapToNewMealEntry(item: AIFoodItem, qty: number, meal: MealType): NewMealEntry {
+function mapToNewMealEntry(
+  item: AIFoodItem,
+  qty: number,
+  meal: MealType,
+  foodId: string
+): NewMealEntry {
   const scaled = scaleAiMacros(item, qty);
   return {
     id: generateId(),
     date: todayISO(),
     mealType: meal,
-    foodId: item.foodId,
+    foodId,
     foodName: item.name,
     quantityG: qty,
     calories: scaled.kcal,
@@ -75,12 +81,34 @@ export function ConfirmationScreen() {
     const addEntry = useDayStore.getState().addEntry;
     const checkedItems = results.map((item, i) => ({ item, i })).filter(({ i }) => selections[i]);
 
+    let successCount = 0;
     for (const { item, i } of checkedItems) {
       const qty = quantities[i] ?? item.quantity;
-      await addEntry(mapToNewMealEntry(item, qty, selectedMeal));
+      try {
+        const per100 = scaleAiMacros(item, 100);
+        const food = await createComposite(
+          {
+            id: generateId(),
+            name: item.name,
+            source: "ai",
+            caloriesPer100g: per100.kcal,
+            proteinPer100g: per100.protein,
+            carbsPer100g: per100.carbs,
+            fatPer100g: per100.fat,
+            servingSizeG: qty,
+          },
+          []
+        );
+        await addEntry(mapToNewMealEntry(item, qty, selectedMeal, food.id));
+        successCount += 1;
+      } catch {
+        // Best-effort: skip this item and continue with the rest (D5).
+      }
     }
-    reset();
-    void navigate("/");
+    if (successCount > 0) {
+      reset();
+      void navigate("/");
+    }
   }
 
   return (
@@ -118,7 +146,7 @@ export function ConfirmationScreen() {
 
           return (
             <div
-              key={`${item.foodId}-${i}`}
+              key={`${item.name}-${i}`}
               className={[
                 "flex flex-col gap-2 rounded-2xl border p-4",
                 highlight ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-white",

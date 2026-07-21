@@ -25,7 +25,6 @@ const RAW_FOOD = {
 };
 
 const NORMALIZED = {
-  foodId: "Manzana",
   name: "Manzana",
   kcal: 80,
   protein: 0.4,

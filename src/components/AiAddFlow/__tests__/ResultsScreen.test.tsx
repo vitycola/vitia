@@ -14,7 +14,6 @@ const mockGoToConfirmation = jest.fn();
 
 const ITEMS: AIFoodItem[] = [
   {
-    foodId: "f1",
     name: "Manzana",
     kcal: 80,
     protein: 0.4,
@@ -25,7 +24,6 @@ const ITEMS: AIFoodItem[] = [
     confidence: "high",
   },
   {
-    foodId: "f2",
     name: "Arroz",
     kcal: 200,
     protein: 4,

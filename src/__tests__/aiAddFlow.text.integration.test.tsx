@@ -21,7 +21,11 @@ jest.mock("react-router-dom", () => ({
 }));
 
 jest.mock("@/db/repos/mealEntries", () => ({}));
+jest.mock("@/db/repos/foods", () => ({
+  createComposite: jest.fn(),
+}));
 
+import { createComposite } from "@/db/repos/foods";
 import * as aiService from "@/services/aiFood";
 import { AiAddFlow } from "@/src/components/AiAddFlow/AiAddFlow";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
@@ -30,9 +34,9 @@ import type { AIFoodItem } from "@/types/aiFood";
 
 const mockParseText = aiService.parseText as jest.MockedFunction<typeof aiService.parseText>;
 const mockAddEntry = jest.fn().mockResolvedValue(undefined);
+const mockCreateComposite = createComposite as jest.Mock;
 
 const FOOD_ITEM: AIFoodItem = {
-  foodId: "food-arroz-456",
   name: "Arroz cocido",
   kcal: 200,
   protein: 4,
@@ -48,6 +52,10 @@ beforeEach(() => {
   mockParseText.mockReset();
   mockNavigate.mockReset();
   mockAddEntry.mockReset().mockResolvedValue(undefined);
+  mockCreateComposite.mockReset().mockImplementation(async (food: { id: string }) => ({
+    ...food,
+    createdAt: new Date().toISOString(),
+  }));
   (useDayStore.getState as jest.Mock).mockReturnValue({ addEntry: mockAddEntry });
 });
 
@@ -90,9 +98,13 @@ describe("Text happy path integration", () => {
       fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
     });
 
+    expect(mockCreateComposite).toHaveBeenCalledTimes(1);
+    const [createdFood] = mockCreateComposite.mock.calls[0];
+    expect(createdFood.source).toBe("ai");
+
     expect(mockAddEntry).toHaveBeenCalledTimes(1);
     const entryArg = mockAddEntry.mock.calls[0][0];
-    expect(entryArg.foodId).toBe("food-arroz-456");
+    expect(entryArg.foodId).toBe(createdFood.id);
     expect(entryArg.foodName).toBe("Arroz cocido");
     expect(entryArg.mealType).toBe("breakfast");
     expect(entryArg.quantityG).toBe(100);

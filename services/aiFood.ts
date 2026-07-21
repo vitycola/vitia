@@ -50,7 +50,6 @@ function normalize(raw: RawMatchedFood): AIFoodItem {
       : "high";
 
   return {
-    foodId: String(raw.matched_name ?? raw.query_name ?? ""),
     name: String(raw.matched_name ?? raw.query_name ?? ""),
     kcal: Number(macros.calories ?? 0),
     protein: Number(macros.protein ?? 0),

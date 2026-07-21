@@ -32,7 +32,7 @@ export function ResultsScreen() {
       <div className="flex flex-col gap-2">
         {results.map((item, i) => (
           <div
-            key={`${item.foodId}-${i}`}
+            key={`${item.name}-${i}`}
             className="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
           >
             <div className="flex items-center justify-between gap-2">

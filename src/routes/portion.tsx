@@ -200,7 +200,7 @@ export function PortionRoute() {
                 }
               }}
             />
-            {food.source === "custom" && (
+            {(food.source === "custom" || food.source === "ai") && (
               <div className="relative">
                 <button
                   type="button"

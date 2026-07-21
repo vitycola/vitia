@@ -1777,6 +1777,47 @@ describe.each([
 });
 
 // ---------------------------------------------------------------------------
+// AI-sourced foods (source: "ai") — dual-backend parity
+// (spec: ai-food-persistence — Schema accepts ai source on both backends,
+// AI Foods Stay Invisible In Search And Created Tab)
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)("AI-sourced foods — %s", (_backendName, makeBackend) => {
+  let backend: RepositoryBackend & { _ready: Promise<void> };
+
+  beforeEach(async () => {
+    backend = makeBackend();
+    await backend._ready;
+  });
+
+  it("createComposite(food, []) succeeds with source: ai and round-trips via getById", async () => {
+    const composite = await backend.createComposite(
+      makeFood({ name: "Manzana AI", source: "ai" }),
+      []
+    );
+
+    expect(composite.source).toBe("ai");
+
+    const fetched = await backend.getById(composite.id);
+    expect(fetched).not.toBeNull();
+    expect(fetched?.source).toBe("ai");
+    expect(fetched?.name).toBe("Manzana AI");
+  });
+
+  it("getCustomFoods() does not include ai-sourced rows", async () => {
+    await backend.createComposite(makeFood({ name: "Manzana AI 2", source: "ai" }), []);
+    const custom = await backend.insert(makeFood({ name: "Receta manual", source: "custom" }));
+
+    const customFoods = await backend.getCustomFoods();
+    expect(customFoods.map((f) => f.id)).toContain(custom.id);
+    expect(customFoods.every((f) => f.source === "custom")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Favorites and Search Non-Regression — composite/custom foods (spec:
 // created-foods-list "Favorites and Search Non-Regression")
 // ---------------------------------------------------------------------------
