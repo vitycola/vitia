@@ -1,7 +1,6 @@
 import { useFavorite } from "@/hooks/useFavorite";
 import type { SearchResult } from "@/stores/useFoodSearchStore";
 import type { MealType } from "@/types";
-import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { FavoriteToggle } from "./FavoriteToggle";
 import { MealPicker } from "./MealPicker";
@@ -50,9 +49,6 @@ export function FoodResultRow({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <span className="truncate text-sm font-medium text-gray-900">{food.name}</span>
-              {food.hasMissingData && (
-                <AlertTriangle size={14} className="shrink-0 text-amber-500" />
-              )}
             </div>
             <p className="truncate text-xs text-gray-400">
               {food.brand ?? (food.source === "generic" ? "Genérico" : null)}
