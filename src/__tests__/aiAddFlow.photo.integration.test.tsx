@@ -13,6 +13,11 @@ jest.mock("@/services/aiFood", () => ({
   parseText: jest.fn(),
 }));
 
+// compressImage uses Canvas/URL.createObjectURL — not available in jsdom
+jest.mock("@/lib/compressImage", () => ({
+  compressImage: jest.fn((file: File) => Promise.resolve(file)),
+}));
+
 // Mock useDayStore — we spy on addEntry
 jest.mock("@/stores/useDayStore", () => ({
   useDayStore: { getState: jest.fn() },
