@@ -9,7 +9,7 @@
  *   - stableFoodId determinism carries through dedupeRecords
  */
 
-import { completeness, dedupeRecords, normalizeBaseName } from "../grouping";
+import { completeness, dedupeRecords, normalizeBaseName, toDisplayName } from "../grouping";
 import type { SeedRecord } from "../toSql";
 
 type Draft = Omit<SeedRecord, "id">;
@@ -46,6 +46,36 @@ describe("normalizeBaseName()", () => {
 
   it("collapses whitespace", () => {
     expect(normalizeBaseName("Pollo    crudo")).toBe("pollo");
+  });
+});
+
+describe("toDisplayName()", () => {
+  it("'Lenteja, seca, cruda' → 'Lenteja' (real duplicate case)", () => {
+    expect(toDisplayName("Lenteja, seca, cruda")).toBe("Lenteja");
+  });
+
+  it("'Arroz, crudo' → 'Arroz'", () => {
+    expect(toDisplayName("Arroz, crudo")).toBe("Arroz");
+  });
+
+  it("'Arroz integral, crudo' → 'Arroz integral' (real duplicate case)", () => {
+    expect(toDisplayName("Arroz integral, crudo")).toBe("Arroz integral");
+  });
+
+  it("'Garbanzo cocido' → 'Garbanzo' (space-separated, no comma)", () => {
+    expect(toDisplayName("Garbanzo cocido")).toBe("Garbanzo");
+  });
+
+  it("'Pollo, pechuga, a la plancha.' → 'Pollo, pechuga' (multi-word phrase term)", () => {
+    expect(toDisplayName("Pollo, pechuga, a la plancha.")).toBe("Pollo, pechuga");
+  });
+
+  it("'Lenteja, en conserva' stays unchanged — canned is a distinct food, not a cooking-state variant", () => {
+    expect(toDisplayName("Lenteja, en conserva")).toBe("Lenteja, en conserva");
+  });
+
+  it("falls back to the original name when stripping would empty the result", () => {
+    expect(toDisplayName("Cruda")).toBe("Cruda");
   });
 });
 
@@ -125,7 +155,7 @@ describe("dedupeRecords()", () => {
     const result = dedupeRecords([cooked, raw]);
 
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Arroz, crudo");
+    expect(result[0].name).toBe("Arroz");
   });
 
   it("does not merge the same base name across different categories", () => {
@@ -180,7 +210,9 @@ describe("dedupeRecords()", () => {
     const result = dedupeRecords([longer, shorter]);
 
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Garbanzo cocido");
+    // "shorter" wins the tiebreak by raw name length, then its display name
+    // gets the cooking-state descriptor stripped like any other winner.
+    expect(result[0].name).toBe("Garbanzo");
   });
 
   it("completeness and name-length tie: picks the first-seen entry", () => {

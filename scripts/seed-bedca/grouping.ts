@@ -52,6 +52,56 @@ export function normalizeBaseName(name: string): string {
   return tokens.join(" ").trim();
 }
 
+// ── Display name cleanup ─────────────────────────────────────────────────────
+
+const PUNCT_RE = /[.,;:!?()"'`]+$/g;
+
+/**
+ * Strips a single comma-separated segment of any raw/cooked descriptor terms
+ * it contains, preserving the segment's original casing. Returns "" if the
+ * whole segment (once trimmed of trailing punctuation) IS a descriptor term,
+ * so the caller drops it entirely (e.g. "cruda" as its own segment).
+ */
+function stripTermsFromSegment(segment: string): string {
+  const bare = segment.trim().replace(PUNCT_RE, "");
+  if (ALL_TERMS.includes(bare.toLowerCase())) return "";
+
+  let stripped = bare;
+  for (const phrase of PHRASE_TERMS) {
+    stripped = stripped.replace(
+      new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi"),
+      " "
+    );
+  }
+
+  stripped = stripped
+    .split(/\s+/)
+    .filter((token) => token.length > 0 && !SINGLE_WORD_TERMS.has(token.toLowerCase()))
+    .join(" ");
+
+  return stripped.trim();
+}
+
+/**
+ * Produces the user-facing display name for a canonical record: strips
+ * raw/cooked descriptor segments/words (e.g. ", cruda", "cocido") from the
+ * BEDCA name while preserving casing and any other descriptor that isn't a
+ * cooking-state term (e.g. "en conserva" stays, since canned is a distinct
+ * food, not a cooking-state variant — see design). Falls back to the
+ * original name if stripping would empty the result entirely.
+ */
+export function toDisplayName(name: string): string {
+  const segments = name
+    .split(",")
+    .map(stripTermsFromSegment)
+    .filter((segment) => segment.length > 0);
+
+  if (segments.length === 0) return name.trim();
+
+  const joined = segments.join(", ");
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
+}
+
 // ── Completeness heuristic ──────────────────────────────────────────────────
 
 /**
@@ -128,6 +178,7 @@ export function dedupeRecords(records: Omit<SeedRecord, "id">[]): SeedRecord[] {
 
   return Array.from(groups.values()).map(({ baseName, winner }) => ({
     ...winner.record,
+    name: toDisplayName(winner.record.name),
     id: stableFoodId(baseName, winner.record.category),
   }));
 }
