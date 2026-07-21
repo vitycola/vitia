@@ -26,6 +26,11 @@ export interface OffProxyProduct {
   // (lib/offBasisMap.ts) — see design D3/D6. This proxy is a pass-through:
   // it does NOT categorize server-side.
   categories_tags?: string[];
+  // OFF flags products with no usable nutrition table via this field.
+  // OFF's legacy CGI backend serializes this checkbox-originated field as
+  // the string "on" rather than a boolean in some responses — callers
+  // MUST check both representations (Issue #48).
+  no_nutrition_data?: boolean | string;
 }
 
 /** Which upstream ultimately served the data — kept for observability. */

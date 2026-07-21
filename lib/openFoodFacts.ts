@@ -14,7 +14,7 @@ const OFF_SEARCH_TIMEOUT_MS = 7000; // 6-8s bound (spec: Bounded Request Timeout
 
 // Required fields to avoid fetching the full product blob.
 const OFF_FIELDS =
-  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url,categories_tags";
+  "code,product_name,brands,nutriments,serving_quantity,image_front_small_url,image_url,categories_tags,no_nutrition_data";
 
 // ── Food with missing-data flag (for UI warning) ───────────────────────
 export interface SearchResult extends NewFood {
@@ -27,6 +27,17 @@ function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+/**
+ * True when OFF flags this product as having no usable nutrition table.
+ * OFF's legacy CGI backend serializes this checkbox-originated field as the
+ * string "on" rather than a boolean in some responses, so both
+ * representations must be checked (Issue #48). Only applied in `search()` —
+ * `getByBarcode()`/`normalizeOffProduct()` are intentionally untouched.
+ */
+function hasNoNutritionData(p: OffProxyProduct): boolean {
+  return p.no_nutrition_data === true || p.no_nutrition_data === "on";
 }
 
 /**
@@ -111,6 +122,7 @@ export async function search(query: string, signal?: AbortSignal): Promise<Searc
 
   const normalizedByCode = new Map<string, NewFood & { hasMissingData: boolean }>();
   for (const product of data.products) {
+    if (hasNoNutritionData(product)) continue;
     const normalized = normalizeOffProduct(product);
     if (!normalized) continue;
     normalizedByCode.set(normalized.id, normalized);
