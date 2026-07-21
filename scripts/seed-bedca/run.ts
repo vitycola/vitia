@@ -8,17 +8,19 @@
  *   2. For each group, fetch the list of foods
  *   3. For each food, fetch full macro data
  *   4. Map group → canonical category, food name → data_basis
- *   5. Generate idempotent SQL INSERT statements
- *   6. Write output to scripts/seed-bedca/out/generic_foods_seed.sql
+ *   5. Deduplicate raw/cooked variants into one canonical row per food+category
+ *   6. Generate idempotent SQL INSERT statements (plus a source='bedca'
+ *      reconcile DELETE) and write output to
+ *      scripts/seed-bedca/out/generic_foods_seed.sql
  *
  * Raw JSON responses are cached in scripts/seed-bedca/.cache/ so the pipeline
  * can be re-run without hitting the API again.
  */
 
-import { randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type BedcaFood, getFood, getFoodGroups, getFoodsInGroup } from "./fetchBedca.ts";
+import { dedupeRecords } from "./grouping.ts";
 import { mapBasis } from "./mapBasis.ts";
 import { mapCategory } from "./mapCategory.ts";
 import { type SeedRecord, generateSeedSql } from "./toSql.ts";
@@ -63,7 +65,7 @@ async function run(): Promise<void> {
   const groups = await getFoodGroups();
   console.log(`  Found ${groups.length} groups`);
 
-  const records: SeedRecord[] = [];
+  const records: Omit<SeedRecord, "id">[] = [];
   const unmappedGroups = new Set<string>();
 
   // Step 2+3+4: per group, fetch foods and their macros
@@ -111,7 +113,6 @@ async function run(): Promise<void> {
       const dataBasis = mapBasis(foodName);
 
       records.push({
-        id: randomUUID(),
         name: foodName,
         calories_per_100g: macros.calories,
         protein_per_100g: macros.protein,
@@ -123,9 +124,10 @@ async function run(): Promise<void> {
     }
   }
 
-  // Step 5: generate SQL
-  console.log(`\n[5/5] Generating SQL for ${records.length} records…`);
-  const written = generateSeedSql(records, OUTPUT_FILE);
+  // Step 5: dedupe raw/cooked variants, then generate SQL
+  const deduped = dedupeRecords(records);
+  console.log(`\n[5/5] Deduped ${records.length} records to ${deduped.length}. Generating SQL…`);
+  const written = generateSeedSql(deduped, OUTPUT_FILE);
 
   console.log(`\nDone. ${written} records written to out/generic_foods_seed.sql`);
 

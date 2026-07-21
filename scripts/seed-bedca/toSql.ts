@@ -7,6 +7,7 @@
  * searches.
  */
 
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -43,6 +44,25 @@ function sqlNum(value: number): string {
   return String(value);
 }
 
+/**
+ * Derives a deterministic, content-derived UUID from a food's canonical
+ * identity (baseName + category), so identical canonical foods produce the
+ * identical id across separate pipeline runs and ON CONFLICT (id) DO NOTHING
+ * correctly dedups on rerun.
+ *
+ * The id is scoped to canonical identity only (not raw nutrient values) — see
+ * design Correction 2: post-grouping there is exactly one row per
+ * (baseName, category), so two records sharing that identity MUST share the
+ * same id regardless of differing raw nutrient values.
+ */
+export function stableFoodId(baseName: string, category: string | null): string {
+  const hash = createHash("sha256")
+    .update(`${baseName}|${category ?? ""}`)
+    .digest("hex");
+  const hex = hash.slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
 function buildInsert(record: SeedRecord): string {
   const nameNormalized = normalizeForSearch(record.name);
 
@@ -68,9 +88,13 @@ export function generateSeedSql(records: SeedRecord[], outputFile: string): numb
     `-- Generated: ${new Date().toISOString()}`,
     `-- Records: ${records.length}`,
     "-- Idempotent: ON CONFLICT (id) DO NOTHING",
+    "-- Self-reconciling: deletes existing source='bedca' rows before reinserting",
+    "-- the deduplicated set, atomically, in the same transaction.",
     "-- Apply manually via Supabase SQL Editor.",
     "",
     "BEGIN;",
+    "",
+    "DELETE FROM generic_foods WHERE source = 'bedca';",
     "",
   ].join("\n");
 
