@@ -78,11 +78,13 @@ function FavoriteRow({
         <button
           type="button"
           onClick={() => onSelect(item)}
-          className="flex flex-1 items-center gap-3 text-left active:opacity-70"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left active:opacity-70"
         >
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-medium text-gray-900">{item.name}</span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                {item.name}
+              </span>
               {item.otherMeals.length > 0 && (
                 <span className="shrink-0 truncate text-xs text-gray-400">
                   también en {item.otherMeals.map((m) => MEAL_LABELS[m]).join(", ")}
