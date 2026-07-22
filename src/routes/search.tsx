@@ -57,9 +57,9 @@ export function SearchRoute() {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="flex h-full flex-col bg-gray-50">
       {/* Sticky header: search input + tab bar */}
-      <div className="sticky top-0 z-10 bg-white px-4 pb-0 pt-4 shadow-sm">
+      <div className="z-10 bg-white px-4 pb-0 pt-4 shadow-sm">
         <h1 className="mb-3 text-lg font-bold text-gray-900">Buscar alimento</h1>
 
         <input
@@ -79,7 +79,7 @@ export function SearchRoute() {
         <SearchTabs active={activeTab} onChange={setActiveTab} />
       </div>
 
-      <div className="pb-20">
+      <div className="flex-1 overflow-y-auto pb-20">
         {activeTab === "database" && (
           <FoodDatabaseTab query={query} mealType={mealType} onSelect={handleSelect} />
         )}
