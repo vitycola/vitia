@@ -8,7 +8,6 @@ interface MockVM {
   points: { date: string; value: number }[];
   linePoints: { key: string; label: string; value: number | null }[];
   renderState: RenderState;
-  overlayRows: { date: string; value: number }[];
   latest: number | null;
   delta: number | null;
   window: { from: string; to: string };
@@ -25,10 +24,6 @@ const mockVM: MockVM = {
     { key: "2026-07-03", label: "2026-07-03", value: 78.5 },
   ],
   renderState: "line",
-  overlayRows: [
-    { date: "2026-07-03", value: 78.5 },
-    { date: "2026-07-01", value: 80 },
-  ],
   latest: 78.5,
   delta: -1.5,
   window: { from: "2026-06-30", to: "2026-07-06" },
@@ -63,7 +58,7 @@ describe("WeightCard", () => {
     expect(screen.getByTestId("weight-line")).toBeInTheDocument();
   });
 
-  it("whole card tap opens the historical overlay", () => {
+  it("whole card tap opens the fullscreen scrub chart", () => {
     render(<WeightCard range="week" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Ver historial de peso" }));
@@ -84,9 +79,9 @@ describe("WeightCard", () => {
   it("shows an em dash and no delta caption when there is no data", () => {
     mockUseWeightDashboard.mockReturnValue({
       ...mockVM,
+      points: [],
       renderState: "empty" as const,
       linePoints: [],
-      overlayRows: [],
       latest: null,
       delta: null,
     });

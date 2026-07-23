@@ -12,10 +12,6 @@ const mockVM = {
     { key: "2026-07-03", label: "2026-07-03", value: 89, imputed: true },
   ],
   renderState: "line" as const,
-  overlayRows: [
-    { date: "2026-07-03", value: 89 },
-    { date: "2026-07-01", value: 90 },
-  ],
   latest: 89,
   delta: -1,
   window: { from: "2026-06-30", to: "2026-07-06" },

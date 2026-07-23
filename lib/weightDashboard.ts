@@ -121,17 +121,6 @@ export function carryForwardBuckets(
   });
 }
 
-/**
- * Build the historical-overlay row list: sparse (logged days only, never a
- * zero/placeholder row for unlogged days). Rows are DESCENDING date order
- * (most recent first).
- */
-export function buildOverlayRows(rows: WeightEntryRow[]): { date: string; value: number }[] {
-  return toPoints(rows)
-    .map((point) => ({ date: point.date, value: point.value }))
-    .reverse();
-}
-
 /** The most recent logged value, or null when there are no points. */
 export function latestValue(points: WeightPoint[]): number | null {
   if (points.length === 0) return null;

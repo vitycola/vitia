@@ -8,7 +8,6 @@ interface MockVM {
   points: { date: string; value: number }[];
   linePoints: { key: string; label: string; value: number | null }[];
   renderState: RenderState;
-  overlayRows: { date: string; value: number }[];
   latest: number | null;
   delta: number | null;
   window: { from: string; to: string };
@@ -25,10 +24,6 @@ const mockVM: MockVM = {
     { key: "2026-07-03", label: "2026-07-03", value: 21.1 },
   ],
   renderState: "line",
-  overlayRows: [
-    { date: "2026-07-03", value: 21.1 },
-    { date: "2026-07-01", value: 22.4 },
-  ],
   latest: 21.1,
   delta: -1.3,
   window: { from: "2026-06-30", to: "2026-07-06" },
@@ -86,7 +81,6 @@ describe("BodyFatCard", () => {
       ...mockVM,
       renderState: "empty" as const,
       linePoints: [],
-      overlayRows: [],
       latest: null,
       delta: null,
     });
@@ -113,7 +107,6 @@ describe("BodyFatCard", () => {
       ...mockVM,
       renderState: "empty" as const,
       linePoints: [],
-      overlayRows: [],
       latest: null,
       delta: null,
     });

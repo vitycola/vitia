@@ -149,27 +149,6 @@ describe("useBodyFatDashboard", () => {
     expect(result.current.renderState).toBe("single");
   });
 
-  it("exposes sparse overlayRows in descending date order", async () => {
-    const day1 = weekStart;
-    const day2 = addDays(weekStart, 1);
-    const day3 = addDays(weekStart, 2);
-
-    mockGetRange.mockResolvedValue([
-      { date: day1, bodyFatPct: 22.4 },
-      { date: day2, bodyFatPct: null },
-      { date: day3, bodyFatPct: 21.1 },
-    ]);
-
-    const { result } = renderHook(() => useBodyFatDashboard("week"));
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.overlayRows).toEqual([
-      { date: day3, value: 21.1 },
-      { date: day1, value: 22.4 },
-    ]);
-  });
-
   it("exposes latest and delta derived from the sparse points", async () => {
     const day1 = weekStart;
     const day3 = addDays(weekStart, 2);

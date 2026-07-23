@@ -1,10 +1,4 @@
-import {
-  buildLine,
-  buildOverlayRows,
-  deltaFromFirst,
-  latestValue,
-  toPoints,
-} from "../weightDashboard";
+import { buildLine, deltaFromFirst, latestValue, toPoints } from "../weightDashboard";
 
 type ProgressEntryRow = {
   date: string;
@@ -144,44 +138,6 @@ describe("buildLine — 3month carry-forward bucketing", () => {
     const line = buildLine("3month", points, "2026-04-08", "2026-07-06");
     expect(line.renderState).toBe("line");
     expect(line.points.every((p) => p.value !== null)).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildOverlayRows
-// ---------------------------------------------------------------------------
-
-describe("buildOverlayRows", () => {
-  it("lists only logged days, sparse — never a placeholder row for unlogged days", () => {
-    const rows: ProgressEntryRow[] = [
-      row("2026-07-01", { weightKg: 90 }),
-      row("2026-07-02"),
-      row("2026-07-03", { weightKg: 89 }),
-    ];
-
-    const overlayRows = buildOverlayRows(rows);
-
-    expect(overlayRows).toEqual([
-      { date: "2026-07-03", value: 89 },
-      { date: "2026-07-01", value: 90 },
-    ]);
-  });
-
-  it("returns rows in descending date order — most recent first", () => {
-    const rows: ProgressEntryRow[] = [
-      row("2026-07-01", { weightKg: 90 }),
-      row("2026-07-05", { weightKg: 88 }),
-      row("2026-07-03", { weightKg: 89 }),
-    ];
-
-    const overlayRows = buildOverlayRows(rows);
-
-    expect(overlayRows.map((r) => r.date)).toEqual(["2026-07-05", "2026-07-03", "2026-07-01"]);
-  });
-
-  it("returns an empty array when no day has weightKg logged", () => {
-    const rows: ProgressEntryRow[] = [row("2026-07-01"), row("2026-07-02")];
-    expect(buildOverlayRows(rows)).toEqual([]);
   });
 });
 

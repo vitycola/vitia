@@ -1,20 +1,13 @@
 import * as progressRepo from "@/db/repos/progress";
 import { resolveDashboardWindow } from "@/lib/date";
 import type { DashboardRange, LinePoint, RenderState, WeightEntryRow } from "@/lib/weightDashboard";
-import {
-  buildLine,
-  buildOverlayRows,
-  deltaFromFirst,
-  latestValue,
-  toPoints,
-} from "@/lib/weightDashboard";
+import { buildLine, deltaFromFirst, latestValue, toPoints } from "@/lib/weightDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface WeightDashboardVM {
   points: { date: string; value: number }[];
   linePoints: LinePoint[];
   renderState: RenderState;
-  overlayRows: { date: string; value: number }[];
   latest: number | null;
   delta: number | null;
   window: { from: string; to: string };
@@ -25,8 +18,11 @@ export interface WeightDashboardVM {
  * Fetch+shape hook for the Progress > Peso dashboard. Mirrors
  * useMeasurementsDashboard's fetch pattern minus the metric param: resolves
  * the window for the active range, calls progressRepo.getRange, and derives
- * sparse points + line data + overlay rows via the pure functions in
- * lib/weightDashboard.ts.
+ * sparse points + line data via the pure functions in lib/weightDashboard.ts.
+ * `points` (sparse, per-day, real ISO dates) also feeds `WeightScrubOverlay`'s
+ * `buildScrubSeries` for the fullscreen scrub chart (issue #63) — there is no
+ * separate overlay-row shaping here anymore (the previous bottom-sheet list
+ * overlay and its `buildOverlayRows` were removed).
  */
 export function useWeightDashboard(range: DashboardRange): WeightDashboardVM {
   const [rows, setRows] = useState<WeightEntryRow[]>([]);
@@ -55,7 +51,6 @@ export function useWeightDashboard(range: DashboardRange): WeightDashboardVM {
   return useMemo(() => {
     const points = toPoints(rows);
     const { points: linePoints, renderState } = buildLine(range, points, window.from, window.to);
-    const overlayRows = buildOverlayRows(rows);
     const latest = latestValue(points);
     const delta = deltaFromFirst(points);
 
@@ -63,7 +58,6 @@ export function useWeightDashboard(range: DashboardRange): WeightDashboardVM {
       points,
       linePoints,
       renderState,
-      overlayRows,
       latest,
       delta,
       window,

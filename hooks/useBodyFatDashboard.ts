@@ -5,13 +5,7 @@ import type {
   LinePoint,
   RenderState,
 } from "@/lib/bodyFatDashboard";
-import {
-  buildLine,
-  buildOverlayRows,
-  deltaFromFirst,
-  latestValue,
-  toPoints,
-} from "@/lib/bodyFatDashboard";
+import { buildLine, deltaFromFirst, latestValue, toPoints } from "@/lib/bodyFatDashboard";
 import { rollingWindow, startOfWeek, todayISO, weekDays } from "@/lib/date";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,7 +13,6 @@ export interface BodyFatDashboardVM {
   points: { date: string; value: number }[];
   linePoints: LinePoint[];
   renderState: RenderState;
-  overlayRows: { date: string; value: number }[];
   latest: number | null;
   delta: number | null;
   window: { from: string; to: string };
@@ -47,7 +40,11 @@ function resolveWindow(range: DashboardRange): { from: string; to: string } {
  * Fetch+shape hook for the Progress > % Grasa dashboard. Mirrors
  * useWeightDashboard's fetch pattern: resolves the window for the active
  * range, calls progressRepo.getRange, and derives sparse points + line data
- * + overlay rows via the pure functions in lib/bodyFatDashboard.ts.
+ * via the pure functions in lib/bodyFatDashboard.ts. `points` also feeds
+ * `BodyFatScrubOverlay`'s `buildScrubSeries` for the fullscreen scrub chart
+ * (issue #63) — there is no separate overlay-row shaping here anymore (the
+ * previous bottom-sheet list overlay and its `buildOverlayRows` were
+ * removed).
  */
 export function useBodyFatDashboard(range: DashboardRange): BodyFatDashboardVM {
   const [rows, setRows] = useState<BodyFatEntryRow[]>([]);
@@ -76,7 +73,6 @@ export function useBodyFatDashboard(range: DashboardRange): BodyFatDashboardVM {
   return useMemo(() => {
     const points = toPoints(rows);
     const { points: linePoints, renderState } = buildLine(range, points, window.from, window.to);
-    const overlayRows = buildOverlayRows(rows);
     const latest = latestValue(points);
     const delta = deltaFromFirst(points);
 
@@ -84,7 +80,6 @@ export function useBodyFatDashboard(range: DashboardRange): BodyFatDashboardVM {
       points,
       linePoints,
       renderState,
-      overlayRows,
       latest,
       delta,
       window,
