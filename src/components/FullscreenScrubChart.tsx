@@ -1,5 +1,6 @@
 import { useChartScrub } from "@/hooks/useChartScrub";
-import { formatFullDayLabel } from "@/lib/date";
+import { formatAxisDateLabel, formatFullDayLabel } from "@/lib/date";
+import { pickAxisTicks } from "@/lib/scrubChart";
 import type { ScrubSeriesPoint } from "@/lib/scrubChart";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { X } from "lucide-react";
@@ -13,6 +14,27 @@ const SECONDARY_TEXT_COLOR = "#8E8E93";
 const VIEW_WIDTH = 100;
 const VIEW_HEIGHT = 100;
 const DOT_RADIUS = 3;
+
+/** Horizontal edge alignment, shared by the axis tick labels and the inline
+ * tooltip (see AMENDMENT — Inline on-chart tooltip / X-axis date tick
+ * labels): a point/tick near the left or right chart edge flips its anchor
+ * instead of centering, so its content never clips off-screen. */
+type EdgeAlign = "start" | "center" | "end";
+
+const EDGE_THRESHOLD = 0.15;
+
+function resolveEdgeAlign(xFraction: number): EdgeAlign {
+  if (xFraction <= EDGE_THRESHOLD) return "start";
+  if (xFraction >= 1 - EDGE_THRESHOLD) return "end";
+  return "center";
+}
+
+/** CSS `transform` that anchors an absolutely-positioned (`left: x%`) element per its edge alignment. */
+function alignTransform(align: EdgeAlign): string {
+  if (align === "start") return "translateX(0)";
+  if (align === "end") return "translateX(-100%)";
+  return "translateX(-50%)";
+}
 
 const RANGE_OPTIONS: { value: DashboardRange; label: string }[] = [
   { value: "week", label: "Semana" },
@@ -39,8 +61,8 @@ export interface FullscreenScrubChartProps {
  * `PhotoLightbox`'s fixed-overlay chrome conventions (role="dialog", single
  * X close, no back-chevron — see design "Header affordance"), but replaces
  * the previous bottom-sheet row list (`*HistoryOverlay`) with an in-view
- * range switcher, a fixed-position tooltip card, and a pointer-scrubbable
- * SVG line chart.
+ * range switcher, a pointer-scrubbable SVG line chart with X-axis date tick
+ * labels, and an inline tooltip anchored to the actively-scrubbed point.
  *
  * `ScrubChartBody` is remounted via `key={range}` whenever the active range
  * changes, so `useChartScrub`'s internal activeIndex always resets to the
@@ -136,91 +158,140 @@ function ScrubChartBody({ title, series, renderState, unit, formatValue }: Scrub
   }
 
   const activePoint = activeIndex !== null ? series[activeIndex] : null;
+  const axisTicks = renderState === "line" ? pickAxisTicks(series) : [];
 
   return (
-    <>
-      <div className="px-4 pt-3">
-        <div className="rounded-2xl bg-[#F2F2F7] p-3">
-          <p className="text-xs" style={{ color: SECONDARY_TEXT_COLOR }}>
-            {activePoint ? formatFullDayLabel(activePoint.date) : "Sin datos"}
-          </p>
-          {activePoint && (
-            <p className="text-lg font-bold" style={{ color: PRIMARY_TEXT_COLOR }}>
-              {formatValue(activePoint.value)} {unit}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 px-4 pb-8 pt-4">
-        <div
-          ref={plotRef}
-          data-testid="scrub-plot"
-          className="relative h-full touch-none"
-          onPointerDown={(e) => onPointerDown({ clientX: e.clientX })}
-          onPointerMove={(e) => onPointerMove({ clientX: e.clientX })}
-          onPointerUp={onPointerUp}
+    <div className="flex-1 px-4 pb-6 pt-4">
+      <div
+        ref={plotRef}
+        data-testid="scrub-plot"
+        className="relative h-full touch-none"
+        onPointerDown={(e) => onPointerDown({ clientX: e.clientX })}
+        onPointerMove={(e) => onPointerMove({ clientX: e.clientX })}
+        onPointerUp={onPointerUp}
+      >
+        <svg
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+          preserveAspectRatio="none"
+          className="h-full w-full"
+          role="img"
+          aria-label={title}
         >
-          <svg
-            viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-            preserveAspectRatio="none"
-            className="h-full w-full"
-            role="img"
-            aria-label={title}
-          >
-            {renderState === "line" && (
-              <polyline
-                data-testid="scrub-line"
-                points={series
-                  .map(
-                    (p) => `${p.xFraction * VIEW_WIDTH},${VIEW_HEIGHT - p.yFraction * VIEW_HEIGHT}`
-                  )
-                  .join(" ")}
-                fill="none"
-                stroke={ACCENT_COLOR}
-                strokeWidth={2}
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-
-            {renderState === "single" &&
-              series.map((p) => (
-                <circle
-                  key={p.date}
-                  data-testid="scrub-dot"
-                  cx={p.xFraction * VIEW_WIDTH}
-                  cy={VIEW_HEIGHT - p.yFraction * VIEW_HEIGHT}
-                  r={DOT_RADIUS}
-                  fill={ACCENT_COLOR}
-                />
-              ))}
-
-            {renderState === "line" && activePoint && (
-              <line
-                data-testid="scrub-indicator"
-                x1={activePoint.xFraction * VIEW_WIDTH}
-                y1={0}
-                x2={activePoint.xFraction * VIEW_WIDTH}
-                y2={VIEW_HEIGHT}
-                stroke={SECONDARY_TEXT_COLOR}
-                strokeWidth={1}
-                strokeDasharray="4 3"
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-
-            <line
-              x1={0}
-              y1={VIEW_HEIGHT}
-              x2={VIEW_WIDTH}
-              y2={VIEW_HEIGHT}
-              stroke={TRACK_COLOR}
-              strokeWidth={1}
+          {renderState === "line" && (
+            <polyline
+              data-testid="scrub-line"
+              points={series
+                .map(
+                  (p) => `${p.xFraction * VIEW_WIDTH},${VIEW_HEIGHT - p.yFraction * VIEW_HEIGHT}`
+                )
+                .join(" ")}
+              fill="none"
+              stroke={ACCENT_COLOR}
+              strokeWidth={2}
               vectorEffect="non-scaling-stroke"
             />
-          </svg>
-        </div>
+          )}
+
+          {renderState === "single" &&
+            series.map((p) => (
+              <circle
+                key={p.date}
+                data-testid="scrub-dot"
+                cx={p.xFraction * VIEW_WIDTH}
+                cy={VIEW_HEIGHT - p.yFraction * VIEW_HEIGHT}
+                r={DOT_RADIUS}
+                fill={ACCENT_COLOR}
+              />
+            ))}
+
+          {renderState === "line" && activePoint && (
+            <line
+              data-testid="scrub-indicator"
+              x1={activePoint.xFraction * VIEW_WIDTH}
+              y1={0}
+              x2={activePoint.xFraction * VIEW_WIDTH}
+              y2={VIEW_HEIGHT}
+              stroke={SECONDARY_TEXT_COLOR}
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+
+          <line
+            x1={0}
+            y1={VIEW_HEIGHT}
+            x2={VIEW_WIDTH}
+            y2={VIEW_HEIGHT}
+            stroke={TRACK_COLOR}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+
+        {/*
+         * Inline tooltip (AMENDMENT — Inline on-chart tooltip): anchored to
+         * the active point's REAL xFraction/yFraction — the same geometry
+         * driving the dashed indicator above — instead of a fixed DOM slot.
+         * Rendered as an absolutely-positioned HTML child of this `relative`
+         * plot container (not a `<foreignObject>`) so existing Tailwind
+         * text/padding styling keeps working. Edge-clamped via
+         * `resolveEdgeAlign` so it never clips off the left/right bounds.
+         */}
+        {activePoint && (
+          <div
+            data-testid="scrub-tooltip"
+            className="absolute rounded-2xl bg-[#F2F2F7] p-3"
+            style={{
+              left: `${activePoint.xFraction * 100}%`,
+              top: 8,
+              transform: alignTransform(resolveEdgeAlign(activePoint.xFraction)),
+            }}
+          >
+            <p className="text-xs whitespace-nowrap" style={{ color: SECONDARY_TEXT_COLOR }}>
+              {formatFullDayLabel(activePoint.date)}
+            </p>
+            <p
+              className="text-lg font-bold whitespace-nowrap"
+              style={{ color: PRIMARY_TEXT_COLOR }}
+            >
+              {formatValue(activePoint.value)} {unit}
+            </p>
+          </div>
+        )}
       </div>
-    </>
+
+      {/*
+       * X-axis date tick labels (AMENDMENT — X-axis date tick labels):
+       * rendered as HTML spans, NOT SVG <text> — the SVG above uses
+       * `preserveAspectRatio="none"`, whose non-uniform stretch would
+       * distort SVG text. A small fixed number of evenly-spaced ticks
+       * (`pickAxisTicks`), never one per point. Guarded on renderState
+       * === "line" only — no tick row for the empty/single states.
+       */}
+      {axisTicks.length > 0 && (
+        <div className="relative mt-2 h-4">
+          {axisTicks.map((index) => {
+            const point = series[index];
+            const align = resolveEdgeAlign(point.xFraction);
+            return (
+              <span
+                key={point.date}
+                data-testid="scrub-axis-tick"
+                className="absolute top-0 text-[10px] whitespace-nowrap"
+                style={{
+                  left: `${point.xFraction * 100}%`,
+                  transform: alignTransform(align),
+                  textAlign: align === "start" ? "left" : align === "end" ? "right" : "center",
+                  color: SECONDARY_TEXT_COLOR,
+                }}
+              >
+                {formatAxisDateLabel(point.date)}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

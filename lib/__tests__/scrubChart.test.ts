@@ -1,5 +1,5 @@
-import type { ScrubPoint } from "@/lib/scrubChart";
-import { buildScrubSeries, nearestIndex } from "@/lib/scrubChart";
+import type { ScrubPoint, ScrubSeriesPoint } from "@/lib/scrubChart";
+import { buildScrubSeries, nearestIndex, pickAxisTicks } from "@/lib/scrubChart";
 
 describe("buildScrubSeries", () => {
   it("returns one series point per logged point for a 90-day (3-month) window — never carry-forward buckets", () => {
@@ -102,5 +102,61 @@ describe("nearestIndex", () => {
 
   it("clamps to the first point when dragging past the left edge", () => {
     expect(nearestIndex(series, -5)).toBe(0);
+  });
+});
+
+describe("pickAxisTicks", () => {
+  function makeSeries(count: number): ScrubSeriesPoint[] {
+    return Array.from({ length: count }, (_, i) => ({
+      date: `day-${i}`,
+      value: i,
+      xFraction: count === 1 ? 0.5 : i / (count - 1),
+      yFraction: 0,
+    }));
+  }
+
+  it("returns an empty array for an empty series", () => {
+    expect(pickAxisTicks([], 4)).toEqual([]);
+  });
+
+  it("returns a single tick (index 0) for a single-point series", () => {
+    expect(pickAxisTicks(makeSeries(1), 4)).toEqual([0]);
+  });
+
+  it("returns [0, 1] for a 2-point series", () => {
+    expect(pickAxisTicks(makeSeries(2), 4)).toEqual([0, 1]);
+  });
+
+  it("returns maxTicks evenly-spaced indices for a many-point series, always including first and last", () => {
+    const series = makeSeries(90); // mirrors buildScrubSeries' 3-month fixture shape
+
+    const ticks = pickAxisTicks(series, 4);
+
+    expect(ticks).toHaveLength(4);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[ticks.length - 1]).toBe(89);
+    // Roughly evenly spaced, not clustered.
+    const gaps = ticks.slice(1).map((t, i) => t - ticks[i]);
+    for (const gap of gaps) {
+      expect(gap).toBeGreaterThan(20);
+    }
+  });
+
+  it("never returns duplicate indices", () => {
+    const ticks = pickAxisTicks(makeSeries(90), 4);
+    expect(new Set(ticks).size).toBe(ticks.length);
+  });
+
+  it("never returns one index per point for a large series", () => {
+    const series = makeSeries(90);
+    const ticks = pickAxisTicks(series, 4);
+    expect(ticks.length).toBeLessThan(series.length);
+  });
+
+  it("respects a custom maxTicks", () => {
+    const ticks = pickAxisTicks(makeSeries(90), 3);
+    expect(ticks).toHaveLength(3);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[2]).toBe(89);
   });
 });

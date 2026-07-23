@@ -91,3 +91,23 @@ export function nearestIndex(series: ScrubSeriesPoint[], xFraction: number): num
 
   return bestIndex;
 }
+
+/**
+ * Pick up to `maxTicks` evenly-spaced series INDICES to label on the X axis
+ * (always includes first & last when length >= 2). Returns `[]` for an
+ * empty series, `[0]` for a single point. Never one-per-point — with up to
+ * 90 points (3-month range) that would be illegible (spec: "X-axis date
+ * tick labels").
+ */
+export function pickAxisTicks(series: ScrubSeriesPoint[], maxTicks = 4): number[] {
+  const n = series.length;
+  if (n === 0) return [];
+  if (n === 1) return [0];
+  if (n <= maxTicks) return series.map((_, i) => i);
+
+  const ticks: number[] = [];
+  for (let i = 0; i < maxTicks; i++) {
+    ticks.push(Math.round((i * (n - 1)) / (maxTicks - 1)));
+  }
+  return Array.from(new Set(ticks));
+}
