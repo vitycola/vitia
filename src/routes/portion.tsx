@@ -200,7 +200,9 @@ export function PortionRoute() {
                 }
               }}
             />
-            {(food.source === "custom" || food.source === "ai") && (
+            {(food.source === "custom" ||
+              food.source === "ai_photo" ||
+              food.source === "ai_list") && (
               <div className="relative">
                 <button
                   type="button"
@@ -238,7 +240,14 @@ export function PortionRoute() {
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold">{food.name}</h1>
             <p className="truncate text-sm text-white/80">
-              {food.brand ?? (food.source === "generic" ? "Genérico" : null)}
+              {food.brand ??
+                (food.source === "generic"
+                  ? "Genérico"
+                  : food.source === "ai_photo"
+                    ? "Creado con IA · Foto"
+                    : food.source === "ai_list"
+                      ? "Creado con IA · Lista"
+                      : null)}
             </p>
           </div>
         </div>

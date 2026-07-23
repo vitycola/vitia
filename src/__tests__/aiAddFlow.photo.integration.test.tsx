@@ -115,7 +115,7 @@ describe("Photo happy path integration", () => {
     // A real foods row is created (source: ai), and addEntry references its id
     expect(mockCreateComposite).toHaveBeenCalledTimes(1);
     const [createdFood] = mockCreateComposite.mock.calls[0];
-    expect(createdFood.source).toBe("ai");
+    expect(createdFood.source).toBe("ai_photo");
 
     expect(mockAddEntry).toHaveBeenCalledTimes(1);
     const entryArg = mockAddEntry.mock.calls[0][0];

@@ -1777,9 +1777,9 @@ describe.each([
 });
 
 // ---------------------------------------------------------------------------
-// AI-sourced foods (source: "ai") — dual-backend parity
-// (spec: ai-food-persistence — Schema accepts ai source on both backends,
-// AI Foods Stay Invisible In Search And Created Tab)
+// AI-sourced foods (source: "ai_photo" | "ai_list") — dual-backend parity
+// (spec: ai-food-persistence — Schema accepts ai_photo/ai_list source on both
+// backends, AI Foods Stay Invisible In Search And Created Tab)
 // ---------------------------------------------------------------------------
 
 describe.each([
@@ -1793,22 +1793,23 @@ describe.each([
     await backend._ready;
   });
 
-  it("createComposite(food, []) succeeds with source: ai and round-trips via getById", async () => {
-    const composite = await backend.createComposite(
-      makeFood({ name: "Manzana AI", source: "ai" }),
-      []
-    );
+  it.each(["ai_photo", "ai_list"] as const)(
+    "createComposite(food, []) succeeds with source: %s and round-trips via getById",
+    async (source) => {
+      const composite = await backend.createComposite(makeFood({ name: "Manzana AI", source }), []);
 
-    expect(composite.source).toBe("ai");
+      expect(composite.source).toBe(source);
 
-    const fetched = await backend.getById(composite.id);
-    expect(fetched).not.toBeNull();
-    expect(fetched?.source).toBe("ai");
-    expect(fetched?.name).toBe("Manzana AI");
-  });
+      const fetched = await backend.getById(composite.id);
+      expect(fetched).not.toBeNull();
+      expect(fetched?.source).toBe(source);
+      expect(fetched?.name).toBe("Manzana AI");
+    }
+  );
 
   it("getCustomFoods() does not include ai-sourced rows", async () => {
-    await backend.createComposite(makeFood({ name: "Manzana AI 2", source: "ai" }), []);
+    await backend.createComposite(makeFood({ name: "Manzana AI 2", source: "ai_photo" }), []);
+    await backend.createComposite(makeFood({ name: "Manzana AI 3", source: "ai_list" }), []);
     const custom = await backend.insert(makeFood({ name: "Receta manual", source: "custom" }));
 
     const customFoods = await backend.getCustomFoods();

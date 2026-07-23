@@ -100,7 +100,7 @@ describe("Text happy path integration", () => {
 
     expect(mockCreateComposite).toHaveBeenCalledTimes(1);
     const [createdFood] = mockCreateComposite.mock.calls[0];
-    expect(createdFood.source).toBe("ai");
+    expect(createdFood.source).toBe("ai_list");
 
     expect(mockAddEntry).toHaveBeenCalledTimes(1);
     const entryArg = mockAddEntry.mock.calls[0][0];

@@ -64,6 +64,7 @@ function setupStore(overrides: Record<string, unknown> = {}) {
     selections: { 0: true, 1: false }, // high=checked, low=unchecked
     quantities: { 0: 150, 1: 50 },
     selectedMeal: null,
+    inputMode: "photo",
     reset: mockReset,
     toggleItem: mockToggleItem,
     setQuantity: mockSetQuantity,
@@ -154,17 +155,28 @@ describe("ConfirmationScreen — quantity and macro preview", () => {
 });
 
 describe("ConfirmationScreen — handleAdd persistence (real foods row per item)", () => {
-  it("creates a foods row with source: ai for each checked item", async () => {
-    setupStore({ selectedMeal: "lunch" });
+  it("creates a foods row with source: ai_photo when inputMode is photo", async () => {
+    setupStore({ selectedMeal: "lunch", inputMode: "photo" });
     render(<ConfirmationScreen />);
     fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
 
     await waitFor(() => expect(mockAddEntry).toHaveBeenCalled());
     expect(mockCreateComposite).toHaveBeenCalledTimes(1);
     const [food, ingredients] = mockCreateComposite.mock.calls[0];
-    expect(food.source).toBe("ai");
+    expect(food.source).toBe("ai_photo");
     expect(food.name).toBe(HIGH_ITEM.name);
     expect(ingredients).toEqual([]);
+  });
+
+  it("creates a foods row with source: ai_list when inputMode is text", async () => {
+    setupStore({ selectedMeal: "lunch", inputMode: "text" });
+    render(<ConfirmationScreen />);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalled());
+    expect(mockCreateComposite).toHaveBeenCalledTimes(1);
+    const [food] = mockCreateComposite.mock.calls[0];
+    expect(food.source).toBe("ai_list");
   });
 
   it("converts macros to per-100g using scaleAiMacros(item, 100) before creating the food row", async () => {
@@ -203,7 +215,7 @@ describe("ConfirmationScreen — handleAdd persistence (real foods row per item)
     mockCreateComposite.mockResolvedValueOnce({
       id: "real-id-123",
       name: HIGH_ITEM.name,
-      source: "ai",
+      source: "ai_photo",
     });
     setupStore({ selectedMeal: "lunch" });
     render(<ConfirmationScreen />);
@@ -218,7 +230,7 @@ describe("ConfirmationScreen — handleAdd persistence (real foods row per item)
   it("partial failure: one item's createComposite rejects, the other item still succeeds and addEntry/navigate still fire", async () => {
     mockCreateComposite
       .mockRejectedValueOnce(new Error("create failed"))
-      .mockResolvedValueOnce({ id: "real-id-2", name: LOW_ITEM.name, source: "ai" });
+      .mockResolvedValueOnce({ id: "real-id-2", name: LOW_ITEM.name, source: "ai_photo" });
     setupStore({
       selectedMeal: "lunch",
       selections: { 0: true, 1: true },
