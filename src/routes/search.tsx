@@ -58,7 +58,7 @@ export function SearchRoute() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      {/* Sticky header — sibling above scroll container */}
+      {/* Sticky header: search input + tab bar */}
       <div className="z-10 bg-white px-4 pb-0 pt-4 shadow-sm">
         <h1 className="mb-3 text-lg font-bold text-gray-900">Buscar alimento</h1>
 
