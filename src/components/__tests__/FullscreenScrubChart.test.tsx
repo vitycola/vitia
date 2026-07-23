@@ -15,7 +15,7 @@ const SINGLE_SERIES: ScrubSeriesPoint[] = [
 ];
 
 // 10 evenly-spaced points — enough that "one label per point" would be
-// obviously illegible, exercising pickAxisTicks' default maxTicks=4.
+// obviously illegible, exercising pickAxisTicks' default maxTicks=7.
 const MANY_SERIES: ScrubSeriesPoint[] = Array.from({ length: 10 }, (_, i) => ({
   date: `2026-01-${String(i + 1).padStart(2, "0")}`,
   value: 70 + i,
@@ -265,7 +265,31 @@ describe("FullscreenScrubChart", () => {
 
       const ticks = screen.getAllByTestId("scrub-axis-tick");
       expect(ticks.length).toBeLessThan(MANY_SERIES.length);
-      expect(ticks.length).toBe(4); // pickAxisTicks' default maxTicks
+      expect(ticks.length).toBe(7); // pickAxisTicks' default maxTicks
+    });
+
+    it("labels every point of a week-sized series (dense enough that no compaction is needed)", () => {
+      const weekSeries: ScrubSeriesPoint[] = Array.from({ length: 7 }, (_, i) => ({
+        date: `2026-06-${String(i + 1).padStart(2, "0")}`,
+        value: 80 - i,
+        xFraction: i / 6,
+        yFraction: i / 6,
+      }));
+
+      render(
+        <FullscreenScrubChart
+          title="Peso"
+          series={weekSeries}
+          renderState="line"
+          unit="kg"
+          formatValue={formatValue}
+          range="week"
+          onRangeChange={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getAllByTestId("scrub-axis-tick")).toHaveLength(7);
     });
 
     it("start-aligns the first (leftmost) tick and end-aligns the last (rightmost) tick", () => {
@@ -323,6 +347,24 @@ describe("FullscreenScrubChart", () => {
 
       expect(screen.queryAllByTestId("scrub-axis-tick")).toHaveLength(0);
     });
+  });
+
+  it("caps the plot's height instead of stretching to fill the full dialog (avoids exaggerating the visual slope)", () => {
+    render(
+      <FullscreenScrubChart
+        title="Peso"
+        series={SERIES}
+        renderState="line"
+        unit="kg"
+        formatValue={formatValue}
+        range="week"
+        onRangeChange={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    const plot = screen.getByTestId("scrub-plot");
+    expect(plot).not.toHaveClass("h-full");
   });
 
   describe("inline on-chart tooltip", () => {

@@ -48,7 +48,7 @@ describe("buildScrubSeries", () => {
     expect(series[2].xFraction).toBe(1);
   });
 
-  it("normalizes yFraction so the min value is 0 and the max value is 1", () => {
+  it("pads yFraction so the min/max values don't touch the very top/bottom (avoids exaggerating small real differences)", () => {
     const series = buildScrubSeries(
       [
         { date: "2026-01-01", value: 60 },
@@ -58,9 +58,21 @@ describe("buildScrubSeries", () => {
       { from: "2026-01-01", to: "2026-01-03" }
     );
 
-    expect(series[0].yFraction).toBe(0);
-    expect(series[1].yFraction).toBe(1);
-    expect(series[2].yFraction).toBe(0.5);
+    expect(series[0].yFraction).toBeCloseTo(0.15); // min -> padded floor, not 0
+    expect(series[1].yFraction).toBeCloseTo(0.85); // max -> padded ceiling, not 1
+    expect(series[2].yFraction).toBeCloseTo(0.5); // midpoint stays centered
+  });
+
+  it("keeps yFraction within [0.15, 0.85] even for values at the extremes of a larger series", () => {
+    const series = buildScrubSeries(
+      Array.from({ length: 10 }, (_, i) => ({ date: `2026-01-0${i + 1}`, value: i })),
+      { from: "2026-01-01", to: "2026-01-10" }
+    );
+
+    for (const point of series) {
+      expect(point.yFraction).toBeGreaterThanOrEqual(0.15);
+      expect(point.yFraction).toBeLessThanOrEqual(0.85);
+    }
   });
 });
 
@@ -127,6 +139,18 @@ describe("pickAxisTicks", () => {
     expect(pickAxisTicks(makeSeries(2), 4)).toEqual([0, 1]);
   });
 
+  it("by default, labels every point of a week-sized (7-point) series — no gaps in a dense-enough range", () => {
+    const ticks = pickAxisTicks(makeSeries(7));
+    expect(ticks).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it("by default, compacts a month-sized (30-point) series down to a small evenly-spaced set", () => {
+    const ticks = pickAxisTicks(makeSeries(30));
+    expect(ticks.length).toBeLessThan(10);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[ticks.length - 1]).toBe(29);
+  });
+
   it("returns maxTicks evenly-spaced indices for a many-point series, always including first and last", () => {
     const series = makeSeries(90); // mirrors buildScrubSeries' 3-month fixture shape
 
@@ -158,5 +182,28 @@ describe("pickAxisTicks", () => {
     expect(ticks).toHaveLength(3);
     expect(ticks[0]).toBe(0);
     expect(ticks[2]).toBe(89);
+  });
+
+  it("compacts clustered points even when the total count is small — geometry-based (xFraction), not index-based (regression: overlapping labels when points aren't evenly time-spaced)", () => {
+    // 1 old point far left (xFraction 0), 6 points bunched in the last 18%
+    // of the window (xFraction 0.82-1) — mirrors a real month view where
+    // most logged days are recent. Labeling every one of the 7 real points
+    // by INDEX alone would visually overlap on the right; ticks must be
+    // chosen by screen POSITION instead.
+    const clustered: ScrubSeriesPoint[] = [
+      { date: "day-old", value: 0, xFraction: 0, yFraction: 0 },
+      { date: "day-1", value: 1, xFraction: 0.82, yFraction: 0 },
+      { date: "day-2", value: 2, xFraction: 0.85, yFraction: 0 },
+      { date: "day-3", value: 3, xFraction: 0.88, yFraction: 0 },
+      { date: "day-4", value: 4, xFraction: 0.91, yFraction: 0 },
+      { date: "day-5", value: 5, xFraction: 0.94, yFraction: 0 },
+      { date: "day-6", value: 6, xFraction: 1, yFraction: 0 },
+    ];
+
+    const ticks = pickAxisTicks(clustered); // default maxTicks=7, n=7
+
+    expect(ticks.length).toBeLessThan(7);
+    expect(ticks).toContain(0); // leftmost point always represented
+    expect(ticks).toContain(6); // rightmost point always represented
   });
 });

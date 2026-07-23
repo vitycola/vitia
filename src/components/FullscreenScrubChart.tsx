@@ -161,11 +161,11 @@ function ScrubChartBody({ title, series, renderState, unit, formatValue }: Scrub
   const axisTicks = renderState === "line" ? pickAxisTicks(series) : [];
 
   return (
-    <div className="flex-1 px-4 pb-6 pt-4">
+    <div className="flex flex-1 flex-col justify-center px-4 pb-6">
       <div
         ref={plotRef}
         data-testid="scrub-plot"
-        className="relative h-full touch-none"
+        className="relative h-56 touch-none"
         onPointerDown={(e) => onPointerDown({ clientX: e.clientX })}
         onPointerMove={(e) => onPointerMove({ clientX: e.clientX })}
         onPointerUp={onPointerUp}

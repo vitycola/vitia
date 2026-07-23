@@ -26,6 +26,14 @@ export interface ScrubSeriesPoint {
   yFraction: number;
 }
 
+/**
+ * Vertical padding applied to yFraction so the min/max logged values never
+ * touch the very top/bottom of the plot (0.15 -> 0.85, not 0 -> 1). Without
+ * this, a small real change (e.g. 1kg) stretches to fill the whole chart
+ * height and visually reads as a dramatic swing.
+ */
+const Y_PADDING = 0.15;
+
 /** Inclusive day-count from `from` to `to` — local copy of the pattern already duplicated across each *Dashboard.ts's `windowSpanDays`. */
 function spanDays(from: string, to: string): number {
   let count = 0;
@@ -64,7 +72,7 @@ export function buildScrubSeries(
     date: point.date,
     value: point.value,
     xFraction: spanDays(window.from, point.date) / totalSpan,
-    yFraction: (point.value - minValue) / valueRange,
+    yFraction: Y_PADDING + ((point.value - minValue) / valueRange) * (1 - 2 * Y_PADDING),
   }));
 }
 
@@ -93,21 +101,26 @@ export function nearestIndex(series: ScrubSeriesPoint[], xFraction: number): num
 }
 
 /**
- * Pick up to `maxTicks` evenly-spaced series INDICES to label on the X axis
- * (always includes first & last when length >= 2). Returns `[]` for an
- * empty series, `[0]` for a single point. Never one-per-point — with up to
- * 90 points (3-month range) that would be illegible (spec: "X-axis date
- * tick labels").
+ * Pick up to `maxTicks` series indices to label on the X axis, chosen by
+ * real screen POSITION (xFraction), not by array index. Points are
+ * date-proportional and often unevenly spaced (e.g. a few old sparse points
+ * plus many recent daily ones) — picking evenly-spaced INDICES would
+ * cluster several ticks in the same dense region and overlap on screen.
+ * Snapping `maxTicks` evenly-spaced target fractions to their nearest real
+ * point (reusing `nearestIndex`) and deduping naturally thins out crowded
+ * regions instead. Returns `[]` for an empty series, `[0]` for a single
+ * point; always includes first & last for length >= 2 (target fractions 0
+ * and 1 resolve to the endpoints).
  */
-export function pickAxisTicks(series: ScrubSeriesPoint[], maxTicks = 4): number[] {
+export function pickAxisTicks(series: ScrubSeriesPoint[], maxTicks = 7): number[] {
   const n = series.length;
   if (n === 0) return [];
   if (n === 1) return [0];
-  if (n <= maxTicks) return series.map((_, i) => i);
 
   const ticks: number[] = [];
   for (let i = 0; i < maxTicks; i++) {
-    ticks.push(Math.round((i * (n - 1)) / (maxTicks - 1)));
+    const targetFraction = i / (maxTicks - 1);
+    ticks.push(nearestIndex(series, targetFraction));
   }
-  return Array.from(new Set(ticks));
+  return Array.from(new Set(ticks)).sort((a, b) => a - b);
 }
