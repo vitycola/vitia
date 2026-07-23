@@ -79,6 +79,7 @@ export function SearchRoute() {
         <SearchTabs active={activeTab} onChange={setActiveTab} />
       </div>
 
+      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto pb-20">
         {activeTab === "database" && (
           <FoodDatabaseTab query={query} mealType={mealType} onSelect={handleSelect} />

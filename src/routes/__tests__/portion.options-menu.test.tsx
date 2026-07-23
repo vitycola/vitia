@@ -116,4 +116,26 @@ describe("PortionRoute — options menu (three dots)", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith("/create-food/manual/food-1");
   });
+
+  it.each(["ai_photo", "ai_list"] as const)(
+    "shows Editar option for a meal entry whose food has source: %s",
+    async (source) => {
+      mockGetById.mockResolvedValue(makeFood({ source }));
+      mockGetIngredients.mockResolvedValue([]);
+
+      render(<PortionRoute />);
+
+      await waitFor(() => expect(screen.getByLabelText("Más opciones")).toBeInTheDocument());
+    }
+  );
+
+  it("does not introduce editability for source: openfoodfacts or generic", async () => {
+    mockGetById.mockResolvedValue(makeFood({ source: "generic" }));
+    mockGetIngredients.mockResolvedValue([]);
+
+    render(<PortionRoute />);
+
+    await waitFor(() => expect(screen.getByText("Tortilla con queso")).toBeInTheDocument());
+    expect(screen.queryByLabelText("Más opciones")).not.toBeInTheDocument();
+  });
 });

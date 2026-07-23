@@ -1777,6 +1777,48 @@ describe.each([
 });
 
 // ---------------------------------------------------------------------------
+// AI-sourced foods (source: "ai_photo" | "ai_list") — dual-backend parity
+// (spec: ai-food-persistence — Schema accepts ai_photo/ai_list source on both
+// backends, AI Foods Stay Invisible In Search And Created Tab)
+// ---------------------------------------------------------------------------
+
+describe.each([
+  ["SQLite-proxy (better-sqlite3 in-memory)", makeSqliteProxyBackend],
+  ["Dexie/IndexedDB (fake-indexeddb)", makeDexieBackend],
+] as const)("AI-sourced foods — %s", (_backendName, makeBackend) => {
+  let backend: RepositoryBackend & { _ready: Promise<void> };
+
+  beforeEach(async () => {
+    backend = makeBackend();
+    await backend._ready;
+  });
+
+  it.each(["ai_photo", "ai_list"] as const)(
+    "createComposite(food, []) succeeds with source: %s and round-trips via getById",
+    async (source) => {
+      const composite = await backend.createComposite(makeFood({ name: "Manzana AI", source }), []);
+
+      expect(composite.source).toBe(source);
+
+      const fetched = await backend.getById(composite.id);
+      expect(fetched).not.toBeNull();
+      expect(fetched?.source).toBe(source);
+      expect(fetched?.name).toBe("Manzana AI");
+    }
+  );
+
+  it("getCustomFoods() does not include ai-sourced rows", async () => {
+    await backend.createComposite(makeFood({ name: "Manzana AI 2", source: "ai_photo" }), []);
+    await backend.createComposite(makeFood({ name: "Manzana AI 3", source: "ai_list" }), []);
+    const custom = await backend.insert(makeFood({ name: "Receta manual", source: "custom" }));
+
+    const customFoods = await backend.getCustomFoods();
+    expect(customFoods.map((f) => f.id)).toContain(custom.id);
+    expect(customFoods.every((f) => f.source === "custom")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Favorites and Search Non-Regression — composite/custom foods (spec:
 // created-foods-list "Favorites and Search Non-Regression")
 // ---------------------------------------------------------------------------

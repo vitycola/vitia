@@ -42,9 +42,14 @@ export const foods = sqliteTable(
     carbsPer100g: real("carbs_per_100g").notNull().default(0),
     fatPer100g: real("fat_per_100g").notNull().default(0),
     servingSizeG: real("serving_size_g"),
-    // "generic" added for generic_foods catalog (Supabase). TS-level enum only —
-    // SQLite has no enum type, so no migration file is needed.
-    source: text("source", { enum: ["openfoodfacts", "custom", "generic"] }).notNull(),
+    // "generic" added for generic_foods catalog (Supabase); "ai_photo" and
+    // "ai_list" added for foods synthesized from AI-detected items
+    // (ai-food-persistence), split by input mode (photo analysis vs.
+    // text/list analysis) so the origin can be shown to the user later.
+    // TS-level enum only — SQLite has no enum type, so no migration file is needed.
+    source: text("source", {
+      enum: ["openfoodfacts", "custom", "generic", "ai_photo", "ai_list"],
+    }).notNull(),
     offProductCode: text("off_product_code"),
     nameNormalized: text("name_normalized").notNull().default(""),
     imageUrl: text("image_url"),

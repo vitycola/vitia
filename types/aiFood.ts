@@ -3,8 +3,6 @@
 export type AiConfidence = "high" | "medium" | "low";
 
 export interface AIFoodItem {
-  /** Real food catalog ID returned by the vitia-ai backend (matched generic or OFF item). */
-  foodId: string;
   name: string;
   kcal: number;
   protein: number;

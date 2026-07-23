@@ -20,7 +20,6 @@ const mockAnalyzePhoto = aiService.analyzePhoto as jest.MockedFunction<
 const mockParseText = aiService.parseText as jest.MockedFunction<typeof aiService.parseText>;
 
 const HIGH_ITEM: AIFoodItem = {
-  foodId: "food-1",
   name: "Manzana",
   kcal: 80,
   protein: 0.4,
@@ -32,7 +31,6 @@ const HIGH_ITEM: AIFoodItem = {
 };
 
 const MEDIUM_ITEM: AIFoodItem = {
-  foodId: "food-2",
   name: "Arroz",
   kcal: 200,
   protein: 4,
@@ -44,7 +42,6 @@ const MEDIUM_ITEM: AIFoodItem = {
 };
 
 const LOW_ITEM: AIFoodItem = {
-  foodId: "food-3",
   name: "Desconocido",
   kcal: 100,
   protein: 1,
