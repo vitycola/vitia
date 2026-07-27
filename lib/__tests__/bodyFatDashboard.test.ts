@@ -1,10 +1,4 @@
-import {
-  buildLine,
-  buildOverlayRows,
-  deltaFromFirst,
-  latestValue,
-  toPoints,
-} from "../bodyFatDashboard";
+import { buildLine, deltaFromFirst, latestValue, toPoints } from "../bodyFatDashboard";
 
 type ProgressEntryRow = {
   date: string;
@@ -144,44 +138,6 @@ describe("buildLine — 3month carry-forward bucketing", () => {
     const line = buildLine("3month", points, "2026-04-08", "2026-07-06");
     expect(line.renderState).toBe("line");
     expect(line.points.every((p) => p.value !== null)).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildOverlayRows
-// ---------------------------------------------------------------------------
-
-describe("buildOverlayRows", () => {
-  it("lists only logged days, sparse — never a placeholder row for unlogged days", () => {
-    const rows: ProgressEntryRow[] = [
-      row("2026-07-01", { bodyFatPct: 22.4 }),
-      row("2026-07-02"),
-      row("2026-07-03", { bodyFatPct: 21.1 }),
-    ];
-
-    const overlayRows = buildOverlayRows(rows);
-
-    expect(overlayRows).toEqual([
-      { date: "2026-07-03", value: 21.1 },
-      { date: "2026-07-01", value: 22.4 },
-    ]);
-  });
-
-  it("returns rows in descending date order — most recent first", () => {
-    const rows: ProgressEntryRow[] = [
-      row("2026-07-01", { bodyFatPct: 22.4 }),
-      row("2026-07-05", { bodyFatPct: 20.8 }),
-      row("2026-07-03", { bodyFatPct: 21.1 }),
-    ];
-
-    const overlayRows = buildOverlayRows(rows);
-
-    expect(overlayRows.map((r) => r.date)).toEqual(["2026-07-05", "2026-07-03", "2026-07-01"]);
-  });
-
-  it("returns an empty array when no day has bodyFatPct logged", () => {
-    const rows: ProgressEntryRow[] = [row("2026-07-01"), row("2026-07-02")];
-    expect(buildOverlayRows(rows)).toEqual([]);
   });
 });
 

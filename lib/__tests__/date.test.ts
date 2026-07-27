@@ -1,6 +1,7 @@
 import {
   addDays,
   enumerateDays,
+  formatAxisDateLabel,
   formatDayLabel,
   formatFullDayLabel,
   formatMonthLabel,
@@ -113,6 +114,28 @@ describe("formatFullDayLabel", () => {
 
   it.each(monthCases)("%s → %s (correct Spanish abbreviated month)", (input, expected) => {
     expect(formatFullDayLabel(input)).toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatAxisDateLabel
+// ---------------------------------------------------------------------------
+
+describe("formatAxisDateLabel", () => {
+  it("returns a real D mmm date for today, NOT the special 'Hoy' string (unlike formatDayLabel/formatFullDayLabel)", () => {
+    const today = todayISO();
+    const label = formatAxisDateLabel(today);
+    expect(label).not.toBe("Hoy");
+    // Same "D mmm" shape as formatFullDayLabel would produce for a non-today date.
+    expect(label).toMatch(/^\d{1,2} [a-z]{3}$/);
+  });
+
+  it("returns D mmm for a past date, matching formatFullDayLabel's shape", () => {
+    expect(formatAxisDateLabel("2024-07-02")).toBe("2 jul");
+  });
+
+  it("returns D mmm for a future date", () => {
+    expect(formatAxisDateLabel("2030-01-15")).toBe("15 ene");
   });
 });
 

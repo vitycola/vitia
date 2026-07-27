@@ -2,8 +2,8 @@ import { useBodyFatDashboard } from "@/hooks/useBodyFatDashboard";
 import { BODY_FAT_UNIT } from "@/lib/bodyFatDashboard";
 import type { DashboardRange } from "@/lib/bodyFatDashboard";
 import { useState } from "react";
-import { BodyFatHistoryOverlay } from "./BodyFatHistoryOverlay";
 import { BodyFatLineChart } from "./BodyFatLineChart";
+import { BodyFatScrubOverlay } from "./BodyFatScrubOverlay";
 
 interface BodyFatCardProps {
   range: DashboardRange;
@@ -17,13 +17,14 @@ interface BodyFatCardProps {
  * label (unlike MeasurementsCard, which moved its label into the body to
  * host a chevron metric-picker — % Grasa has a single series and no
  * picker). Consumes useBodyFatDashboard(range). The whole card body is the
- * tap target for the historical overlay.
+ * tap target for the fullscreen scrub chart (`BodyFatScrubOverlay`),
+ * initialized to this card's active range (issue #63 — replaces the
+ * previous list overlay).
  */
 export function BodyFatCard({ range }: BodyFatCardProps) {
   const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const { linePoints, renderState, overlayRows, latest, delta, window } =
-    useBodyFatDashboard(range);
+  const { linePoints, renderState, latest, delta, window } = useBodyFatDashboard(range);
 
   const latestText =
     latest === null ? "—" : latest.toLocaleString("es-AR", { maximumFractionDigits: 1 });
@@ -60,7 +61,7 @@ export function BodyFatCard({ range }: BodyFatCardProps) {
       </div>
 
       {overlayOpen && (
-        <BodyFatHistoryOverlay rows={overlayRows} onClose={() => setOverlayOpen(false)} />
+        <BodyFatScrubOverlay initialRange={range} onClose={() => setOverlayOpen(false)} />
       )}
     </>
   );

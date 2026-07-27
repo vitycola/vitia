@@ -2,8 +2,8 @@ import { useWeightDashboard } from "@/hooks/useWeightDashboard";
 import { WEIGHT_UNIT } from "@/lib/weightDashboard";
 import type { DashboardRange } from "@/lib/weightDashboard";
 import { useState } from "react";
-import { WeightHistoryOverlay } from "./WeightHistoryOverlay";
 import { WeightLineChart } from "./WeightLineChart";
+import { WeightScrubOverlay } from "./WeightScrubOverlay";
 
 interface WeightCardProps {
   range: DashboardRange;
@@ -17,12 +17,13 @@ interface WeightCardProps {
  * label (unlike MeasurementsCard, which moved its label into the body to
  * host a chevron metric-picker — Peso has a single series and no picker).
  * Consumes useWeightDashboard(range). The whole card body is the tap target
- * for the historical overlay.
+ * for the fullscreen scrub chart (`WeightScrubOverlay`), initialized to this
+ * card's active range (issue #63 — replaces the previous list overlay).
  */
 export function WeightCard({ range }: WeightCardProps) {
   const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const { linePoints, renderState, overlayRows, latest, delta, window } = useWeightDashboard(range);
+  const { linePoints, renderState, latest, delta, window } = useWeightDashboard(range);
 
   const latestText =
     latest === null ? "—" : latest.toLocaleString("es-AR", { maximumFractionDigits: 1 });
@@ -59,7 +60,7 @@ export function WeightCard({ range }: WeightCardProps) {
       </div>
 
       {overlayOpen && (
-        <WeightHistoryOverlay rows={overlayRows} onClose={() => setOverlayOpen(false)} />
+        <WeightScrubOverlay initialRange={range} onClose={() => setOverlayOpen(false)} />
       )}
     </>
   );

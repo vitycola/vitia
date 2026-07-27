@@ -80,6 +80,36 @@ export function weekDays(weekStart: string): string[] {
   return days;
 }
 
+const MONTHS_ES_SHORT = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+];
+
+/**
+ * Format a YYYY-MM-DD date string as a lowercase "D mmm" label (e.g. "2
+ * jul") — no leading zero, no year. Always a real calendar date, unlike
+ * `formatFullDayLabel`/`formatDayLabel` which special-case today as "Hoy".
+ * Used where a "Hoy" label would be ambiguous/misleading, e.g. chart axis
+ * tick labels (a tick reading "Hoy" instead of an actual date).
+ */
+export function formatAxisDateLabel(isoDate: string): string {
+  const [, monthStr, dayStr] = isoDate.split("-");
+  const monthIndex = Number.parseInt(monthStr, 10) - 1;
+  const day = Number.parseInt(dayStr, 10);
+
+  return `${day} ${MONTHS_ES_SHORT[monthIndex]}`;
+}
+
 /**
  * Format a YYYY-MM-DD date string for the week strip header label.
  * Returns "Hoy" when the date equals today, otherwise "D mmm" in
@@ -90,26 +120,7 @@ export function formatFullDayLabel(isoDate: string): string {
     return "Hoy";
   }
 
-  const MONTHS_ES_SHORT = [
-    "ene",
-    "feb",
-    "mar",
-    "abr",
-    "may",
-    "jun",
-    "jul",
-    "ago",
-    "sep",
-    "oct",
-    "nov",
-    "dic",
-  ];
-
-  const [, monthStr, dayStr] = isoDate.split("-");
-  const monthIndex = Number.parseInt(monthStr, 10) - 1;
-  const day = Number.parseInt(dayStr, 10);
-
-  return `${day} ${MONTHS_ES_SHORT[monthIndex]}`;
+  return formatAxisDateLabel(isoDate);
 }
 
 /**

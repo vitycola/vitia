@@ -7,20 +7,13 @@ import type {
   MetricKey,
   RenderState,
 } from "@/lib/measurementsDashboard";
-import {
-  buildLine,
-  buildOverlayRows,
-  deltaFromFirst,
-  latestValue,
-  toPoints,
-} from "@/lib/measurementsDashboard";
+import { buildLine, deltaFromFirst, latestValue, toPoints } from "@/lib/measurementsDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface MeasurementsDashboardVM {
   points: { date: string; value: number }[];
   linePoints: LinePoint[];
   renderState: RenderState;
-  overlayRows: { date: string; value: number }[];
   latest: number | null;
   delta: number | null;
   window: { from: string; to: string };
@@ -31,9 +24,12 @@ export interface MeasurementsDashboardVM {
  * Fetch+shape hook for the Progress > Medidas dashboard. Mirrors
  * useCalorieDashboard's fetch pattern: resolves the window for the active
  * range, calls progressRepo.getRange, and derives sparse points + line data
- * + overlay rows via the pure functions in lib/measurementsDashboard.ts.
- * Switching the active metric refilters the same fetched entries — no new
- * getRange call is required.
+ * via the pure functions in lib/measurementsDashboard.ts. Switching the
+ * active metric refilters the same fetched entries — no new getRange call
+ * is required. `points` also feeds `MeasurementsScrubOverlay`'s
+ * `buildScrubSeries` for the fullscreen scrub chart (issue #63) — there is
+ * no separate overlay-row shaping here anymore (the previous bottom-sheet
+ * list overlay and its `buildOverlayRows` were removed).
  */
 export function useMeasurementsDashboard(
   range: DashboardRange,
@@ -65,7 +61,6 @@ export function useMeasurementsDashboard(
   return useMemo(() => {
     const points = toPoints(rows, metric);
     const { points: linePoints, renderState } = buildLine(range, points, window.from, window.to);
-    const overlayRows = buildOverlayRows(rows, metric);
     const latest = latestValue(points);
     const delta = deltaFromFirst(points);
 
@@ -73,7 +68,6 @@ export function useMeasurementsDashboard(
       points,
       linePoints,
       renderState,
-      overlayRows,
       latest,
       delta,
       window,

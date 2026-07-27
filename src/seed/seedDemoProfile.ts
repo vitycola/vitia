@@ -418,9 +418,66 @@ interface DemoProgressFixture {
   hue: number;
 }
 
-// One entry per logged day (D-5, D-4, D-2, D-1, D0), weight trending
-// 82.0 -> 81.2 (non-increasing), one distinct hue per day for its photo.
+// One entry per logged day, spanning roughly the last month and a half
+// (D-45 .. D0) so week/month/3-month range filters each have distinct real
+// history to render — weight trending 85.0 -> 81.2 (non-increasing), one
+// distinct hue per day for its photo.
 const PROGRESS_PLANS: Array<Omit<DemoProgressFixture, "date"> & { dayOffset: number }> = [
+  {
+    dayOffset: 45,
+    weightKg: 85.0,
+    neckCm: 40,
+    chestCm: 105,
+    armCm: 35,
+    waistCm: 96,
+    hipCm: 103,
+    thighCm: 58,
+    hue: 340,
+  },
+  {
+    dayOffset: 38,
+    weightKg: 84.4,
+    neckCm: 39.8,
+    chestCm: 104,
+    armCm: 34.8,
+    waistCm: 95,
+    hipCm: 102,
+    thighCm: 57.6,
+    hue: 20,
+  },
+  {
+    dayOffset: 31,
+    weightKg: 83.8,
+    neckCm: 39.6,
+    chestCm: 103.5,
+    armCm: 34.6,
+    waistCm: 94,
+    hipCm: 101.5,
+    thighCm: 57.2,
+    hue: 60,
+  },
+  {
+    dayOffset: 24,
+    weightKg: 83.2,
+    neckCm: 39.4,
+    chestCm: 103,
+    armCm: 34.4,
+    waistCm: 93.5,
+    hipCm: 101,
+    thighCm: 56.8,
+    hue: 190,
+  },
+  {
+    dayOffset: 17,
+    weightKg: 82.6,
+    neckCm: 39.2,
+    chestCm: 102.5,
+    armCm: 34.2,
+    waistCm: 93,
+    hipCm: 100.5,
+    thighCm: 56.4,
+    hue: 250,
+  },
   {
     dayOffset: 5,
     weightKg: 82.0,
@@ -560,13 +617,18 @@ function isResetRequested(): boolean {
  * per-date bulk delete outside of deleteByDateAndMeal (meal-type scoped).
  */
 async function clearPreviouslySeededRows(): Promise<void> {
-  const allOffsets = [5, 4, 3, 2, 1, 0];
-  for (const offset of allOffsets) {
+  const mealOffsets = [5, 4, 3, 2, 1, 0];
+  for (const offset of mealOffsets) {
     const date = daysAgo(offset);
-    await progressRepo.deleteByDate(date);
     for (const mealType of ["breakfast", "lunch", "dinner", "snack"] as const) {
       await mealEntriesRepo.deleteByDateAndMeal(date, mealType);
     }
+  }
+
+  // Progress spans a wider window than meals (PROGRESS_PLANS, up to D-45) —
+  // cleared separately so a re-seed doesn't leave stale older rows behind.
+  for (const plan of PROGRESS_PLANS) {
+    await progressRepo.deleteByDate(daysAgo(plan.dayOffset));
   }
 }
 

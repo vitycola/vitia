@@ -3,8 +3,8 @@ import type { DashboardRange, MetricKey } from "@/lib/measurementsDashboard";
 import { METRICS } from "@/lib/measurementsDashboard";
 import { Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { MeasurementsHistoryOverlay } from "./MeasurementsHistoryOverlay";
 import { MeasurementsLineChart } from "./MeasurementsLineChart";
+import { MeasurementsScrubOverlay } from "./MeasurementsScrubOverlay";
 
 interface MeasurementsCardProps {
   range: DashboardRange;
@@ -19,17 +19,18 @@ const DEFAULT_METRIC: MetricKey = "waistCm";
  * so this component owns only the header (label + chevron metric-picker),
  * the line chart, and a stats caption, NOT the outer card frame.
  * Consumes useMeasurementsDashboard(range, metric). The whole card body
- * (everything except the chevron) is the tap target for the historical
- * overlay — there is no room for a bottom link on a 1/3-width tile. Metric
- * selection is local component state, not store state (spec: "Metric
- * Picker Default and Field Mapping").
+ * (everything except the chevron) is the tap target for the fullscreen
+ * scrub chart (`MeasurementsScrubOverlay`), which is opened for the
+ * currently-selected metric only — no field picker inside it (issue #63 —
+ * replaces the previous list overlay). Metric selection is local component
+ * state, not store state (spec: "Metric Picker Default and Field Mapping").
  */
 export function MeasurementsCard({ range }: MeasurementsCardProps) {
   const [metric, setMetric] = useState<MetricKey>(DEFAULT_METRIC);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
 
-  const { linePoints, renderState, overlayRows, latest, delta, window } = useMeasurementsDashboard(
+  const { linePoints, renderState, latest, delta, window } = useMeasurementsDashboard(
     range,
     metric
   );
@@ -114,7 +115,11 @@ export function MeasurementsCard({ range }: MeasurementsCardProps) {
       </div>
 
       {overlayOpen && (
-        <MeasurementsHistoryOverlay rows={overlayRows} onClose={() => setOverlayOpen(false)} />
+        <MeasurementsScrubOverlay
+          initialRange={range}
+          metric={metric}
+          onClose={() => setOverlayOpen(false)}
+        />
       )}
     </>
   );

@@ -142,20 +142,6 @@ function relativeBucketLabelFor(index: number): string {
   return LABELS[index];
 }
 
-/**
- * Build the historical-overlay row list: sparse (logged days only, never a
- * zero/placeholder row for unlogged days — deliberately different from the
- * Calorías overlay). Rows are DESCENDING date order (most recent first).
- */
-export function buildOverlayRows(
-  rows: MeasurementEntryRow[],
-  metric: MetricKey
-): { date: string; value: number }[] {
-  return toPoints(rows, metric)
-    .map((point) => ({ date: point.date, value: point.value }))
-    .reverse();
-}
-
 /** The most recent logged value, or null when there are no points. */
 export function latestValue(points: MeasurementPoint[]): number | null {
   if (points.length === 0) return null;

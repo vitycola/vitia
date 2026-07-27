@@ -22,8 +22,9 @@ function StatCell({ label, value }: { label: string; value: string | null }) {
 }
 
 /**
- * Full-screen photo detail dialog. Mirrors WeightHistoryOverlay's chrome
- * conventions (role="dialog", fixed inset-0 z-50, dark overlay) but as a
+ * Full-screen photo detail dialog. Mirrors the app's other fixed-overlay
+ * dialog conventions (role="dialog", fixed inset-0 z-50, dark overlay — see
+ * also FullscreenScrubChart/CalorieHistoryOverlay) but as a
  * full-bleed black lightbox rather than a bottom sheet: full photo + a dark
  * rounded 3-column stats panel (Peso / % Grasa / Cintura) for that photo's
  * entry date, with prev/next chevron navigation across the gallery's full
