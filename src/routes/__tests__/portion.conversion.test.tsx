@@ -145,6 +145,22 @@ describe("PortionRoute — crudo/cocido conversion toggle", () => {
     expect(entry.quantityG).toBe(150);
   });
 
+  it("defaults the toggle to the food's own dataBasis instead of always 'crudo'", async () => {
+    mockGetById.mockResolvedValue(makeFood({ dataBasis: "cocido" })); // e.g. a food with no raw BEDCA variant
+    mockGetIngredients.mockResolvedValue([]);
+
+    render(<PortionRoute />);
+    await waitFor(() => expect(screen.getByLabelText(/tipo de peso/i)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/cantidad/i), { target: { value: "150" } });
+    // Toggle defaults to "cocido" (this food's dataBasis) — matches stored basis, no conversion.
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno$/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
+    const [entry] = mockAddEntry.mock.calls[0];
+    expect(entry.quantityG).toBe(150);
+  });
+
   it("logs entered grams unchanged (no conversion) for a food where canConvert is false — regression check", async () => {
     mockGetById.mockResolvedValue(makeFood({ category: "bebidas", dataBasis: null }));
     mockGetIngredients.mockResolvedValue([]);

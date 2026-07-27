@@ -9,7 +9,7 @@
 
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { type SeedRecord, generateSeedSql } from "../toSql";
+import { type SeedRecord, generateSeedSql, stableFoodId } from "../toSql";
 
 // normalizeForSearch re-implemented inline (same logic as lib/search.ts).
 // Kept in sync via this test: if the implementations diverge, the
@@ -177,5 +177,88 @@ describe("generateSeedSql()", () => {
 
     const count = generateSeedSql(records, OUTPUT_FILE);
     expect(count).toBe(2);
+  });
+
+  it("emits a DELETE reconcile scoped to source='bedca', before all INSERTs, inside the same BEGIN/COMMIT transaction", () => {
+    const records: SeedRecord[] = [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440005",
+        name: "Arroz blanco",
+        calories_per_100g: 351,
+        protein_per_100g: 6.7,
+        carbs_per_100g: 78.2,
+        fat_per_100g: 0.6,
+        category: "cereales_y_granos",
+        data_basis: "crudo",
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440006",
+        name: "Pechuga de pollo",
+        calories_per_100g: 165,
+        protein_per_100g: 31,
+        carbs_per_100g: 0,
+        fat_per_100g: 3.6,
+        category: "carnes",
+        data_basis: "crudo",
+      },
+    ];
+
+    generateSeedSql(records, OUTPUT_FILE);
+    const sql = readOutput();
+
+    const deleteStatement = "DELETE FROM generic_foods WHERE source = 'bedca';";
+    expect(sql).toContain(deleteStatement);
+
+    const beginIndex = sql.indexOf("BEGIN;");
+    const deleteIndex = sql.indexOf(deleteStatement);
+    const commitIndex = sql.indexOf("COMMIT;");
+    const insertIndices = [...sql.matchAll(/INSERT INTO generic_foods/g)].map((m) => m.index ?? -1);
+
+    expect(beginIndex).toBeGreaterThanOrEqual(0);
+    expect(deleteIndex).toBeGreaterThan(beginIndex);
+    expect(insertIndices.length).toBeGreaterThan(0);
+    for (const insertIndex of insertIndices) {
+      expect(deleteIndex).toBeLessThan(insertIndex);
+      expect(insertIndex).toBeLessThan(commitIndex);
+    }
+  });
+
+  it("DELETE reconcile is scoped to source='bedca' (not an unscoped delete)", () => {
+    generateSeedSql([], OUTPUT_FILE);
+    const sql = readOutput();
+
+    expect(sql).not.toMatch(/DELETE FROM generic_foods;/);
+    expect(sql).not.toMatch(/TRUNCATE/i);
+    expect(sql).toContain("DELETE FROM generic_foods WHERE source = 'bedca';");
+  });
+});
+
+describe("stableFoodId()", () => {
+  it("same input produces the same id across calls", () => {
+    const a = stableFoodId("arroz", "cereales_y_granos");
+    const b = stableFoodId("arroz", "cereales_y_granos");
+    expect(a).toBe(b);
+  });
+
+  it("produces a valid 8-4-4-4-12 hex UUID format", () => {
+    const id = stableFoodId("arroz", "cereales_y_granos");
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  it("different base name produces a different id", () => {
+    const a = stableFoodId("arroz", "cereales_y_granos");
+    const b = stableFoodId("lenteja", "cereales_y_granos");
+    expect(a).not.toBe(b);
+  });
+
+  it("different category produces a different id", () => {
+    const a = stableFoodId("arroz", "cereales_y_granos");
+    const b = stableFoodId("arroz", "legumbres");
+    expect(a).not.toBe(b);
+  });
+
+  it("handles a null category", () => {
+    const id = stableFoodId("arroz", null);
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 });

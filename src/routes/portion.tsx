@@ -41,7 +41,11 @@ export function PortionRoute() {
   // Functional basis control (repurposed from the former display-only
   // selector — design D4): the entered grams is what the user weighed;
   // `basis` says which basis that weight is in. Direction is derived (D6.5)
-  // from this vs. the food's resolved dataBasis, never assumed.
+  // from this vs. the food's resolved dataBasis, never assumed. Defaults to
+  // "crudo" until the food loads, then is synced to the food's own
+  // dataBasis below so the toggle starts aligned with how that food's
+  // nutrition is actually measured (falls back to "crudo" when dataBasis
+  // is unresolved).
   const [basis, setBasis] = useState<CookingBasis>("crudo");
 
   // Edit mode: `entryId` must resolve to an entry already loaded in the day
@@ -98,6 +102,7 @@ export function PortionRoute() {
       setQuantityStr(String(food.servingSizeG ?? 100));
       setMealType(requestedMealType);
     }
+    setBasis(food.dataBasis ?? "crudo");
   }, [food, editingEntry]);
 
   if (loading) {
