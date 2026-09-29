@@ -104,7 +104,7 @@ describe("ConfigurationRoute", () => {
     fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/mínimo 10 años/i)).toBeInTheDocument();
+      expect(screen.getByText(/debe estar entre 10 y 120 años/i)).toBeInTheDocument();
     });
     expect(saveProfile).not.toHaveBeenCalled();
   });
