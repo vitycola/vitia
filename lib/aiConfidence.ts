@@ -12,8 +12,8 @@ export interface ConfidenceMeta {
 
 const CONFIDENCE_MAP: Record<AiConfidence, ConfidenceMeta> = {
   high: { label: "Alta", color: "#16a34a", defaultChecked: true, highlight: false },
-  medium: { label: "Revisar", color: "#F5A623", defaultChecked: true, highlight: true },
-  low: { label: "Editar", color: "#FF3B30", defaultChecked: false, highlight: false },
+  medium: { label: "Media", color: "#F5A623", defaultChecked: true, highlight: true },
+  low: { label: "Baja", color: "#FF3B30", defaultChecked: true, highlight: false },
 };
 
 export function getConfidenceMeta(confidence: AiConfidence): ConfidenceMeta {

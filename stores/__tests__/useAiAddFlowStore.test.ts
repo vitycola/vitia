@@ -117,9 +117,9 @@ describe("defaultChecked by confidence", () => {
     expect(getStore().selections[0]).toBe(true);
   });
 
-  it("low confidence → unchecked by default", () => {
+  it("low confidence → checked by default", () => {
     getStore().setResults([LOW_ITEM]);
-    expect(getStore().selections[0]).toBe(false);
+    expect(getStore().selections[0]).toBe(true);
   });
 
   it("quantities initialized from item.quantity", () => {
@@ -156,7 +156,7 @@ describe("setMeal", () => {
 describe("checkedMacroTotals", () => {
   it("sums macros for checked items only", () => {
     getStore().setResults([HIGH_ITEM, LOW_ITEM]);
-    // HIGH_ITEM checked (high), LOW_ITEM unchecked (low)
+    getStore().toggleItem(1); // uncheck LOW_ITEM
     const totals = getStore().checkedMacroTotals();
     expect(totals.kcal).toBeCloseTo(80);
     expect(totals.protein).toBeCloseTo(0.4);
@@ -219,19 +219,120 @@ describe("submitPhoto", () => {
 });
 
 describe("submitText", () => {
-  it("on success: step=results, results populated", async () => {
+  it("on success: step=results, items tagged with their meal", async () => {
     mockParseText.mockResolvedValueOnce([MEDIUM_ITEM]);
     getStore().chooseMode("text");
-    await getStore().submitText("100g de arroz");
+    await getStore().submitText([{ mealType: "lunch", text: "100g de arroz" }]);
     expect(getStore().step).toBe("results");
-    expect(getStore().results).toEqual([MEDIUM_ITEM]);
+    expect(getStore().results).toEqual([{ ...MEDIUM_ITEM, mealType: "lunch" }]);
+    expect(getStore().failedMeals).toEqual([]);
   });
 
-  it("on AiServiceError: status=error, stays on input", async () => {
-    mockParseText.mockRejectedValueOnce(new AiServiceError("fail"));
+  it("makes one parseText call per non-empty entry with only that meal's text", async () => {
+    mockParseText.mockResolvedValueOnce([HIGH_ITEM]).mockResolvedValueOnce([MEDIUM_ITEM]);
     getStore().chooseMode("text");
-    await getStore().submitText("texto");
+    await getStore().submitText([
+      { mealType: "breakfast", text: "manzana" },
+      { mealType: "dinner", text: "   " },
+      { mealType: "lunch", text: "arroz" },
+    ]);
+    expect(mockParseText).toHaveBeenCalledTimes(2);
+    expect(mockParseText).toHaveBeenNthCalledWith(1, "manzana");
+    expect(mockParseText).toHaveBeenNthCalledWith(2, "arroz");
+  });
+
+  it("keeps entry order in results even when a later request resolves first", async () => {
+    let resolveFirst: (v: AIFoodItem[]) => void = () => {};
+    mockParseText
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res;
+          })
+      )
+      .mockResolvedValueOnce([MEDIUM_ITEM]);
+    getStore().chooseMode("text");
+    const pending = getStore().submitText([
+      { mealType: "breakfast", text: "manzana" },
+      { mealType: "lunch", text: "arroz" },
+    ]);
+    resolveFirst([HIGH_ITEM]);
+    await pending;
+    expect(getStore().results.map((r) => [r.name, r.mealType])).toEqual([
+      ["Manzana", "breakfast"],
+      ["Arroz", "lunch"],
+    ]);
+  });
+
+  it("partial failure: keeps successes and records failed meals", async () => {
+    mockParseText
+      .mockResolvedValueOnce([HIGH_ITEM])
+      .mockRejectedValueOnce(new AiServiceError("fail"));
+    getStore().chooseMode("text");
+    await getStore().submitText([
+      { mealType: "breakfast", text: "manzana" },
+      { mealType: "lunch", text: "arroz" },
+    ]);
+    expect(getStore().step).toBe("results");
+    expect(getStore().status).toBe("idle");
+    expect(getStore().results).toEqual([{ ...HIGH_ITEM, mealType: "breakfast" }]);
+    expect(getStore().failedMeals).toEqual(["lunch"]);
+    expect(mockParseText).toHaveBeenCalledTimes(2); // no auto-retry
+  });
+
+  it("all requests fail: status=error, stays on input, no results", async () => {
+    mockParseText
+      .mockRejectedValueOnce(new AiServiceError("fail"))
+      .mockRejectedValueOnce(new AiServiceError("fail"));
+    getStore().chooseMode("text");
+    await getStore().submitText([
+      { mealType: "breakfast", text: "manzana" },
+      { mealType: "lunch", text: "arroz" },
+    ]);
     expect(getStore().step).toBe("input");
     expect(getStore().status).toBe("error");
+    expect(getStore().error).toContain("asistente de IA");
+    expect(getStore().results).toEqual([]);
+    expect(mockParseText).toHaveBeenCalledTimes(2);
+  });
+
+  it("single AiServiceError: status=error, stays on input", async () => {
+    mockParseText.mockRejectedValueOnce(new AiServiceError("fail"));
+    getStore().chooseMode("text");
+    await getStore().submitText([{ mealType: "dinner", text: "texto" }]);
+    expect(getStore().step).toBe("input");
+    expect(getStore().status).toBe("error");
+  });
+
+  it("ignores entries whose text is empty after trimming", async () => {
+    getStore().chooseMode("text");
+    await getStore().submitText([{ mealType: "dinner", text: "   " }]);
+    expect(mockParseText).not.toHaveBeenCalled();
+    expect(getStore().step).toBe("input");
+    expect(getStore().status).toBe("idle");
+  });
+
+  it("clears failedMeals on the next submitText", async () => {
+    useAiAddFlowStore.setState({ failedMeals: ["lunch"] });
+    mockParseText.mockResolvedValueOnce([HIGH_ITEM]);
+    getStore().chooseMode("text");
+    await getStore().submitText([{ mealType: "breakfast", text: "manzana" }]);
+    expect(getStore().failedMeals).toEqual([]);
+  });
+});
+
+describe("failedMeals lifecycle", () => {
+  it("submitPhoto clears failedMeals", async () => {
+    useAiAddFlowStore.setState({ failedMeals: ["dinner"] });
+    mockAnalyzePhoto.mockResolvedValueOnce([HIGH_ITEM]);
+    await getStore().submitPhoto(new File(["d"], "p.jpg", { type: "image/jpeg" }));
+    expect(getStore().failedMeals).toEqual([]);
+    expect(getStore().results[0].mealType).toBeUndefined();
+  });
+
+  it("reset clears failedMeals", () => {
+    useAiAddFlowStore.setState({ failedMeals: ["dinner", "snack"] });
+    getStore().reset();
+    expect(getStore().failedMeals).toEqual([]);
   });
 });

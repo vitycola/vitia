@@ -1,16 +1,14 @@
 import { compressImage } from "@/lib/compressImage";
+import { MEAL_LABELS, MEAL_ORDER } from "@/lib/constants";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
+import type { MealType } from "@/types";
+import type { MealTextEntry } from "@/types/aiFood";
 import { useRef, useState } from "react";
 import { useShallow } from "zustand/shallow";
 
-const MEAL_SECTIONS = [
-  { key: "breakfast", label: "Desayuno" },
-  { key: "lunch", label: "Almuerzo" },
-  { key: "dinner", label: "Cena" },
-  { key: "snack", label: "Snack" },
-] as const;
+const MEAL_SECTIONS = MEAL_ORDER.map((key) => ({ key, label: MEAL_LABELS[key] }));
 
-type MealKey = (typeof MEAL_SECTIONS)[number]["key"];
+type MealKey = MealType;
 
 export function InputScreen() {
   const { inputMode, status, error, submitPhoto, submitText } = useAiAddFlowStore(
@@ -47,11 +45,12 @@ export function InputScreen() {
     setMealTexts((prev) => ({ ...prev, [key]: value }));
   }
 
-  const combinedText = MEAL_SECTIONS.filter(({ key }) => mealTexts[key].trim())
-    .map(({ label, key }) => `${label}: ${mealTexts[key].trim()}`)
-    .join("\n");
+  const entries: MealTextEntry[] = MEAL_ORDER.filter((key) => mealTexts[key].trim()).map((key) => ({
+    mealType: key,
+    text: mealTexts[key].trim(),
+  }));
 
-  const canSubmitText = combinedText.length > 0;
+  const canSubmitText = entries.length > 0;
 
   function handleSubmit() {
     if (!navigator.onLine) {
@@ -62,7 +61,7 @@ export function InputScreen() {
     if (inputMode === "photo" && selectedFile) {
       void compressImage(selectedFile).then((compressed) => submitPhoto(compressed));
     } else if (inputMode === "text" && canSubmitText) {
-      void submitText(combinedText);
+      void submitText(entries);
     }
   }
 

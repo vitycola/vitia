@@ -1,10 +1,16 @@
+import { groupResultsByMeal } from "@/lib/aiMealGroups";
+import { MEAL_LABELS } from "@/lib/constants";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useShallow } from "zustand/shallow";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
 export function ResultsScreen() {
-  const { results, goToConfirmation } = useAiAddFlowStore(
-    useShallow((s) => ({ results: s.results, goToConfirmation: s.goToConfirmation }))
+  const { results, failedMeals, goToConfirmation } = useAiAddFlowStore(
+    useShallow((s) => ({
+      results: s.results,
+      failedMeals: s.failedMeals,
+      goToConfirmation: s.goToConfirmation,
+    }))
   );
 
   if (results.length === 0) {
@@ -28,29 +34,42 @@ export function ResultsScreen() {
         ))}
       </div>
 
+      {failedMeals.length > 0 && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+          No se pudieron analizar: {failedMeals.map((m) => MEAL_LABELS[m]).join(", ")}. Vuelve a
+          escribirlas.
+        </p>
+      )}
+
       {/* Items */}
-      <div className="flex flex-col gap-2">
-        {results.map((item, i) => (
-          <div
-            key={`${item.name}-${i}`}
-            className="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold text-gray-900">{item.name}</p>
-              <ConfidenceBadge confidence={item.confidence} />
-            </div>
-            <p className="text-xs text-gray-500">
-              {item.quantity} {item.unit}
-            </p>
-            <div className="flex gap-3 text-xs text-gray-600">
-              <span>{Math.round(item.kcal)} kcal</span>
-              <span>P: {item.protein.toFixed(1)}g</span>
-              <span>C: {item.carbs.toFixed(1)}g</span>
-              <span>G: {item.fat.toFixed(1)}g</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {groupResultsByMeal(results).map((group) => (
+        <div key={group.mealType ?? "untagged"} className="flex flex-col gap-2">
+          {group.label && <h3 className="text-base font-bold text-gray-900">{group.label}</h3>}
+          {group.indices.map((i) => {
+            const item = results[i];
+            return (
+              <div
+                key={`${item.name}-${i}`}
+                className="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-gray-900">{item.name}</p>
+                  <ConfidenceBadge confidence={item.confidence} />
+                </div>
+                <p className="text-xs text-gray-500">
+                  {item.quantity} {item.unit}
+                </p>
+                <div className="flex gap-3 text-xs text-gray-600">
+                  <span>{Math.round(item.kcal)} kcal</span>
+                  <span>P: {item.protein.toFixed(1)}g</span>
+                  <span>C: {item.carbs.toFixed(1)}g</span>
+                  <span>G: {item.fat.toFixed(1)}g</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
 
       <button
         type="button"

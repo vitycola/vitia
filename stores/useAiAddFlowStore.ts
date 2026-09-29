@@ -3,7 +3,7 @@ import { scaleAiMacros } from "@/lib/aiMacros";
 import { analyzePhoto, parseText } from "@/services/aiFood";
 import type { MealType } from "@/types";
 import { AiServiceError, ConfigurationError, OfflineError } from "@/types/aiFood";
-import type { AIFoodItem } from "@/types/aiFood";
+import type { AIFoodItem, MealTextEntry } from "@/types/aiFood";
 import { create } from "zustand";
 
 type Step = "selection" | "input" | "results" | "confirmation";
@@ -21,12 +21,14 @@ interface AiAddFlowState {
   selectedMeal: MealType | null;
   status: Status;
   error: string | null;
+  /** Meals whose text could not be analyzed in the last text submit. */
+  failedMeals: MealType[];
 }
 
 interface AiAddFlowActions {
   chooseMode: (mode: "photo" | "text") => void;
   submitPhoto: (file: File) => Promise<void>;
-  submitText: (text: string) => Promise<void>;
+  submitText: (entries: MealTextEntry[]) => Promise<void>;
   setResults: (items: AIFoodItem[]) => void;
   goToConfirmation: () => void;
   toggleItem: (index: number) => void;
@@ -54,6 +56,7 @@ const INITIAL_STATE: AiAddFlowState = {
   selectedMeal: null,
   status: "idle",
   error: null,
+  failedMeals: [],
 };
 
 const STEP_ORDER: Step[] = ["selection", "input", "results", "confirmation"];
@@ -72,7 +75,7 @@ export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((se
   chooseMode: (mode) => set({ inputMode: mode, step: "input" }),
 
   submitPhoto: async (file: File) => {
-    set({ status: "loading", error: null });
+    set({ status: "loading", error: null, failedMeals: [] });
     try {
       const items = await analyzePhoto(file);
       get().setResults(items);
@@ -82,15 +85,30 @@ export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((se
     }
   },
 
-  submitText: async (text: string) => {
-    set({ status: "loading", error: null });
-    try {
-      const items = await parseText(text);
-      get().setResults(items);
-      set({ step: "results", status: "idle" });
-    } catch (err) {
-      set({ status: "error", error: mapError(err) });
+  submitText: async (entries: MealTextEntry[]) => {
+    const active = entries.filter((e) => e.text.trim().length > 0);
+    if (active.length === 0) return;
+    set({ status: "loading", error: null, failedMeals: [] });
+    const outcomes = await Promise.allSettled(active.map((e) => parseText(e.text)));
+
+    const items: AIFoodItem[] = [];
+    const failedMeals: MealType[] = [];
+    outcomes.forEach((outcome, i) => {
+      const { mealType } = active[i];
+      if (outcome.status === "fulfilled") {
+        items.push(...outcome.value.map((item) => ({ ...item, mealType })));
+      } else {
+        failedMeals.push(mealType);
+      }
+    });
+
+    if (failedMeals.length === active.length) {
+      const firstRejected = outcomes.find((o) => o.status === "rejected");
+      set({ status: "error", error: mapError(firstRejected?.reason) });
+      return;
     }
+    get().setResults(items);
+    set({ step: "results", status: "idle", failedMeals });
   },
 
   setResults: (items: AIFoodItem[]) => {

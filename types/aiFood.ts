@@ -1,5 +1,7 @@
 // types/aiFood.ts — AI add-flow data contracts and typed errors.
 
+import type { MealType } from "@/types";
+
 export type AiConfidence = "high" | "medium" | "low";
 
 export interface AIFoodItem {
@@ -11,9 +13,17 @@ export interface AIFoodItem {
   quantity: number;
   unit: string;
   confidence: AiConfidence;
+  /** Meal this item was parsed for (text flow). Undefined for photo results. */
+  mealType?: MealType;
 }
 
-export type ConfidenceLabel = "Alta" | "Revisar" | "Editar";
+/** One meal's free text, sent as an independent parse request. */
+export interface MealTextEntry {
+  mealType: MealType;
+  text: string;
+}
+
+export type ConfidenceLabel = "Alta" | "Media" | "Baja";
 
 // ── Typed errors ──────────────────────────────────────────────────────────
 
