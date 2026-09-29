@@ -4,6 +4,7 @@ import { useFavorite } from "@/hooks/useFavorite";
 import { MEAL_LABELS } from "@/lib/constants";
 import { canConvert, convertWeight, directionFor } from "@/lib/cookingConversion";
 import type { CookingBasis } from "@/lib/cookingConversion";
+import { formatAxisDateLabel, todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
 import { scalePortion } from "@/lib/nutrition";
 import { CollapsibleSection } from "@/src/components/CollapsibleSection";
@@ -138,7 +139,9 @@ export function PortionRoute() {
   const effectiveGrams = conversionResult?.kind === "converted" ? conversionResult.grams : grams;
   const portion = grams > 0 ? scalePortion(food, effectiveGrams) : null;
   const mealLabel = MEAL_LABELS[mealType];
-  const ctaLabel = isEditMode ? "Actualizar" : `Añadir a ${mealLabel}`;
+  // Show the target date only when it is not today, so logging to another day is explicit.
+  const dateSuffix = selectedDate === todayISO() ? "" : ` · ${formatAxisDateLabel(selectedDate)}`;
+  const ctaLabel = isEditMode ? "Actualizar" : `Añadir a ${mealLabel}${dateSuffix}`;
 
   async function handleConfirm() {
     if (!food || grams <= 0) return;

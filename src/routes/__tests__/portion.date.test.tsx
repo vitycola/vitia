@@ -6,6 +6,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type { Food } from "@/db/schema";
+import { todayISO } from "@/lib/date";
 
 let mockSearch = "";
 const mockNavigate = jest.fn();
@@ -32,7 +33,7 @@ jest.mock("@/hooks/useFavorite", () => ({
   }),
 }));
 
-const SELECTED_DATE = "2026-09-20";
+let mockSelectedDate = "2026-09-20";
 const mockAddEntry = jest.fn();
 const mockUpdateEntry = jest.fn();
 let mockEntries: unknown[] = [];
@@ -41,7 +42,7 @@ jest.mock("@/stores/useDayStore", () => ({
     addEntry: (...args: unknown[]) => mockAddEntry(...args),
     updateEntry: (...args: unknown[]) => mockUpdateEntry(...args),
     entries: mockEntries,
-    selectedDate: SELECTED_DATE,
+    selectedDate: mockSelectedDate,
   }),
 }));
 
@@ -70,6 +71,7 @@ function makeFood(): Food {
 describe("PortionRoute — entry date", () => {
   beforeEach(() => {
     mockSearch = "";
+    mockSelectedDate = "2026-09-20";
     mockEntries = [];
     mockNavigate.mockReset();
     mockAddEntry.mockReset();
@@ -82,11 +84,35 @@ describe("PortionRoute — entry date", () => {
     render(<PortionRoute />);
     await waitFor(() => expect(screen.getByText("Garbanzos secos")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno · 20 sep$/i }));
 
     await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
-    expect(mockAddEntry).toHaveBeenCalledWith(expect.objectContaining({ date: SELECTED_DATE }));
+    expect(mockAddEntry).toHaveBeenCalledWith(expect.objectContaining({ date: "2026-09-20" }));
     expect(mockUpdateEntry).not.toHaveBeenCalled();
+  });
+
+  it("create mode: saves under a future selected day, not today", async () => {
+    mockSelectedDate = "2099-01-05";
+    render(<PortionRoute />);
+    await waitFor(() => expect(screen.getByText("Garbanzos secos")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno · 5 ene$/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
+    expect(mockAddEntry).toHaveBeenCalledWith(expect.objectContaining({ date: "2099-01-05" }));
+  });
+
+  it("create mode: CTA has no date suffix when the selected day is today", async () => {
+    mockSelectedDate = todayISO();
+    render(<PortionRoute />);
+    await waitFor(() => expect(screen.getByText("Garbanzos secos")).toBeInTheDocument());
+
+    const cta = screen.getByRole("button", { name: /^añadir a desayuno$/i });
+    expect(cta).toHaveTextContent(/^Añadir a Desayuno$/);
+    fireEvent.click(cta);
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
+    expect(mockAddEntry).toHaveBeenCalledWith(expect.objectContaining({ date: todayISO() }));
   });
 
   it("edit mode: updates without touching the entry's own date", async () => {
@@ -106,6 +132,7 @@ describe("PortionRoute — entry date", () => {
       expect(screen.getByRole("button", { name: /^actualizar$/i })).toBeEnabled()
     );
 
+    // Edit mode keeps "Actualizar" even on a non-today selected day.
     fireEvent.click(screen.getByRole("button", { name: /^actualizar$/i }));
 
     await waitFor(() => expect(mockUpdateEntry).toHaveBeenCalledTimes(1));

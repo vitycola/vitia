@@ -5,7 +5,8 @@
  *   assert the absence of the clipping utility class on the ancestor chain)
  * - outside taps dismiss it via pointerdown (iOS Safari does not synthesize
  *   mousedown for taps on non-clickable targets)
- * - "Repetir comida" source-date behavior is unchanged
+ * - "Vaciar comida", the copy-from-previous-day banner and "Repetir comida"
+ *   are available on any day (no isToday gating)
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -17,6 +18,7 @@ jest.mock("@/db/repos/mealEntries", () => ({
 
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import type { MealEntry } from "@/db/schema";
+import { todayISO } from "@/lib/date";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
 import { MealSection } from "../MealSection";
 
@@ -49,7 +51,6 @@ function renderSection(
       onDeleteEntry={jest.fn()}
       onEditEntry={jest.fn()}
       selectedDate="2026-09-20"
-      isToday={false}
       onRepeatMeal={jest.fn().mockResolvedValue(0)}
       onPasteMeal={jest.fn().mockResolvedValue(0)}
       onClearMeal={jest.fn().mockResolvedValue(undefined)}
@@ -133,25 +134,127 @@ describe("MealSection menu — outside dismissal on touch", () => {
   });
 });
 
-describe("MealSection menu — Repetir comida unchanged", () => {
-  it("passes the selected date as source when not today", async () => {
-    const onRepeatMeal = jest.fn().mockResolvedValue(0);
-    renderSection({ isToday: false, selectedDate: "2026-09-20", onRepeatMeal });
+describe("MealSection menu — Repetir comida", () => {
+  it.each(["2026-09-20", "2099-01-05", todayISO()])(
+    "calls onRepeatMeal with only the meal type on %s",
+    async (selectedDate) => {
+      const onRepeatMeal = jest.fn().mockResolvedValue(0);
+      renderSection({ selectedDate, onRepeatMeal });
+      openMenu();
+
+      fireEvent.click(screen.getByText("Repetir comida"));
+
+      await waitFor(() => expect(onRepeatMeal).toHaveBeenCalledTimes(1));
+      expect(onRepeatMeal).toHaveBeenCalledWith("breakfast");
+    }
+  );
+});
+
+describe("MealSection menu — Vaciar comida on any day", () => {
+  it.each(["2026-09-20", "2099-01-05", todayISO()])(
+    "clears the meal on %s after confirming",
+    async (selectedDate) => {
+      const onClearMeal = jest.fn().mockResolvedValue(undefined);
+      const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
+      renderSection({ selectedDate, entries: [makeEntry()], onClearMeal });
+      openMenu();
+
+      fireEvent.click(screen.getByText("Vaciar comida"));
+
+      await waitFor(() => expect(onClearMeal).toHaveBeenCalledWith("breakfast"));
+      confirmSpy.mockRestore();
+    }
+  );
+
+  it("does not clear when the confirmation is canceled", () => {
+    const onClearMeal = jest.fn();
+    const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(false);
+    renderSection({ selectedDate: "2026-09-20", entries: [makeEntry()], onClearMeal });
     openMenu();
 
-    fireEvent.click(screen.getByText("Repetir comida"));
+    fireEvent.click(screen.getByText("Vaciar comida"));
 
-    await waitFor(() => expect(onRepeatMeal).toHaveBeenCalledWith("breakfast", "2026-09-20"));
+    expect(onClearMeal).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+});
+
+describe("MealSection — copy-from-previous-day banner", () => {
+  const previousRow = makeEntry({ id: "p1", date: "2026-09-19" });
+
+  it("shows the previous-day title on a past day and looks up date - 1", async () => {
+    mockGetByDateAndMeal.mockResolvedValue([previousRow]);
+    renderSection({ selectedDate: "2026-09-20" });
+
+    expect(await screen.findByText("¿Copiar del día anterior?")).toBeInTheDocument();
+    expect(mockGetByDateAndMeal).toHaveBeenCalledWith("2026-09-19", "breakfast");
   });
 
-  it("passes undefined as source when today", async () => {
-    const onRepeatMeal = jest.fn().mockResolvedValue(0);
-    renderSection({ isToday: true, selectedDate: "2026-09-29", onRepeatMeal });
-    openMenu();
+  it("shows the previous-day title on a future day", async () => {
+    mockGetByDateAndMeal.mockResolvedValue([previousRow]);
+    renderSection({ selectedDate: "2099-01-05" });
 
-    fireEvent.click(screen.getByText("Repetir comida"));
+    expect(await screen.findByText("¿Copiar del día anterior?")).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(onRepeatMeal).toHaveBeenCalledWith("breakfast", undefined));
+  it("shows '¿Copiar de ayer?' on today", async () => {
+    mockGetByDateAndMeal.mockResolvedValue([previousRow]);
+    renderSection({ selectedDate: todayISO() });
+
+    expect(await screen.findByText("¿Copiar de ayer?")).toBeInTheDocument();
+    expect(screen.queryByText("¿Copiar del día anterior?")).not.toBeInTheDocument();
+  });
+
+  it("is absent when the meal already has entries", async () => {
+    mockGetByDateAndMeal.mockResolvedValue([previousRow]);
+    renderSection({ selectedDate: "2026-09-20", entries: [makeEntry()] });
+
+    await waitFor(() => expect(screen.getByText("Avena")).toBeInTheDocument());
+    expect(screen.queryByText("¿Copiar del día anterior?")).not.toBeInTheDocument();
+    expect(mockGetByDateAndMeal).not.toHaveBeenCalled();
+  });
+
+  it("ignores a stale previous-day response after the date changes", async () => {
+    let resolveFirst: (rows: MealEntryView[]) => void = () => {};
+    mockGetByDateAndMeal
+      .mockImplementationOnce(
+        () =>
+          new Promise<MealEntryView[]>((r) => {
+            resolveFirst = r;
+          })
+      )
+      .mockResolvedValueOnce([]);
+    const view = renderSection({ selectedDate: "2026-09-20" });
+    view.rerender(
+      <MealSection
+        mealType="breakfast"
+        entries={[]}
+        onAddFood={jest.fn()}
+        onDeleteEntry={jest.fn()}
+        onEditEntry={jest.fn()}
+        selectedDate="2026-09-25"
+        onRepeatMeal={jest.fn().mockResolvedValue(0)}
+        onPasteMeal={jest.fn().mockResolvedValue(0)}
+        onClearMeal={jest.fn().mockResolvedValue(undefined)}
+        onAcceptSuggestion={jest.fn().mockResolvedValue(0)}
+      />
+    );
+    await waitFor(() => expect(mockGetByDateAndMeal).toHaveBeenCalledTimes(2));
+
+    resolveFirst([previousRow]);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(screen.queryByText("¿Copiar del día anterior?")).not.toBeInTheDocument();
+  });
+
+  it("is absent when the previous day has no entries", async () => {
+    mockGetByDateAndMeal.mockResolvedValue([]);
+    renderSection({ selectedDate: "2026-09-20" });
+
+    await waitFor(() =>
+      expect(mockGetByDateAndMeal).toHaveBeenCalledWith("2026-09-19", "breakfast")
+    );
+    expect(screen.queryByText("¿Copiar del día anterior?")).not.toBeInTheDocument();
   });
 });
 
@@ -163,7 +266,7 @@ describe("MealSection menu — Pegar available on any day", () => {
   it("shows Pegar and calls onPasteMeal on a non-today day with a clipboard", async () => {
     fillClipboard();
     const onPasteMeal = jest.fn().mockResolvedValue(1);
-    renderSection({ isToday: false, onPasteMeal });
+    renderSection({ onPasteMeal });
     openMenu();
 
     fireEvent.click(screen.getByText("Pegar"));
@@ -174,7 +277,7 @@ describe("MealSection menu — Pegar available on any day", () => {
   it("shows Pegar and calls onPasteMeal on today with a clipboard", async () => {
     fillClipboard();
     const onPasteMeal = jest.fn().mockResolvedValue(1);
-    renderSection({ isToday: true, selectedDate: "2026-09-29", onPasteMeal });
+    renderSection({ selectedDate: todayISO(), onPasteMeal });
     openMenu();
 
     fireEvent.click(screen.getByText("Pegar"));
@@ -183,7 +286,7 @@ describe("MealSection menu — Pegar available on any day", () => {
   });
 
   it("hides Pegar when the clipboard is empty", () => {
-    renderSection({ isToday: false });
+    renderSection();
     openMenu();
 
     expect(screen.queryByText("Pegar")).not.toBeInTheDocument();
