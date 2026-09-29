@@ -11,7 +11,7 @@ describe("getConfidenceMeta", () => {
 
   it("returns correct meta for medium confidence", () => {
     const meta = getConfidenceMeta("medium");
-    expect(meta.label).toBe("Revisar");
+    expect(meta.label).toBe("Media");
     expect(meta.color).toBe("#F5A623");
     expect(meta.defaultChecked).toBe(true);
     expect(meta.highlight).toBe(true);
@@ -19,9 +19,9 @@ describe("getConfidenceMeta", () => {
 
   it("returns correct meta for low confidence", () => {
     const meta = getConfidenceMeta("low");
-    expect(meta.label).toBe("Editar");
+    expect(meta.label).toBe("Baja");
     expect(meta.color).toBe("#FF3B30");
-    expect(meta.defaultChecked).toBe(false);
+    expect(meta.defaultChecked).toBe(true);
     expect(meta.highlight).toBe(false);
   });
 });

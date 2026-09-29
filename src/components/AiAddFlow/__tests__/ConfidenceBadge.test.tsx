@@ -9,14 +9,20 @@ describe("ConfidenceBadge", () => {
     expect(screen.getByText("Alta")).toBeInTheDocument();
   });
 
-  it("renders 'Revisar' label for medium confidence", () => {
+  it("renders 'Media' label for medium confidence", () => {
     render(<ConfidenceBadge confidence="medium" />);
-    expect(screen.getByText("Revisar")).toBeInTheDocument();
+    expect(screen.getByText("Media")).toBeInTheDocument();
   });
 
-  it("renders 'Editar' label for low confidence", () => {
+  it("renders 'Baja' label for low confidence", () => {
     render(<ConfidenceBadge confidence="low" />);
-    expect(screen.getByText("Editar")).toBeInTheDocument();
+    expect(screen.getByText("Baja")).toBeInTheDocument();
+  });
+
+  it("does not render an edit affordance for low confidence", () => {
+    render(<ConfidenceBadge confidence="low" />);
+    expect(screen.getByText("Baja")).toBeInTheDocument();
+    expect(screen.queryByText(/editar/i)).not.toBeInTheDocument();
   });
 
   it("applies green color for high confidence", () => {
@@ -27,13 +33,13 @@ describe("ConfidenceBadge", () => {
 
   it("applies amber color for medium confidence", () => {
     render(<ConfidenceBadge confidence="medium" />);
-    const badge = screen.getByText("Revisar");
+    const badge = screen.getByText("Media");
     expect(badge).toHaveStyle({ color: "#F5A623" });
   });
 
   it("applies red color for low confidence", () => {
     render(<ConfidenceBadge confidence="low" />);
-    const badge = screen.getByText("Editar");
+    const badge = screen.getByText("Baja");
     expect(badge).toHaveStyle({ color: "#FF3B30" });
   });
 });

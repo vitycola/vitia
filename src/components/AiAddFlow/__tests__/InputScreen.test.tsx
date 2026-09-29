@@ -62,6 +62,43 @@ describe("InputScreen — text mode", () => {
   });
 });
 
+describe("InputScreen — per-meal submit", () => {
+  it("submits one entry per non-empty meal, in canonical order", () => {
+    setupStore({ inputMode: "text" });
+    render(<InputScreen />);
+    const boxes = screen.getAllByRole("textbox"); // breakfast, lunch, dinner, snack
+    fireEvent.change(boxes[2], { target: { value: "  sopa  " } });
+    fireEvent.change(boxes[0], { target: { value: "tostada" } });
+    fireEvent.click(screen.getByRole("button", { name: /analizar con ia/i }));
+    expect(mockSubmitText).toHaveBeenCalledTimes(1);
+    expect(mockSubmitText).toHaveBeenCalledWith([
+      { mealType: "breakfast", text: "tostada" },
+      { mealType: "dinner", text: "sopa" },
+    ]);
+  });
+
+  it("does not include whitespace-only meals and keeps CTA disabled without entries", () => {
+    setupStore({ inputMode: "text" });
+    render(<InputScreen />);
+    fireEvent.change(screen.getAllByRole("textbox")[1], { target: { value: "   " } });
+    expect(screen.getByRole("button", { name: /analizar con ia/i })).toBeDisabled();
+  });
+
+  it("labels the fourth section Merienda, not Snack", () => {
+    setupStore({ inputMode: "text" });
+    render(<InputScreen />);
+    expect(screen.getByText("Merienda")).toBeInTheDocument();
+    expect(screen.queryByText("Snack")).not.toBeInTheDocument();
+  });
+
+  it("text mode has no single-meal selector buttons", () => {
+    setupStore({ inputMode: "text" });
+    render(<InputScreen />);
+    expect(screen.queryByRole("button", { name: "Desayuno" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(4);
+  });
+});
+
 describe("InputScreen — error state", () => {
   it("shows inline error message when status=error", () => {
     setupStore({

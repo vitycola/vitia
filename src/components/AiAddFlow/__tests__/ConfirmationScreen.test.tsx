@@ -122,21 +122,56 @@ describe("ConfirmationScreen — CTA disabled states", () => {
   });
 });
 
-describe("ConfirmationScreen — default checked state by confidence", () => {
-  it("high confidence item is checked by default", () => {
-    setupStore();
+describe("ConfirmationScreen — selection clarity", () => {
+  it("renders every item checked when the store selects all (including low confidence)", () => {
+    setupStore({ selections: { 0: true, 1: true } });
     render(<ConfirmationScreen />);
     const checkboxes = screen.getAllByRole("checkbox");
-    // First item (high) should be checked
+    expect(checkboxes).toHaveLength(2);
     expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[1]).toBeChecked();
   });
 
-  it("low confidence item is unchecked by default", () => {
+  it("dims and strikes through an unchecked row, but not a checked one", () => {
+    setupStore({ selections: { 0: true, 1: false } });
+    render(<ConfirmationScreen />);
+    const uncheckedRow = screen.getByText(LOW_ITEM.name).closest("[data-selected]");
+    const checkedRow = screen.getByText(HIGH_ITEM.name).closest("[data-selected]");
+    expect(uncheckedRow).toHaveAttribute("data-selected", "false");
+    expect(uncheckedRow).toHaveClass("opacity-50");
+    expect(screen.getByText(LOW_ITEM.name)).toHaveClass("line-through");
+    expect(checkedRow).toHaveAttribute("data-selected", "true");
+    expect(checkedRow).not.toHaveClass("opacity-50");
+    expect(screen.getByText(HIGH_ITEM.name)).not.toHaveClass("line-through");
+  });
+
+  it("shows the live selected count next to the total", () => {
+    const items = [HIGH_ITEM, LOW_ITEM, HIGH_ITEM, LOW_ITEM, HIGH_ITEM];
+    setupStore({
+      results: items,
+      selections: { 0: true, 1: true, 2: true, 3: false, 4: false },
+      quantities: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1 },
+    });
+    render(<ConfirmationScreen />);
+    expect(screen.getByText("3 de 5 alimentos seleccionados")).toBeInTheDocument();
+  });
+
+  it("shows 0 de Y when nothing is selected", () => {
+    setupStore({ selections: { 0: false, 1: false } });
+    render(<ConfirmationScreen />);
+    expect(screen.getByText("0 de 2 alimentos seleccionados")).toBeInTheDocument();
+  });
+
+  it("offers an edit action per item that focuses its quantity input", () => {
     setupStore();
     render(<ConfirmationScreen />);
-    const checkboxes = screen.getAllByRole("checkbox");
-    // Second item (low) should be unchecked
-    expect(checkboxes[1]).not.toBeChecked();
+    const editButton = screen.getByRole("button", {
+      name: `Editar cantidad de ${LOW_ITEM.name}`,
+    });
+    fireEvent.click(editButton);
+    const qtyInputs = screen.getAllByRole("spinbutton");
+    expect(qtyInputs[1]).toHaveFocus();
+    expect(qtyInputs[0]).not.toHaveFocus();
   });
 });
 
@@ -263,5 +298,102 @@ describe("ConfirmationScreen — handleAdd persistence (real foods row per item)
     expect(mockAddEntry.mock.calls[0][0].foodId).toBe("real-id-2");
     expect(mockReset).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("ConfirmationScreen — per-meal grouping (text flow)", () => {
+  const BREAKFAST_ITEM: AIFoodItem = { ...HIGH_ITEM, mealType: "breakfast" };
+  const DINNER_ITEM: AIFoodItem = { ...LOW_ITEM, mealType: "dinner" };
+
+  function setupTagged(overrides: Record<string, unknown> = {}) {
+    setupStore({
+      inputMode: "text",
+      results: [DINNER_ITEM, BREAKFAST_ITEM],
+      selections: { 0: true, 1: true },
+      quantities: { 0: 50, 1: 150 },
+      selectedMeal: null,
+      ...overrides,
+    });
+  }
+
+  it("renders a header per meal in canonical order", () => {
+    setupTagged();
+    render(<ConfirmationScreen />);
+    const headers = screen.getAllByRole("heading", { level: 3 });
+    expect(headers.map((h) => h.textContent)).toEqual(["Desayuno", "Cena"]);
+  });
+
+  it("hides the meal selector when every item is tagged and enables the CTA without it", () => {
+    setupTagged();
+    render(<ConfirmationScreen />);
+    expect(screen.queryByText("Comida *")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /añadir al diario/i })).not.toBeDisabled();
+  });
+
+  it("saves each checked item to its own meal on the selected date", async () => {
+    setupTagged();
+    render(<ConfirmationScreen />);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(2));
+    const saved = mockAddEntry.mock.calls.map(([e]) => [e.foodName, e.mealType, e.date]);
+    expect(saved).toEqual(
+      expect.arrayContaining([
+        [DINNER_ITEM.name, "dinner", SELECTED_DATE],
+        [BREAKFAST_ITEM.name, "breakfast", SELECTED_DATE],
+      ])
+    );
+    expect(saved).toHaveLength(2);
+  });
+
+  it("does not save unchecked items", async () => {
+    setupTagged({ selections: { 0: false, 1: true } });
+    render(<ConfirmationScreen />);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
+    expect(mockAddEntry.mock.calls[0][0].mealType).toBe("breakfast");
+  });
+
+  it("shows the selector and requires a meal when any item is untagged", () => {
+    setupTagged({ results: [BREAKFAST_ITEM, LOW_ITEM], quantities: { 0: 150, 1: 50 } });
+    render(<ConfirmationScreen />);
+    expect(screen.getByText("Comida *")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /añadir al diario/i })).toBeDisabled();
+  });
+
+  it("mixed items: tagged item keeps its meal, untagged falls back to selectedMeal", async () => {
+    setupTagged({
+      results: [BREAKFAST_ITEM, LOW_ITEM],
+      quantities: { 0: 150, 1: 50 },
+      selectedMeal: "snack",
+    });
+    render(<ConfirmationScreen />);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(2));
+    expect(mockAddEntry.mock.calls.map(([e]) => [e.foodName, e.mealType])).toEqual([
+      [BREAKFAST_ITEM.name, "breakfast"],
+      [LOW_ITEM.name, "snack"],
+    ]);
+  });
+
+  it("photo results (untagged) still show the selector and save to the selected meal", async () => {
+    setupStore({ selectedMeal: "lunch", inputMode: "photo" });
+    render(<ConfirmationScreen />);
+    expect(screen.getByText("Comida *")).toBeInTheDocument();
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
+    expect(mockAddEntry.mock.calls[0][0].mealType).toBe("lunch");
+  });
+
+  it("toggling an item in a group passes its original index", () => {
+    setupTagged();
+    render(<ConfirmationScreen />);
+    // Rendered order: Desayuno (index 1: Manzana), Cena (index 0: Desconocido)
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    expect(mockToggleItem).toHaveBeenCalledWith(1);
   });
 });
