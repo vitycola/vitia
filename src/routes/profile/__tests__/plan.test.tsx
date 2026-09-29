@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
-import { fireEvent, render, screen } from "@testing-library/react";
+import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { PlanRoute } from "../plan";
 
@@ -13,6 +14,11 @@ const mockUseProfileStore = useProfileStore as unknown as jest.Mock;
 
 const baseProfile = {
   id: "p1",
+  age: 30,
+  heightCm: 175,
+  weightKg: 75,
+  sex: "male",
+  activityLevel: "moderately_active",
   goal: "lose_weight",
   calorieGoal: 1800,
   proteinGoalG: 120,
@@ -27,6 +33,7 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     recalcFromProfile: jest.fn().mockResolvedValue(undefined),
     overrideGoals: jest.fn().mockResolvedValue(undefined),
     revertToAutomaticGoals: jest.fn().mockResolvedValue(undefined),
+    saveProfile: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -126,5 +133,128 @@ describe("PlanRoute", () => {
     fireEvent.click(screen.getByRole("button", { name: /volver a objetivos automáticos/i }));
 
     expect(store.revertToAutomaticGoals).toHaveBeenCalledTimes(1);
+  });
+  describe("interactive goal selector", () => {
+    const profileInput = {
+      age: 30,
+      heightCm: 175,
+      weightKg: 75,
+      sex: "male",
+      activityLevel: "moderately_active",
+    } as const;
+
+    function expected(goal: "lose_weight" | "maintain" | "gain_muscle") {
+      const tdee = computeTDEE(computeBMR(profileInput), profileInput.activityLevel);
+      const kcal = deriveCalorieGoal(tdee, goal);
+      return { kcal, ...deriveMacros(kcal) };
+    }
+
+    it("renders the goal chips as buttons with the current one pressed", () => {
+      render(<PlanRoute />);
+
+      const group = screen.getByRole("group", { name: /objetivo actual/i });
+      expect(within(group).getAllByRole("button")).toHaveLength(3);
+      expect(screen.getByRole("button", { name: /perder peso/i })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(screen.getByRole("button", { name: /mantener peso/i })).toHaveAttribute(
+        "aria-pressed",
+        "false"
+      );
+      expect(screen.getByRole("button", { name: /ganar músculo/i })).toHaveAttribute(
+        "aria-pressed",
+        "false"
+      );
+    });
+
+    it("does nothing when the current goal is clicked", () => {
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /perder peso/i }));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("opens a preview with current vs new computed targets for a different goal", () => {
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /ganar músculo/i }));
+
+      const dialog = screen.getByRole("dialog", { name: /cambiar objetivo/i });
+      const next = expected("gain_muscle");
+      expect(within(dialog).getByText(`${Math.round(next.kcal)} kcal`)).toBeInTheDocument();
+      expect(within(dialog).getByText(`${Math.round(next.proteinG)} g`)).toBeInTheDocument();
+      expect(within(dialog).getByText(`${Math.round(next.carbsG)} g`)).toBeInTheDocument();
+      expect(within(dialog).getByText(`${Math.round(next.fatG)} g`)).toBeInTheDocument();
+      // current values come from the persisted profile
+      expect(within(dialog).getByText("1800 kcal")).toBeInTheDocument();
+    });
+
+    it("previews known literal values for a fixed profile (formula regression guard)", () => {
+      // Literals computed once from lib/nutrition for the base profile
+      // (30y, 175cm, 75kg, male, moderately_active). Do not derive them from the lib.
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+
+      const dialog = screen.getByRole("dialog", { name: /cambiar objetivo/i });
+      expect(within(dialog).getByText("2633 kcal")).toBeInTheDocument();
+      expect(within(dialog).getByText("197 g")).toBeInTheDocument();
+      expect(within(dialog).getByText("263 g")).toBeInTheDocument();
+      expect(within(dialog).getByText("88 g")).toBeInTheDocument();
+    });
+
+    it("shows the manual-goals warning only when useManualGoals is true", () => {
+      const { unmount } = render(<PlanRoute />);
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      expect(screen.queryByText(/se reemplazarán por los calculados/i)).not.toBeInTheDocument();
+      unmount();
+
+      mockUseProfileStore.mockReturnValue(
+        makeStore({ profile: { ...baseProfile, useManualGoals: true } })
+      );
+      render(<PlanRoute />);
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      expect(screen.getByText(/se reemplazarán por los calculados/i)).toBeInTheDocument();
+    });
+
+    it("saves the profile with the new goal on confirm, closes and shows feedback", async () => {
+      const store = makeStore();
+      mockUseProfileStore.mockReturnValue(store);
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(store.saveProfile).toHaveBeenCalledWith({ ...profileInput, goal: "maintain" });
+      expect(screen.getByRole("status")).toHaveTextContent("Objetivo actualizado");
+    });
+
+    it("does not save when cancelled", () => {
+      const store = makeStore();
+      mockUseProfileStore.mockReturnValue(store);
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(store.saveProfile).not.toHaveBeenCalled();
+    });
+
+    it("keeps the sheet open and shows an error when saving fails", async () => {
+      const store = makeStore({ saveProfile: jest.fn().mockRejectedValue(new Error("boom")) });
+      mockUseProfileStore.mockReturnValue(store);
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(/no se pudo actualizar/i);
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
   });
 });
