@@ -44,6 +44,7 @@ jest.mock("@/stores/useDayStore", () => ({
     addEntry: (...args: unknown[]) => mockAddEntry(...args),
     updateEntry: (...args: unknown[]) => mockUpdateEntry(...args),
     entries: [],
+    selectedDate: "2026-09-20",
   }),
 }));
 

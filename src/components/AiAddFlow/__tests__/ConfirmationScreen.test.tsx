@@ -57,6 +57,7 @@ const mockPerItemScaledMacros = jest
   .mockReturnValue({ kcal: 80, protein: 0.4, carbs: 21, fat: 0.2 });
 const mockAddEntry = jest.fn().mockResolvedValue(undefined);
 const mockCreateComposite = createComposite as jest.Mock;
+const SELECTED_DATE = "2026-09-20";
 
 function setupStore(overrides: Record<string, unknown> = {}) {
   (useAiAddFlowStore as unknown as jest.Mock).mockReturnValue({
@@ -73,7 +74,10 @@ function setupStore(overrides: Record<string, unknown> = {}) {
     perItemScaledMacros: mockPerItemScaledMacros,
     ...overrides,
   });
-  (useDayStore.getState as jest.Mock).mockReturnValue({ addEntry: mockAddEntry });
+  (useDayStore.getState as jest.Mock).mockReturnValue({
+    addEntry: mockAddEntry,
+    selectedDate: SELECTED_DATE,
+  });
 }
 
 beforeEach(() => {
@@ -225,6 +229,21 @@ describe("ConfirmationScreen — handleAdd persistence (real foods row per item)
     expect(mockAddEntry).toHaveBeenCalledTimes(1);
     const [entry] = mockAddEntry.mock.calls[0];
     expect(entry.foodId).toBe("real-id-123");
+  });
+
+  it("dates every saved entry with the selected day from useDayStore, not today", async () => {
+    setupStore({
+      selectedMeal: "lunch",
+      selections: { 0: true, 1: true },
+    });
+    render(<ConfirmationScreen />);
+    fireEvent.click(screen.getByRole("button", { name: /añadir al diario/i }));
+
+    await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(2));
+    expect(mockAddEntry.mock.calls.map(([entry]) => entry.date)).toEqual([
+      SELECTED_DATE,
+      SELECTED_DATE,
+    ]);
   });
 
   it("partial failure: one item's createComposite rejects, the other item still succeeds and addEntry/navigate still fire", async () => {
