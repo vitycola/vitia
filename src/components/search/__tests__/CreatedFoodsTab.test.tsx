@@ -66,6 +66,7 @@ describe("CreatedFoodsTab", () => {
       onPointerDown: jest.fn(),
       onPointerMove: jest.fn(),
       onPointerUp: jest.fn(),
+      consumeDragClick: () => false,
       close,
     });
   });
@@ -145,6 +146,7 @@ describe("CreatedFoodsTab", () => {
       onPointerDown: jest.fn(),
       onPointerMove: jest.fn(),
       onPointerUp: jest.fn(),
+      consumeDragClick: () => false,
       close,
     });
 
