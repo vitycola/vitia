@@ -1,7 +1,6 @@
 import { createComposite } from "@/db/repos/foods";
 import { getConfidenceMeta } from "@/lib/aiConfidence";
 import { scaleAiMacros } from "@/lib/aiMacros";
-import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useDayStore } from "@/stores/useDayStore";
@@ -21,12 +20,13 @@ function mapToNewMealEntry(
   item: AIFoodItem,
   qty: number,
   meal: MealType,
-  foodId: string
+  foodId: string,
+  date: string
 ): NewMealEntry {
   const scaled = scaleAiMacros(item, qty);
   return {
     id: generateId(),
-    date: todayISO(),
+    date,
     mealType: meal,
     foodId,
     foodName: item.name,
@@ -80,7 +80,7 @@ export function ConfirmationScreen() {
 
   async function handleAdd() {
     if (!canAdd || !selectedMeal) return;
-    const addEntry = useDayStore.getState().addEntry;
+    const { addEntry, selectedDate } = useDayStore.getState();
     const checkedItems = results.map((item, i) => ({ item, i })).filter(({ i }) => selections[i]);
 
     let successCount = 0;
@@ -101,7 +101,7 @@ export function ConfirmationScreen() {
           },
           []
         );
-        await addEntry(mapToNewMealEntry(item, qty, selectedMeal, food.id));
+        await addEntry(mapToNewMealEntry(item, qty, selectedMeal, food.id, selectedDate));
         successCount += 1;
       } catch {
         // Best-effort: skip this item and continue with the rest (D5).

@@ -81,16 +81,16 @@ export function MealSection({
       .catch(() => setPreviousDayEntries([]));
   }, [selectedDate, mealType, isToday, entries.length]);
 
-  // Click outside to close context menu
+  // Tap/click outside to close context menu (pointerdown covers touch on iOS Safari)
   useEffect(() => {
     if (!menuOpen) return;
-    function handleOutside(e: MouseEvent) {
+    function handleOutside(e: Event) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+    document.addEventListener("pointerdown", handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
   }, [menuOpen]);
 
   async function runAction(fn: () => Promise<unknown>) {
@@ -109,9 +109,13 @@ export function MealSection({
   const hasClipboard = clipboardMeal !== null && clipboardMeal.entries.length > 0;
 
   return (
-    <div className="mb-3 overflow-hidden rounded-3xl bg-white shadow-sm">
+    <div className="mb-3 rounded-3xl bg-white shadow-sm">
       {/* Section header */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div
+        className={`flex items-center justify-between px-4 py-3 ${
+          expanded ? "rounded-t-3xl" : "rounded-3xl"
+        }`}
+      >
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -231,11 +235,11 @@ export function MealSection({
           )}
 
           {/* Add food button */}
-          <div className="border-t border-[#E5E5EA]">
+          <div className="rounded-b-3xl border-t border-[#E5E5EA]">
             <button
               type="button"
               onClick={() => onAddFood(mealType)}
-              className="flex w-full items-center justify-center px-4 py-2.5 text-[#8E8E93]"
+              className="flex w-full items-center justify-center rounded-b-3xl px-4 py-2.5 text-[#8E8E93]"
             >
               <span className="text-2xl font-light leading-none">+</span>
             </button>

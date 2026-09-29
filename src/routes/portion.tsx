@@ -4,7 +4,6 @@ import { useFavorite } from "@/hooks/useFavorite";
 import { MEAL_LABELS } from "@/lib/constants";
 import { canConvert, convertWeight, directionFor } from "@/lib/cookingConversion";
 import type { CookingBasis } from "@/lib/cookingConversion";
-import { todayISO } from "@/lib/date";
 import { generateId } from "@/lib/id";
 import { scalePortion } from "@/lib/nutrition";
 import { CollapsibleSection } from "@/src/components/CollapsibleSection";
@@ -26,7 +25,7 @@ export function PortionRoute() {
   const { foodId } = useParams<{ foodId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { addEntry, updateEntry, entries } = useDayStore();
+  const { addEntry, updateEntry, entries, selectedDate } = useDayStore();
 
   const requestedMealType = (searchParams.get("meal") ?? "breakfast") as MealType;
   const entryId = searchParams.get("entryId");
@@ -160,7 +159,7 @@ export function PortionRoute() {
       } else {
         await addEntry({
           id: generateId(),
-          date: todayISO(),
+          date: selectedDate,
           mealType,
           foodId: food.id,
           foodName: food.name,
