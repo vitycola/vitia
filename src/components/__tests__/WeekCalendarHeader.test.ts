@@ -5,7 +5,7 @@
  * without DOM rendering to keep tests fast and dependency-free.
  */
 
-import { formatFullDayLabel, startOfWeek, weekDays } from "@/lib/date";
+import { formatFullDayLabel, startOfWeek, todayISO, weekDays } from "@/lib/date";
 
 // ---------------------------------------------------------------------------
 // Week derivation (used internally by WeekCalendarHeader)
@@ -89,7 +89,7 @@ describe("WeekCalendarHeader — swipe direction", () => {
 
 describe("WeekCalendarHeader — top-left label", () => {
   it("shows Hoy when selectedDate is today", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     expect(formatFullDayLabel(today)).toBe("Hoy");
   });
 

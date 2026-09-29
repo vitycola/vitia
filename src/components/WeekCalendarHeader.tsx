@@ -1,7 +1,8 @@
 import { useWeekProgress } from "@/hooks/useWeekProgress";
 import type { DayStatus } from "@/hooks/useWeekProgress";
-import { startOfWeek, weekDays } from "@/lib/date";
-import { useRef, useState } from "react";
+import { addDays, formatFullDayLabel, startOfWeek, todayISO, weekDays } from "@/lib/date";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -96,6 +97,19 @@ export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarH
   // selectedDate, then shifts ±7 via swipe without changing selection.
   const [visibleWeekStart, setVisibleWeekStart] = useState<string>(() => startOfWeek(selectedDate));
 
+  const today = todayISO();
+
+  // Keep the visible week in sync with selectedDate changes from any source
+  // (Hoy, picker, day tap, store actions). Chevron browsing only moves
+  // visibleWeekStart, so it is preserved until selectedDate changes.
+  useEffect(() => {
+    setVisibleWeekStart(startOfWeek(selectedDate));
+  }, [selectedDate]);
+
+  function shiftWeek(weeks: number) {
+    setVisibleWeekStart((prev) => addDays(prev, weeks * 7));
+  }
+
   const days = weekDays(visibleWeekStart);
   const progress = useWeekProgress(visibleWeekStart);
 
@@ -119,16 +133,7 @@ export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarH
     didSwipe.current = true;
 
     // Swipe left → next week; swipe right → previous week
-    const shift = delta < 0 ? 7 : -7;
-    setVisibleWeekStart((prev) => {
-      const [y, m, d] = prev.split("-").map(Number);
-      const date = new Date(y, m - 1, d);
-      date.setDate(date.getDate() + shift);
-      const yy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
-      return `${yy}-${mm}-${dd}`;
-    });
+    shiftWeek(delta < 0 ? 1 : -1);
   }
 
   function handleTap(date: string) {
@@ -137,17 +142,64 @@ export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarH
       return;
     }
     onSelectDate(date);
-    // If the tapped day is outside the visible week, realign to that week.
-    const weekOfTapped = startOfWeek(date);
-    if (weekOfTapped !== visibleWeekStart) {
-      setVisibleWeekStart(weekOfTapped);
-    }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  function handleToday() {
+    onSelectDate(today);
+    setVisibleWeekStart(startOfWeek(today));
+  }
+
+  function handlePickDate(e: React.ChangeEvent<HTMLInputElement>) {
+    // Some browsers (iOS "Borrar") emit an empty value — never select "".
+    if (e.target.value === "") return;
+    onSelectDate(e.target.value);
+  }
 
   return (
     <div className="select-none px-4 pt-3 pb-1">
+      {/* Toolbar: date label + picker, Hoy shortcut, week chevrons */}
+      <div className="mb-1 flex items-center justify-between">
+        <div className="relative">
+          <span className="text-sm font-semibold text-gray-900">
+            {formatFullDayLabel(selectedDate)}
+          </span>
+          <input
+            type="date"
+            aria-label="Elegir fecha"
+            value={selectedDate}
+            onChange={handlePickDate}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          {(selectedDate !== today || visibleWeekStart !== startOfWeek(today)) && (
+            <button
+              type="button"
+              onClick={handleToday}
+              className="rounded-full px-2 py-1 text-xs font-semibold text-accent"
+            >
+              Hoy
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label="Semana anterior"
+            onClick={() => shiftWeek(-1)}
+            className="rounded-full p-1 text-gray-500"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label="Semana siguiente"
+            onClick={() => shiftWeek(1)}
+            className="rounded-full p-1 text-gray-500"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
       {/* Week strip */}
       <div
         className="grid grid-cols-7 touch-pan-y"
