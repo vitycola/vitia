@@ -163,7 +163,7 @@ export function MealSection({
                   Copiar
                 </button>
 
-                {isToday && hasClipboard && (
+                {hasClipboard && (
                   <button
                     type="button"
                     onClick={() => runAction(() => onPasteMeal(mealType))}

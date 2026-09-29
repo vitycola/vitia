@@ -16,6 +16,8 @@ jest.mock("@/db/repos/mealEntries", () => ({
 }));
 
 import type { MealEntryView } from "@/db/repos/mealEntries";
+import type { MealEntry } from "@/db/schema";
+import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
 import { MealSection } from "../MealSection";
 
 function makeEntry(overrides: Partial<MealEntryView> = {}): MealEntryView {
@@ -75,6 +77,7 @@ function menuAncestors(container: HTMLElement): HTMLElement[] {
 
 beforeEach(() => {
   mockGetByDateAndMeal.mockReset().mockResolvedValue([]);
+  useMealClipboardStore.setState({ clipboardMeal: null });
 });
 
 describe("MealSection menu — not clipped by ancestors", () => {
@@ -149,5 +152,40 @@ describe("MealSection menu — Repetir comida unchanged", () => {
     fireEvent.click(screen.getByText("Repetir comida"));
 
     await waitFor(() => expect(onRepeatMeal).toHaveBeenCalledWith("breakfast", undefined));
+  });
+});
+
+describe("MealSection menu — Pegar available on any day", () => {
+  function fillClipboard() {
+    useMealClipboardStore.getState().copyMeal([makeEntry() as unknown as MealEntry], "breakfast");
+  }
+
+  it("shows Pegar and calls onPasteMeal on a non-today day with a clipboard", async () => {
+    fillClipboard();
+    const onPasteMeal = jest.fn().mockResolvedValue(1);
+    renderSection({ isToday: false, onPasteMeal });
+    openMenu();
+
+    fireEvent.click(screen.getByText("Pegar"));
+
+    await waitFor(() => expect(onPasteMeal).toHaveBeenCalledWith("breakfast"));
+  });
+
+  it("shows Pegar and calls onPasteMeal on today with a clipboard", async () => {
+    fillClipboard();
+    const onPasteMeal = jest.fn().mockResolvedValue(1);
+    renderSection({ isToday: true, selectedDate: "2026-09-29", onPasteMeal });
+    openMenu();
+
+    fireEvent.click(screen.getByText("Pegar"));
+
+    await waitFor(() => expect(onPasteMeal).toHaveBeenCalledWith("breakfast"));
+  });
+
+  it("hides Pegar when the clipboard is empty", () => {
+    renderSection({ isToday: false });
+    openMenu();
+
+    expect(screen.queryByText("Pegar")).not.toBeInTheDocument();
   });
 });
