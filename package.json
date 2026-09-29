@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "jest --passWithNoTests --forceExit",
+    "test": "TZ=America/Argentina/Buenos_Aires jest --passWithNoTests --forceExit",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "seed:bedca": "tsx scripts/seed-bedca/run.ts",
