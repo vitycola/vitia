@@ -115,8 +115,8 @@ export function DayScreen() {
     void navigate(`/portion/${entry.foodId}?meal=${entry.mealType}&entryId=${entry.id}`);
   }
 
-  async function handleRepeatMeal(mealType: MealType, sourceDate?: string): Promise<number> {
-    return repeatMeal(mealType, sourceDate);
+  async function handleRepeatMeal(mealType: MealType): Promise<number> {
+    return repeatMeal(mealType);
   }
 
   async function handlePasteMeal(mealType: MealType): Promise<number> {
