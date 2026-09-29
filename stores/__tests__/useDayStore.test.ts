@@ -4,11 +4,12 @@
  */
 const mockGetByDateAndMeal = jest.fn();
 const mockInsertBulk = jest.fn();
+const mockGetByDate = jest.fn().mockResolvedValue([]);
 jest.mock("@/db/repos/mealEntries", () => ({
   getByDateAndMeal: (...args: unknown[]) => mockGetByDateAndMeal(...args),
   insertBulk: (...args: unknown[]) => mockInsertBulk(...args),
   deleteByDateAndMeal: jest.fn(),
-  getByDate: jest.fn().mockResolvedValue([]),
+  getByDate: (...args: unknown[]) => mockGetByDate(...args),
 }));
 
 import { todayISO } from "@/lib/date";
@@ -93,5 +94,29 @@ describe("useDayStore.repeatMeal", () => {
     expect(added).toBe(1);
     expect(mockInsertBulk.mock.calls[0][0][0].date).toBe("2026-03-10");
     expect(useDayStore.getState().entries).toHaveLength(0);
+  });
+});
+
+describe("useDayStore.setDate — stale responses", () => {
+  it("ignores a slower earlier load that resolves after a later setDate", async () => {
+    let resolveFirst: (rows: unknown[]) => void = () => {};
+    const first = new Promise<unknown[]>((r) => {
+      resolveFirst = r;
+    });
+    mockGetByDate.mockReset();
+    mockGetByDate
+      .mockImplementationOnce(() => first)
+      .mockResolvedValueOnce([sourceRow("2026-03-11")]);
+
+    const p1 = useDayStore.getState().setDate("2026-03-10");
+    const p2 = useDayStore.getState().setDate("2026-03-11");
+    await p2;
+    resolveFirst([sourceRow("2026-03-10"), sourceRow("2026-03-10")]);
+    await p1;
+
+    const state = useDayStore.getState();
+    expect(state.selectedDate).toBe("2026-03-11");
+    expect(state.entries).toHaveLength(1);
+    expect(state.entries[0].date).toBe("2026-03-11");
   });
 });

@@ -114,8 +114,11 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     set({ selectedDate: date, isLoading: true });
     try {
       const entries = await mealEntriesRepo.getByDate(date);
+      // Ignore stale responses: a newer setDate call has already moved on.
+      if (get().selectedDate !== date) return;
       set({ entries, isLoading: false });
     } catch {
+      if (get().selectedDate !== date) return;
       set({ isLoading: false });
     }
   },

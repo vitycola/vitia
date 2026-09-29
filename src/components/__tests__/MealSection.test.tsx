@@ -214,6 +214,39 @@ describe("MealSection — copy-from-previous-day banner", () => {
     expect(mockGetByDateAndMeal).not.toHaveBeenCalled();
   });
 
+  it("ignores a stale previous-day response after the date changes", async () => {
+    let resolveFirst: (rows: MealEntryView[]) => void = () => {};
+    mockGetByDateAndMeal
+      .mockImplementationOnce(
+        () =>
+          new Promise<MealEntryView[]>((r) => {
+            resolveFirst = r;
+          })
+      )
+      .mockResolvedValueOnce([]);
+    const view = renderSection({ selectedDate: "2026-09-20" });
+    view.rerender(
+      <MealSection
+        mealType="breakfast"
+        entries={[]}
+        onAddFood={jest.fn()}
+        onDeleteEntry={jest.fn()}
+        onEditEntry={jest.fn()}
+        selectedDate="2026-09-25"
+        onRepeatMeal={jest.fn().mockResolvedValue(0)}
+        onPasteMeal={jest.fn().mockResolvedValue(0)}
+        onClearMeal={jest.fn().mockResolvedValue(undefined)}
+        onAcceptSuggestion={jest.fn().mockResolvedValue(0)}
+      />
+    );
+    await waitFor(() => expect(mockGetByDateAndMeal).toHaveBeenCalledTimes(2));
+
+    resolveFirst([previousRow]);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(screen.queryByText("¿Copiar del día anterior?")).not.toBeInTheDocument();
+  });
+
   it("is absent when the previous day has no entries", async () => {
     mockGetByDateAndMeal.mockResolvedValue([]);
     renderSection({ selectedDate: "2026-09-20" });

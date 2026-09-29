@@ -138,6 +138,51 @@ describe("WeekCalendarHeader — date picker (WN-3)", () => {
     expect(onSelectDate).not.toHaveBeenCalled();
     expect(screen.getByLabelText("2026-09-28")).toBeInTheDocument();
   });
+
+  it("moves the visible week to the picked date even if selectedDate does not change", () => {
+    // onSelectDate is a mock, so selectedDate never changes and the resync
+    // effect cannot be what moves the strip.
+    const { onSelectDate } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Semana anterior" }));
+
+    fireEvent.change(screen.getByLabelText("Elegir fecha"), { target: { value: "2026-09-29" } });
+
+    expect(onSelectDate).toHaveBeenCalledWith("2026-09-29");
+    expect(screen.getByLabelText("2026-09-28")).toBeInTheDocument();
+  });
+
+  it("ignores values outside 2000-01-01..2100-12-31", () => {
+    const { onSelectDate } = setup();
+    const input = screen.getByLabelText("Elegir fecha");
+    expect(input).toHaveAttribute("min", "2000-01-01");
+    expect(input).toHaveAttribute("max", "2100-12-31");
+
+    fireEvent.change(input, { target: { value: "1999-12-31" } });
+    fireEvent.change(input, { target: { value: "2101-01-01" } });
+
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it("opens the native picker on click when showPicker is available", () => {
+    setup();
+    const input = screen.getByLabelText("Elegir fecha") as HTMLInputElement;
+    const showPicker = jest.fn();
+    (input as unknown as { showPicker: () => void }).showPicker = showPicker;
+
+    fireEvent.click(input);
+
+    expect(showPicker).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not throw when showPicker throws", () => {
+    setup();
+    const input = screen.getByLabelText("Elegir fecha") as HTMLInputElement;
+    (input as unknown as { showPicker: () => void }).showPicker = () => {
+      throw new Error("NotAllowedError");
+    };
+
+    expect(() => fireEvent.click(input)).not.toThrow();
+  });
 });
 
 describe("WeekCalendarHeader — local-date today (WN-5)", () => {

@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
 
 const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"] as const;
 const SWIPE_THRESHOLD = 60;
+const MIN_PICKABLE_DATE = "2000-01-01";
+const MAX_PICKABLE_DATE = "2100-12-31";
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -151,15 +153,29 @@ export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarH
 
   function handlePickDate(e: React.ChangeEvent<HTMLInputElement>) {
     // Some browsers (iOS "Borrar") emit an empty value — never select "".
-    if (e.target.value === "") return;
-    onSelectDate(e.target.value);
+    const value = e.target.value;
+    if (value === "") return;
+    // Typed years can fall outside the input's min/max; ignore those.
+    if (value < MIN_PICKABLE_DATE || value > MAX_PICKABLE_DATE) return;
+    onSelectDate(value);
+    // Re-picking the already-selected date must still return to its week.
+    setVisibleWeekStart(startOfWeek(value));
+  }
+
+  function handleOpenPicker(e: React.MouseEvent<HTMLInputElement>) {
+    // Desktop browsers only focus a segment on click; open the popup explicitly.
+    try {
+      e.currentTarget.showPicker?.();
+    } catch {
+      // showPicker can throw (e.g. not user-activated); the native UI still works.
+    }
   }
 
   return (
     <div className="select-none px-4 pt-3 pb-1">
       {/* Toolbar: date label + picker, Hoy shortcut, week chevrons */}
       <div className="mb-1 flex items-center justify-between">
-        <div className="relative">
+        <div className="relative flex min-h-11 items-center">
           <span className="text-sm font-semibold text-gray-900">
             {formatFullDayLabel(selectedDate)}
           </span>
@@ -167,8 +183,11 @@ export function WeekCalendarHeader({ selectedDate, onSelectDate }: WeekCalendarH
             type="date"
             aria-label="Elegir fecha"
             value={selectedDate}
+            min={MIN_PICKABLE_DATE}
+            max={MAX_PICKABLE_DATE}
             onChange={handlePickDate}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            onClick={handleOpenPicker}
+            className="absolute inset-0 h-full w-full cursor-pointer text-base opacity-0"
           />
         </div>
         <div className="flex items-center gap-1">

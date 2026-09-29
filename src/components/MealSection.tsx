@@ -67,9 +67,19 @@ export function MealSection({
       setPreviousDayEntries([]);
       return;
     }
+    let cancelled = false;
     getByDateAndMeal(addDays(selectedDate, -1), mealType)
-      .then((rows) => setPreviousDayEntries(rows.map((e) => ({ ...e, brand: null }))))
-      .catch(() => setPreviousDayEntries([]));
+      .then((rows) => {
+        if (cancelled) return;
+        setPreviousDayEntries(rows.map((e) => ({ ...e, brand: null })));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPreviousDayEntries([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, mealType, entries.length]);
 
   // Tap/click outside to close context menu (pointerdown covers touch on iOS Safari)
