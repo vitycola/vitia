@@ -17,7 +17,7 @@ export function todayISO(): string {
 }
 
 /**
- * Format a YYYY-MM-DD date string for display in the DateNavigator.
+ * Format a YYYY-MM-DD date string for display as a short day label.
  * Returns "Hoy" when the date equals today, otherwise "DD MMM" (e.g. "20 Jun").
  *
  * Month abbreviations are in Spanish to match the Spanish locale of the app.
