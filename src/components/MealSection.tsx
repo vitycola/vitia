@@ -1,5 +1,6 @@
 import { getByDateAndMeal } from "@/db/repos/mealEntries";
 import type { MealEntryView } from "@/db/repos/mealEntries";
+import { addDays, todayISO } from "@/lib/date";
 import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanner";
 import { MealEntryRow } from "@/src/components/MealEntryRow";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
@@ -21,8 +22,7 @@ interface MealSectionProps {
   onDeleteEntry: (id: string) => void;
   onEditEntry: (entry: MealEntryView) => void;
   selectedDate: string;
-  isToday: boolean;
-  onRepeatMeal: (mealType: MealType, sourceDate?: string) => Promise<number>;
+  onRepeatMeal: (mealType: MealType) => Promise<number>;
   onPasteMeal: (mealType: MealType) => Promise<number>;
   onClearMeal: (mealType: MealType) => Promise<void>;
   onAcceptSuggestion: (mealType: MealType) => Promise<number>;
@@ -35,7 +35,6 @@ export function MealSection({
   onDeleteEntry,
   onEditEntry,
   selectedDate,
-  isToday,
   onRepeatMeal,
   onPasteMeal,
   onClearMeal,
@@ -62,24 +61,16 @@ export function MealSection({
     setDismissed(false);
   }, [selectedDate]);
 
-  // Fetch previous day entries to power the "copy from yesterday" banner
+  // Fetch previous day entries to power the "copy from previous day" banner
   useEffect(() => {
-    if (!isToday || entries.length > 0) {
+    if (entries.length > 0) {
       setPreviousDayEntries([]);
       return;
     }
-    const [year, month, day] = selectedDate.split("-").map(Number);
-    const prev = new Date(year, month - 1, day);
-    prev.setDate(prev.getDate() - 1);
-    const y = prev.getFullYear();
-    const m = String(prev.getMonth() + 1).padStart(2, "0");
-    const d = String(prev.getDate()).padStart(2, "0");
-    const prevDate = `${y}-${m}-${d}`;
-
-    getByDateAndMeal(prevDate, mealType)
+    getByDateAndMeal(addDays(selectedDate, -1), mealType)
       .then((rows) => setPreviousDayEntries(rows.map((e) => ({ ...e, brand: null }))))
       .catch(() => setPreviousDayEntries([]));
-  }, [selectedDate, mealType, isToday, entries.length]);
+  }, [selectedDate, mealType, entries.length]);
 
   // Tap/click outside to close context menu (pointerdown covers touch on iOS Safari)
   useEffect(() => {
@@ -104,7 +95,7 @@ export function MealSection({
     }
   }
 
-  const showBanner = isToday && entries.length === 0 && previousDayEntries.length > 0 && !dismissed;
+  const showBanner = entries.length === 0 && previousDayEntries.length > 0 && !dismissed;
 
   const hasClipboard = clipboardMeal !== null && clipboardMeal.entries.length > 0;
 
@@ -175,31 +166,27 @@ export function MealSection({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    runAction(() => onRepeatMeal(mealType, isToday ? undefined : selectedDate))
-                  }
+                  onClick={() => runAction(() => onRepeatMeal(mealType))}
                   className="flex w-full items-center px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
                   Repetir comida
                 </button>
 
-                {isToday && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        window.confirm(`¿Eliminar todas las entradas de ${MEAL_LABELS[mealType]}?`)
-                      ) {
-                        void runAction(() => onClearMeal(mealType));
-                      } else {
-                        setMenuOpen(false);
-                      }
-                    }}
-                    className="flex w-full items-center px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Vaciar comida
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      window.confirm(`¿Eliminar todas las entradas de ${MEAL_LABELS[mealType]}?`)
+                    ) {
+                      void runAction(() => onClearMeal(mealType));
+                    } else {
+                      setMenuOpen(false);
+                    }
+                  }}
+                  className="flex w-full items-center px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  Vaciar comida
+                </button>
               </div>
             )}
           </div>
@@ -213,6 +200,7 @@ export function MealSection({
           {showBanner && (
             <CopyFromYesterdayBanner
               count={previousDayEntries.length}
+              title={selectedDate === todayISO() ? undefined : "¿Copiar del día anterior?"}
               busy={inFlight}
               onAccept={() => runAction(() => onAcceptSuggestion(mealType))}
               onDismiss={() => setDismissed(true)}

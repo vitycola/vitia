@@ -210,7 +210,6 @@ export function DayScreen() {
               onDeleteEntry={(id) => void deleteEntry(id)}
               onEditEntry={handleEditEntry}
               selectedDate={selectedDate}
-              isToday={isToday}
               onRepeatMeal={handleRepeatMeal}
               onPasteMeal={handlePasteMeal}
               onClearMeal={handleClearMeal}
