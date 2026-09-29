@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
 
+/** Horizontal travel (px) beyond which a gesture counts as a drag, not a tap. */
+const DRAG_CLICK_THRESHOLD = 5;
+
 interface UseSwipeRevealOptions {
   /** Width in px of the action revealed behind the row when swiped open. */
   revealWidth: number;
@@ -11,9 +14,17 @@ interface UseSwipeRevealResult {
   isOpen: boolean;
   /** True while actively dragging — disables the snap transition so the row follows the finger. */
   isDragging: boolean;
-  onPointerDown: (e: { clientX: number }) => void;
+  onPointerDown: (e: { clientX: number; pointerType?: string }) => void;
   onPointerMove: (e: { clientX: number }) => void;
   onPointerUp: () => void;
+  /**
+   * Returns true once if the gesture that just ended was a drag, then resets.
+   * Call it first in the row's click handler: mouse browsers fire a `click`
+   * after pointerup on the same element even after a drag (touch browsers
+   * suppress it), which would otherwise select the row or close it right
+   * after the swipe opened it.
+   */
+  consumeDragClick: () => boolean;
   close: () => void;
 }
 
@@ -44,15 +55,19 @@ export function useSwipeReveal({ revealWidth }: UseSwipeRevealOptions): UseSwipe
   const isDraggingRef = useRef(false);
   const startX = useRef(0);
   const startTranslateX = useRef(0);
+  const didDragRef = useRef(false);
+  const pointerTypeRef = useRef<string | undefined>(undefined);
 
   function setTranslateX(value: number) {
     translateXRef.current = value;
     setTranslateXState(value);
   }
 
-  function onPointerDown(e: { clientX: number }) {
+  function onPointerDown(e: { clientX: number; pointerType?: string }) {
     startX.current = e.clientX;
     startTranslateX.current = translateXRef.current;
+    didDragRef.current = false;
+    pointerTypeRef.current = e.pointerType;
     isDraggingRef.current = true;
     setIsDragging(true);
   }
@@ -60,6 +75,10 @@ export function useSwipeReveal({ revealWidth }: UseSwipeRevealOptions): UseSwipe
   function onPointerMove(e: { clientX: number }) {
     if (!isDraggingRef.current) return;
     const delta = e.clientX - startX.current;
+    // Only mouse needs this: touch/pen browsers already suppress the click
+    // after a swipe, and a small finger wobble must still count as a tap.
+    const isMouse = pointerTypeRef.current === undefined || pointerTypeRef.current === "mouse";
+    if (isMouse && Math.abs(delta) > DRAG_CLICK_THRESHOLD) didDragRef.current = true;
     setTranslateX(clamp(startTranslateX.current + delta, -revealWidth, 0));
   }
 
@@ -72,10 +91,25 @@ export function useSwipeReveal({ revealWidth }: UseSwipeRevealOptions): UseSwipe
     setIsOpen(shouldOpen);
   }
 
+  function consumeDragClick(): boolean {
+    const didDrag = didDragRef.current;
+    didDragRef.current = false;
+    return didDrag;
+  }
+
   function close() {
     setTranslateX(0);
     setIsOpen(false);
   }
 
-  return { translateX, isOpen, isDragging, onPointerDown, onPointerMove, onPointerUp, close };
+  return {
+    translateX,
+    isOpen,
+    isDragging,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    consumeDragClick,
+    close,
+  };
 }
