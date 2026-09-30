@@ -1,5 +1,5 @@
 import type { Food } from "@/db/schema";
-import { macroCalorieShares, sumIngredientMacros } from "../nutrition";
+import { computeAutoGoals, macroCalorieShares, sumIngredientMacros } from "../nutrition";
 
 function makeIngredientFood(
   overrides: Partial<Food> = {}
@@ -107,5 +107,20 @@ describe("sumIngredientMacros", () => {
     ]);
     // Not a round number — confirms no rounding was applied internally.
     expect(Number.isInteger(result.proteinPer100g * 1000)).toBe(false);
+  });
+});
+
+describe("computeAutoGoals", () => {
+  it("derives calories and macros from the profile (30y/175cm/75kg male, moderately active, maintain)", () => {
+    expect(
+      computeAutoGoals({
+        age: 30,
+        heightCm: 175,
+        weightKg: 75,
+        sex: "male",
+        activityLevel: "moderately_active",
+        goal: "maintain",
+      })
+    ).toEqual({ calorieGoal: 2633, proteinGoalG: 197, carbsGoalG: 263, fatGoalG: 88 });
   });
 });

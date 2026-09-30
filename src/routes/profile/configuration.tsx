@@ -1,8 +1,10 @@
+import { todayISO } from "@/lib/date";
 import { formatNumber } from "@/lib/formatNumber";
 import { profileFieldsSchema } from "@/lib/profileSchema";
 import { isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
+import { useProgressStore } from "@/stores/useProgressStore";
 import type { ActivityLevel, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Settings } from "lucide-react";
@@ -32,17 +34,18 @@ const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
  * `useProfileStore.saveProfile` — the offline-first Dexie + syncQueue path
  * is untouched.
  *
- * Weight forward-compat seam (SDD-1): `saveProfile` remains the SOLE
- * weight-write path. A future dated weight-log feature can wrap this same
- * call to additionally append a history entry, without requiring this form
- * to change its contract.
+ * Weight: the profile weight mirrors the latest weigh-in (issue #82), so a
+ * changed weight is also upserted as today's progress entry via
+ * `useProgressStore.recordWeight`, which preserves the entry's other data.
  */
 export function ConfigurationRoute() {
   const navigate = useNavigate();
   const { profile, saveProfile } = useProfileStore();
+  const recordWeight = useProgressStore((s) => s.recordWeight);
   const { signOut } = useAuthStore();
   const [signingOut, setSigningOut] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   const {
     register,
@@ -84,21 +87,32 @@ export function ConfigurationRoute() {
       sex: profile.sex,
       activityLevel: profile.activityLevel,
     });
+    setSaveError(false);
     setEditing(false);
   }
 
   async function onSubmit(data: FormValues) {
     if (!profile) return;
-    await saveProfile({
-      age: data.age,
-      heightCm: data.heightCm,
-      weightKg: data.weightKg,
-      sex: data.sex as Sex,
-      activityLevel: data.activityLevel as ActivityLevel,
-      // Goal is edited from the Plan tab, not here — preserve the current value.
-      goal: profile.goal,
-    });
-    setEditing(false);
+    setSaveError(false);
+    try {
+      // Profile weight is the latest weigh-in: record it first (this also
+      // syncs the profile weight), then save the rest of the profile.
+      if (data.weightKg !== profile.weightKg) {
+        await recordWeight(todayISO(), data.weightKg);
+      }
+      await saveProfile({
+        age: data.age,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        sex: data.sex as Sex,
+        activityLevel: data.activityLevel as ActivityLevel,
+        // Goal is edited from the Plan tab, not here — preserve the current value.
+        goal: profile.goal,
+      });
+      setEditing(false);
+    } catch {
+      setSaveError(true);
+    }
   }
 
   return (
@@ -222,6 +236,12 @@ export function ConfigurationRoute() {
                 )}
               </div>
             </div>
+
+            {saveError && (
+              <p role="alert" className="mt-3 text-xs text-red-500">
+                No se pudieron guardar los cambios. Inténtalo de nuevo.
+              </p>
+            )}
 
             <div className="mt-4 flex gap-2">
               <button

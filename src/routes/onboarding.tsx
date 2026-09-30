@@ -1,8 +1,10 @@
-import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
+import { todayISO } from "@/lib/date";
+import { computeAutoGoals } from "@/lib/nutrition";
 import { profileFieldsSchema, requiredOptionError } from "@/lib/profileSchema";
 import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
+import { useProgressStore } from "@/stores/useProgressStore";
 import type { ActivityLevel, Goal, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
@@ -22,11 +24,7 @@ type FormValues = z.infer<typeof schema>;
 function computePreview(values: Partial<FormValues>) {
   const { age, heightCm, weightKg, sex, activityLevel, goal } = values;
   if (!age || !heightCm || !weightKg || !sex || !activityLevel || !goal) return null;
-  const bmr = computeBMR({ age, heightCm, weightKg, sex });
-  const tdee = computeTDEE(bmr, activityLevel);
-  const calorieGoal = deriveCalorieGoal(tdee, goal);
-  const macros = deriveMacros(calorieGoal);
-  return { calorieGoal, ...macros };
+  return computeAutoGoals({ age, heightCm, weightKg, sex, activityLevel, goal });
 }
 
 export function OnboardingRoute() {
@@ -87,6 +85,13 @@ export function OnboardingRoute() {
         goal: data.goal as Goal,
       });
       console.log("[onboarding] saveProfile OK — navigating to /");
+      // The initial weight is the first weigh-in, so a later profile reload
+      // cannot replace it with an older entry.
+      try {
+        await useProgressStore.getState().recordWeight(todayISO(), data.weightKg);
+      } catch (err) {
+        console.error("[onboarding] recordWeight FAILED", err);
+      }
     } catch (err) {
       console.error("[onboarding] saveProfile FAILED", err);
       throw err;
@@ -110,7 +115,7 @@ export function OnboardingRoute() {
             </p>
             <p className="text-2xl font-bold text-[#1C1C1E]">{preview.calorieGoal} kcal</p>
             <p className="mt-1 text-xs text-[#8E8E93]">
-              P {preview.proteinG}g · C {preview.carbsG}g · G {preview.fatG}g
+              P {preview.proteinGoalG}g · C {preview.carbsGoalG}g · G {preview.fatGoalG}g
             </p>
           </div>
         )}

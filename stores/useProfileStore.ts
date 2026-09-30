@@ -1,6 +1,9 @@
 import * as profileRepo from "@/db/repos/profile";
+import * as progressRepo from "@/db/repos/progress";
 import type { UserProfile } from "@/db/schema";
-import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
+import { todayISO } from "@/lib/date";
+import { pickLatestWeight } from "@/lib/latestWeight";
+import { computeAutoGoals } from "@/lib/nutrition";
 import type { ActivityLevel, Goal, Sex } from "@/types";
 import { create } from "zustand";
 
@@ -64,6 +67,14 @@ interface ProfileActions {
    * recomputes directly instead.
    */
   revertToAutomaticGoals: () => Promise<void>;
+  /**
+   * Keep `profile.weightKg` equal to the latest weigh-in dated on or before
+   * `today` (product rule, issue #82). Runs after load()/reload() and after
+   * progress entries change. Writes only when the value differs (so it
+   * cannot loop); goals are recomputed in the same write unless manual goals
+   * are active. Returns true when the profile was updated.
+   */
+  syncWeightFromProgress: (today?: string) => Promise<boolean>;
 }
 
 export const useProfileStore = create<ProfileState & ProfileActions>()((set, get) => ({
@@ -79,6 +90,12 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       const profile = await profileRepo.getProfile();
       console.log("[profileStore] load() getProfile result:", profile);
       set({ profile, hasProfile: profile !== null, isLoading: false });
+      // Heal a profile whose weight diverged from the latest weigh-in.
+      try {
+        await get().syncWeightFromProgress();
+      } catch (err) {
+        console.error("[profileStore] syncWeightFromProgress FAILED", err);
+      }
     } catch (err) {
       console.error("[profileStore] load() getProfile FAILED", err);
       set({ isLoading: false });
@@ -92,10 +109,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
   },
 
   saveProfile: async (input: ProfileInput) => {
-    const bmr = computeBMR(input);
-    const tdee = computeTDEE(bmr, input.activityLevel);
-    const calorieGoal = deriveCalorieGoal(tdee, input.goal);
-    const { proteinG, carbsG, fatG } = deriveMacros(calorieGoal);
+    const goals = computeAutoGoals(input);
 
     const profile = await profileRepo.upsertProfile({
       age: input.age,
@@ -104,10 +118,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       sex: input.sex,
       activityLevel: input.activityLevel,
       goal: input.goal,
-      calorieGoal,
-      proteinGoalG: proteinG,
-      carbsGoalG: carbsG,
-      fatGoalG: fatG,
+      ...goals,
       useManualGoals: false,
     });
 
@@ -140,10 +151,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
     // No-op when manual goals are active or no profile exists.
     if (!current || current.useManualGoals) return;
 
-    const bmr = computeBMR(current);
-    const tdee = computeTDEE(bmr, current.activityLevel);
-    const calorieGoal = deriveCalorieGoal(tdee, current.goal);
-    const { proteinG, carbsG, fatG } = deriveMacros(calorieGoal);
+    const goals = computeAutoGoals(current);
 
     const profile = await profileRepo.upsertProfile({
       age: current.age,
@@ -152,24 +160,53 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       sex: current.sex,
       activityLevel: current.activityLevel,
       goal: current.goal,
-      calorieGoal,
-      proteinGoalG: proteinG,
-      carbsGoalG: carbsG,
-      fatGoalG: fatG,
+      ...goals,
       useManualGoals: false,
     });
 
     set({ profile });
   },
 
+  syncWeightFromProgress: async (today = todayISO()) => {
+    if (!get().profile) return false;
+
+    const entries = await progressRepo.getRange("0000-01-01", "9999-12-31");
+    const weightKg = pickLatestWeight(entries, today);
+
+    // Re-read after the await: a concurrent saveProfile/recalc/goal edit must
+    // not be overwritten by a stale snapshot.
+    const current = get().profile;
+    if (!current || weightKg === null || weightKg === current.weightKg) return false;
+
+    const goals = current.useManualGoals
+      ? {
+          calorieGoal: current.calorieGoal,
+          proteinGoalG: current.proteinGoalG,
+          carbsGoalG: current.carbsGoalG,
+          fatGoalG: current.fatGoalG,
+        }
+      : computeAutoGoals({ ...current, weightKg });
+
+    const profile = await profileRepo.upsertProfile({
+      age: current.age,
+      heightCm: current.heightCm,
+      weightKg,
+      sex: current.sex,
+      activityLevel: current.activityLevel,
+      goal: current.goal,
+      ...goals,
+      useManualGoals: current.useManualGoals,
+    });
+
+    set({ profile });
+    return true;
+  },
+
   revertToAutomaticGoals: async () => {
     const current = get().profile;
     if (!current) return;
 
-    const bmr = computeBMR(current);
-    const tdee = computeTDEE(bmr, current.activityLevel);
-    const calorieGoal = deriveCalorieGoal(tdee, current.goal);
-    const { proteinG, carbsG, fatG } = deriveMacros(calorieGoal);
+    const goals = computeAutoGoals(current);
 
     const profile = await profileRepo.upsertProfile({
       age: current.age,
@@ -178,10 +215,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       sex: current.sex,
       activityLevel: current.activityLevel,
       goal: current.goal,
-      calorieGoal,
-      proteinGoalG: proteinG,
-      carbsGoalG: carbsG,
-      fatGoalG: fatG,
+      ...goals,
       useManualGoals: false,
     });
 
