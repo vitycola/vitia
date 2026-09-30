@@ -47,7 +47,7 @@ export function LoginRoute() {
           return;
         }
         // Supabase may require email confirmation; show a message
-        setError("Check your email to confirm your account before logging in.");
+        setError("Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.");
       }
     } finally {
       setIsSubmitting(false);
@@ -73,7 +73,7 @@ export function LoginRoute() {
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            Sign in
+            Iniciar sesión
           </button>
           <button
             type="button"
@@ -87,7 +87,7 @@ export function LoginRoute() {
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            Create account
+            Crear cuenta
           </button>
         </div>
 
@@ -95,7 +95,7 @@ export function LoginRoute() {
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
+              Correo electrónico
             </label>
             <input
               id="email"
@@ -105,13 +105,13 @@ export function LoginRoute() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-              placeholder="you@example.com"
+              placeholder="tu@correo.com"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
+              Contraseña
             </label>
             <input
               id="password"
@@ -122,7 +122,7 @@ export function LoginRoute() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-              placeholder="At least 8 characters"
+              placeholder="Mínimo 8 caracteres"
             />
           </div>
 
@@ -133,7 +133,7 @@ export function LoginRoute() {
             disabled={isSubmitting}
             className="mt-1 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Please wait…" : tab === "login" ? "Sign in" : "Create account"}
+            {isSubmitting ? "Un momento…" : tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </button>
         </form>
       </div>

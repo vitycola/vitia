@@ -38,7 +38,7 @@ describe("ProgressEntrySheet", () => {
 
     fireEvent.click(screen.getByText("Guardar"));
 
-    expect(await screen.findByText(/Ingresá al menos un dato/)).toBeInTheDocument();
+    expect(await screen.findByText(/Introduce al menos un dato/)).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });
 

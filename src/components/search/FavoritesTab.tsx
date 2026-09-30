@@ -29,7 +29,7 @@ export function FavoritesTab({ mealType: _mealType, onSelect, query }: Favorites
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
           <p className="mb-2 text-base font-semibold text-gray-700">Sin favoritos todavía</p>
           <p className="text-sm text-gray-400">
-            Marca alimentos con el corazón para encontrarlos rápido acá.
+            Marca alimentos con el corazón para encontrarlos rápido aquí.
           </p>
         </div>
       )}

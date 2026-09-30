@@ -166,7 +166,7 @@ export function CalorieCard({
       <div className="mb-1 flex items-center justify-between">
         <button
           type="button"
-          aria-label="Edit calorie goal"
+          aria-label="Editar objetivo de calorías"
           onClick={onEditGoals}
           className="p-1 text-[#C7C7CC]"
         >
@@ -178,7 +178,7 @@ export function CalorieCard({
           </p>
           <p className="text-xs text-[#8E8E93]">kcal</p>
         </div>
-        <button type="button" aria-label="More options" className="p-1 text-[#C7C7CC]">
+        <button type="button" aria-label="Más opciones" className="p-1 text-[#C7C7CC]">
           <MoreHorizontal size={16} />
         </button>
       </div>
@@ -224,7 +224,7 @@ export function CalorieCard({
       {/* Macro columns */}
       <div className="mt-3 flex gap-2">
         <MacroColumn label="Proteínas" consumed={proteinG} goal={proteinGoalG} />
-        <MacroColumn label="Carbs" consumed={carbsG} goal={carbsGoalG} />
+        <MacroColumn label="Carboh." consumed={carbsG} goal={carbsGoalG} />
         <MacroColumn label="Grasas" consumed={fatG} goal={fatGoalG} />
       </div>
     </div>
