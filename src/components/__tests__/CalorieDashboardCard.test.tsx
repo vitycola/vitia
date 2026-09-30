@@ -54,19 +54,23 @@ describe("CalorieDashboardCard", () => {
     expect(screen.queryByText("2.200")).not.toBeInTheDocument();
   });
 
-  it("renders the week caption combining total-period label and average", () => {
+  it("renders the week caption as a rolling 7-day window with a per-logged-day average", () => {
     render(<CalorieDashboardCard range="week" />);
-    expect(screen.getByText("total esta semana · 2000 kcal prom/día")).toBeInTheDocument();
+    expect(screen.getByText("total últimos 7 días · 2000 kcal/día registrado")).toBeInTheDocument();
   });
 
-  it("renders the month caption with its own label", () => {
+  it("renders the month caption as a rolling 30-day window", () => {
     render(<CalorieDashboardCard range="month" />);
-    expect(screen.getByText("total este mes · 2000 kcal prom/día")).toBeInTheDocument();
+    expect(
+      screen.getByText("total últimos 30 días · 2000 kcal/día registrado")
+    ).toBeInTheDocument();
   });
 
-  it("renders the 3month caption with its own label and unit", () => {
+  it("renders the 3month caption as a rolling 90-day window with a per-day (not per-month) average", () => {
     render(<CalorieDashboardCard range="3month" />);
-    expect(screen.getByText("total últimos 3 meses · 2000 kcal prom/mes")).toBeInTheDocument();
+    expect(
+      screen.getByText("total últimos 90 días · 2000 kcal/día registrado")
+    ).toBeInTheDocument();
   });
 
   it("renders a placeholder in the caption when average is null (zero logged days)", () => {
@@ -77,7 +81,7 @@ describe("CalorieDashboardCard", () => {
 
     render(<CalorieDashboardCard range="week" />);
 
-    expect(screen.getByText("total esta semana · — kcal prom/día")).toBeInTheDocument();
+    expect(screen.getByText("total últimos 7 días · — kcal/día registrado")).toBeInTheDocument();
   });
 
   it("still renders the total number even when average is null", () => {
