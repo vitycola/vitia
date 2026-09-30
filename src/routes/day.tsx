@@ -1,6 +1,7 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
 import { formatFullDayLabel, todayISO } from "@/lib/date";
+import { formatNumber } from "@/lib/formatNumber";
 import { CalorieCard } from "@/src/components/CalorieCard";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
@@ -226,7 +227,8 @@ export function DayScreen() {
               <div className="flex flex-col items-start gap-1">
                 <span className="text-sm font-semibold text-gray-900">Progreso registrado</span>
                 <span className="text-xs text-gray-500">
-                  {progressEntry.weightKg != null && `Peso: ${progressEntry.weightKg} kg`}
+                  {progressEntry.weightKg != null &&
+                    `Peso: ${formatNumber(progressEntry.weightKg, { maxFractionDigits: 1 })} kg`}
                 </span>
               </div>
               <div className="flex items-center gap-1">

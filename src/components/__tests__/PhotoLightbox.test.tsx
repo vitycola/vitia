@@ -41,7 +41,7 @@ describe("PhotoLightbox", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("80 kg")).toBeInTheDocument();
-    expect(screen.getByText("18.5 %")).toBeInTheDocument();
+    expect(screen.getByText("18,5 %")).toBeInTheDocument();
     expect(screen.getByText("85 cm")).toBeInTheDocument();
   });
 

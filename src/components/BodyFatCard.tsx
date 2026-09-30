@@ -1,6 +1,7 @@
 import { useBodyFatDashboard } from "@/hooks/useBodyFatDashboard";
 import { BODY_FAT_UNIT } from "@/lib/bodyFatDashboard";
 import type { DashboardRange } from "@/lib/bodyFatDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import { useState } from "react";
 import { BodyFatLineChart } from "./BodyFatLineChart";
 import { BodyFatScrubOverlay } from "./BodyFatScrubOverlay";
@@ -26,12 +27,11 @@ export function BodyFatCard({ range }: BodyFatCardProps) {
 
   const { linePoints, renderState, latest, delta, window } = useBodyFatDashboard(range);
 
-  const latestText =
-    latest === null ? "—" : latest.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  const latestText = latest === null ? "—" : formatNumber(latest, { maxFractionDigits: 1 });
   const deltaText =
     delta === null
       ? null
-      : `${delta > 0 ? "+" : ""}${delta.toLocaleString("es-AR", { maximumFractionDigits: 1 })} desde inicio`;
+      : `${delta > 0 ? "+" : ""}${formatNumber(delta, { maxFractionDigits: 1 })} desde inicio`;
 
   return (
     <>

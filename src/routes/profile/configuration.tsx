@@ -1,3 +1,4 @@
+import { formatNumber } from "@/lib/formatNumber";
 import { profileFieldsSchema } from "@/lib/profileSchema";
 import { isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
@@ -131,8 +132,14 @@ export function ConfigurationRoute() {
         {!editing ? (
           <div className="space-y-2">
             <ProfileRow label="Edad" value={`${profile.age} años`} />
-            <ProfileRow label="Altura" value={`${profile.heightCm} cm`} />
-            <ProfileRow label="Peso" value={`${profile.weightKg} kg`} />
+            <ProfileRow
+              label="Altura"
+              value={`${formatNumber(profile.heightCm, { maxFractionDigits: 1 })} cm`}
+            />
+            <ProfileRow
+              label="Peso"
+              value={`${formatNumber(profile.weightKg, { maxFractionDigits: 1 })} kg`}
+            />
             <ProfileRow label="Sexo" value={SEX_LABELS[profile.sex]} />
             <ProfileRow label="Actividad" value={ACTIVITY_LABELS[profile.activityLevel]} />
           </div>

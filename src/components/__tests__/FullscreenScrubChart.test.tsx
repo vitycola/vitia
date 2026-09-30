@@ -2,6 +2,7 @@
 import type { ScrubSeriesPoint } from "@/lib/scrubChart";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import { formatNumber } from "@/lib/formatNumber";
 import { FullscreenScrubChart } from "../FullscreenScrubChart";
 
 const SERIES: ScrubSeriesPoint[] = [
@@ -24,7 +25,7 @@ const MANY_SERIES: ScrubSeriesPoint[] = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 function formatValue(value: number): string {
-  return value.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  return formatNumber(value, { maxFractionDigits: 1 });
 }
 
 beforeAll(() => {

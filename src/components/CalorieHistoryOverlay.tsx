@@ -1,4 +1,5 @@
 import { formatFullDayLabel } from "@/lib/date";
+import { formatNumber } from "@/lib/formatNumber";
 import { X } from "lucide-react";
 
 interface OverlayRow {
@@ -47,7 +48,7 @@ export function CalorieHistoryOverlay({ rows, onClose }: CalorieHistoryOverlayPr
               className="flex items-center justify-between border-b border-gray-100 py-2 text-sm last:border-b-0"
             >
               <span className="text-gray-700">{formatFullDayLabel(row.date)}</span>
-              <span className="text-gray-500">{Math.round(row.kcal).toLocaleString()} kcal</span>
+              <span className="text-gray-500">{formatNumber(row.kcal)} kcal</span>
             </div>
           ))}
         </div>

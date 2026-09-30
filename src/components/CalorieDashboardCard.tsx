@@ -1,5 +1,6 @@
 import { useCalorieDashboard } from "@/hooks/useCalorieDashboard";
 import type { DashboardRange } from "@/lib/calorieDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import { useState } from "react";
 import { CalorieBarChart } from "./CalorieBarChart";
 import { CalorieHistoryOverlay } from "./CalorieHistoryOverlay";
@@ -28,7 +29,7 @@ export function CalorieDashboardCard({ range }: CalorieDashboardCardProps) {
   const [overlayOpen, setOverlayOpen] = useState(false);
 
   const { totalLabel, avgUnit } = CAPTION_BY_RANGE[range];
-  const avgText = average === null ? "—" : Math.round(average).toLocaleString("es-AR");
+  const avgText = average === null ? "—" : formatNumber(average);
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -37,9 +38,7 @@ export function CalorieDashboardCard({ range }: CalorieDashboardCardProps) {
       </div>
 
       <div className="mb-3">
-        <p className="text-xl font-bold text-[#1C1C1E]">
-          {Math.round(total).toLocaleString("es-AR")}
-        </p>
+        <p className="text-xl font-bold text-[#1C1C1E]">{formatNumber(total)}</p>
         <p className="text-[11px] text-[#8E8E93]">
           {totalLabel} · {avgText} {avgUnit}
         </p>

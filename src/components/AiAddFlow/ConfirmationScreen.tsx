@@ -3,6 +3,7 @@ import { getConfidenceMeta } from "@/lib/aiConfidence";
 import { scaleAiMacros } from "@/lib/aiMacros";
 import { groupResultsByMeal } from "@/lib/aiMealGroups";
 import { MEAL_LABELS, MEAL_ORDER } from "@/lib/constants";
+import { formatNumber } from "@/lib/formatNumber";
 import { generateId } from "@/lib/id";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useDayStore } from "@/stores/useDayStore";
@@ -214,9 +215,16 @@ export function ConfirmationScreen() {
                 )}
                 <div className="flex gap-3 text-xs text-gray-500">
                   <span>{Math.round(scaled.kcal)} kcal</span>
-                  <span>P: {scaled.protein.toFixed(1)}g</span>
-                  <span>C: {scaled.carbs.toFixed(1)}g</span>
-                  <span>G: {scaled.fat.toFixed(1)}g</span>
+                  <span>
+                    P:{" "}
+                    {formatNumber(scaled.protein, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
+                  <span>
+                    C: {formatNumber(scaled.carbs, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
+                  <span>
+                    G: {formatNumber(scaled.fat, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
                 </div>
               </div>
             );
@@ -234,9 +242,15 @@ export function ConfirmationScreen() {
         </div>
         <div className="flex gap-3">
           <span>{Math.round(totals.kcal)} kcal</span>
-          <span>P: {totals.protein.toFixed(1)}g</span>
-          <span>C: {totals.carbs.toFixed(1)}g</span>
-          <span>G: {totals.fat.toFixed(1)}g</span>
+          <span>
+            P: {formatNumber(totals.protein, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+          </span>
+          <span>
+            C: {formatNumber(totals.carbs, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+          </span>
+          <span>
+            G: {formatNumber(totals.fat, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+          </span>
         </div>
       </div>
 

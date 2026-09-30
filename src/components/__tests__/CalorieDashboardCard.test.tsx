@@ -56,17 +56,17 @@ describe("CalorieDashboardCard", () => {
 
   it("renders the week caption combining total-period label and average", () => {
     render(<CalorieDashboardCard range="week" />);
-    expect(screen.getByText("total esta semana · 2.000 kcal prom/día")).toBeInTheDocument();
+    expect(screen.getByText("total esta semana · 2000 kcal prom/día")).toBeInTheDocument();
   });
 
   it("renders the month caption with its own label", () => {
     render(<CalorieDashboardCard range="month" />);
-    expect(screen.getByText("total este mes · 2.000 kcal prom/día")).toBeInTheDocument();
+    expect(screen.getByText("total este mes · 2000 kcal prom/día")).toBeInTheDocument();
   });
 
   it("renders the 3month caption with its own label and unit", () => {
     render(<CalorieDashboardCard range="3month" />);
-    expect(screen.getByText("total últimos 3 meses · 2.000 kcal prom/mes")).toBeInTheDocument();
+    expect(screen.getByText("total últimos 3 meses · 2000 kcal prom/mes")).toBeInTheDocument();
   });
 
   it("renders a placeholder in the caption when average is null (zero logged days)", () => {

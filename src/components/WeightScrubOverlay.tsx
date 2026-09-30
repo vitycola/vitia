@@ -1,4 +1,5 @@
 import { useWeightDashboard } from "@/hooks/useWeightDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import { buildScrubSeries } from "@/lib/scrubChart";
 import { WEIGHT_UNIT } from "@/lib/weightDashboard";
 import type { DashboardRange } from "@/stores/useProgressStore";
@@ -18,7 +19,7 @@ function renderStateFor(pointCount: number): "empty" | "single" | "line" {
 }
 
 function formatValue(value: number): string {
-  return value.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  return formatNumber(value, { maxFractionDigits: 1 });
 }
 
 /**

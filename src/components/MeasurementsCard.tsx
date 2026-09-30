@@ -1,4 +1,5 @@
 import { useMeasurementsDashboard } from "@/hooks/useMeasurementsDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import type { DashboardRange, MetricKey } from "@/lib/measurementsDashboard";
 import { METRICS } from "@/lib/measurementsDashboard";
 import { Check, ChevronDown } from "lucide-react";
@@ -56,12 +57,11 @@ export function MeasurementsCard({ range }: MeasurementsCardProps) {
     setPickerOpen(false);
   }
 
-  const latestText =
-    latest === null ? "—" : latest.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  const latestText = latest === null ? "—" : formatNumber(latest, { maxFractionDigits: 1 });
   const deltaText =
     delta === null
       ? null
-      : `${delta > 0 ? "+" : ""}${delta.toLocaleString("es-AR", { maximumFractionDigits: 1 })} desde inicio`;
+      : `${delta > 0 ? "+" : ""}${formatNumber(delta, { maxFractionDigits: 1 })} desde inicio`;
 
   return (
     <>

@@ -1,3 +1,4 @@
+import { formatNumber } from "@/lib/formatNumber";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { useProfileStore } from "@/stores/useProfileStore";
 import { useState } from "react";
@@ -72,7 +73,7 @@ export function PlanRoute() {
           Objetivos diarios
         </h2>
         <div className="space-y-2">
-          <PlanRow label="Objetivo calórico" value={`${Math.round(profile.calorieGoal)} kcal`} />
+          <PlanRow label="Objetivo calórico" value={`${formatNumber(profile.calorieGoal)} kcal`} />
           <PlanRow label="Proteínas" value={`${Math.round(profile.proteinGoalG)} g`} />
           <PlanRow label="Carbohidratos" value={`${Math.round(profile.carbsGoalG)} g`} />
           <PlanRow label="Grasas" value={`${Math.round(profile.fatGoalG)} g`} />

@@ -4,6 +4,7 @@ import { useFavorite } from "@/hooks/useFavorite";
 import { MEAL_LABELS } from "@/lib/constants";
 import { canConvert, convertWeight, directionFor } from "@/lib/cookingConversion";
 import type { CookingBasis } from "@/lib/cookingConversion";
+import { formatNumber } from "@/lib/formatNumber";
 import { generateId } from "@/lib/id";
 import { scalePortion } from "@/lib/nutrition";
 import { CollapsibleSection } from "@/src/components/CollapsibleSection";
@@ -309,9 +310,18 @@ export function PortionRoute() {
         <CollapsibleSection title="Información Nutricional">
           <div className="space-y-2 text-sm text-gray-700">
             <NutritionRow label="Calorías" value={`${Math.round(food.caloriesPer100g)} kcal`} />
-            <NutritionRow label="Proteínas" value={`${food.proteinPer100g} g`} />
-            <NutritionRow label="Carbohidratos" value={`${food.carbsPer100g} g`} />
-            <NutritionRow label="Grasas" value={`${food.fatPer100g} g`} />
+            <NutritionRow
+              label="Proteínas"
+              value={`${formatNumber(food.proteinPer100g, { maxFractionDigits: 1 })} g`}
+            />
+            <NutritionRow
+              label="Carbohidratos"
+              value={`${formatNumber(food.carbsPer100g, { maxFractionDigits: 1 })} g`}
+            />
+            <NutritionRow
+              label="Grasas"
+              value={`${formatNumber(food.fatPer100g, { maxFractionDigits: 1 })} g`}
+            />
             <p className="pt-1 text-xs text-gray-400">Valores por 100 g de producto.</p>
           </div>
         </CollapsibleSection>
@@ -367,7 +377,7 @@ export function PortionRoute() {
         {portion && grams > 0 && (
           <div className="rounded-2xl bg-surface px-4 py-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#8E8E93]">
-              Para {grams} g
+              Para {formatNumber(grams, { maxFractionDigits: 1 })} g
             </p>
             <div className="grid grid-cols-4 gap-2 text-center">
               <NutritionCell
