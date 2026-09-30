@@ -19,7 +19,7 @@ describe("CalorieCard interaction", () => {
     const onEditGoals = jest.fn();
     render(<CalorieCard {...baseProps} onEditGoals={onEditGoals} />);
 
-    fireEvent.click(screen.getByLabelText("Edit calorie goal"));
+    fireEvent.click(screen.getByLabelText("Editar objetivo de calorías"));
 
     expect(onEditGoals).toHaveBeenCalledTimes(1);
   });
@@ -27,6 +27,15 @@ describe("CalorieCard interaction", () => {
   it("is inert when onEditGoals is not provided", () => {
     render(<CalorieCard {...baseProps} />);
 
-    expect(() => fireEvent.click(screen.getByLabelText("Edit calorie goal"))).not.toThrow();
+    expect(() =>
+      fireEvent.click(screen.getByLabelText("Editar objetivo de calorías"))
+    ).not.toThrow();
+  });
+
+  it("uses Spanish accessible labels and the Carboh. macro label", () => {
+    render(<CalorieCard {...baseProps} />);
+
+    expect(screen.getByLabelText("Más opciones")).toBeInTheDocument();
+    expect(screen.getByText("Carboh.")).toBeInTheDocument();
   });
 });

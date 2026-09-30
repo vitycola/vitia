@@ -6,17 +6,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 const schema = z.object({
-  foodName: z.string().min(1, "Ingresá el nombre del alimento").max(200),
+  foodName: z.string().min(1, "Introduce el nombre del alimento").max(200),
   caloriesPer100g: z.coerce
-    .number({ invalid_type_error: "Ingresá las calorías" })
+    .number({ invalid_type_error: "Introduce las calorías" })
     .min(0, "Debe ser 0 o mayor")
     .max(9000),
-  proteinGPer100g: z.coerce.number({ invalid_type_error: "Ingresá las proteínas" }).min(0).max(100),
-  carbsGPer100g: z.coerce
-    .number({ invalid_type_error: "Ingresá los carbohidratos" })
+  proteinGPer100g: z.coerce
+    .number({ invalid_type_error: "Introduce las proteínas" })
     .min(0)
     .max(100),
-  fatGPer100g: z.coerce.number({ invalid_type_error: "Ingresá las grasas" }).min(0).max(100),
+  carbsGPer100g: z.coerce
+    .number({ invalid_type_error: "Introduce los carbohidratos" })
+    .min(0)
+    .max(100),
+  fatGPer100g: z.coerce.number({ invalid_type_error: "Introduce las grasas" }).min(0).max(100),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -73,7 +76,7 @@ export function CustomFoodRoute() {
 
         <h1 className="mb-2 text-xl font-bold text-gray-900">Alimento personalizado</h1>
         <p className="mb-6 text-sm text-gray-500">
-          Ingresá los datos nutricionales por cada 100 g.
+          Introduce los datos nutricionales por cada 100 g.
         </p>
 
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4" noValidate>
@@ -106,6 +109,7 @@ export function CustomFoodRoute() {
               id="caloriesPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("caloriesPer100g")}
               className={fieldClass(!!errors.caloriesPer100g)}
@@ -127,6 +131,7 @@ export function CustomFoodRoute() {
               id="proteinGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("proteinGPer100g")}
               className={fieldClass(!!errors.proteinGPer100g)}
@@ -145,6 +150,7 @@ export function CustomFoodRoute() {
               id="carbsGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("carbsGPer100g")}
               className={fieldClass(!!errors.carbsGPer100g)}
@@ -163,6 +169,7 @@ export function CustomFoodRoute() {
               id="fatGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("fatGPer100g")}
               className={fieldClass(!!errors.fatGPer100g)}

@@ -49,6 +49,14 @@ beforeEach(() => {
 });
 
 describe("ResultsScreen", () => {
+  it("formats macros with a comma decimal separator", () => {
+    setupStore([{ ...ITEMS[0], protein: 12.5, carbs: 21, fat: 0.2 }]);
+    render(<ResultsScreen />);
+    expect(screen.getByText("P: 12,5g")).toBeInTheDocument();
+    expect(screen.getByText("C: 21,0g")).toBeInTheDocument();
+    expect(screen.getByText("G: 0,2g")).toBeInTheDocument();
+  });
+
   it("renders items with name and confidence badge", () => {
     setupStore(ITEMS);
     render(<ResultsScreen />);

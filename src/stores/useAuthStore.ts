@@ -9,6 +9,7 @@
  * and userId remains null — the app behaves as a fully local-only PWA.
  */
 
+import { mapAuthError } from "@/src/lib/authErrors";
 import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { create } from "zustand";
 
@@ -93,28 +94,28 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
   },
 
   signInWithPassword: async (email, password) => {
-    if (!isSyncEnabled()) return { error: "Cloud sync is disabled." };
+    if (!isSyncEnabled()) return { error: "La sincronización en la nube está desactivada." };
 
     const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       console.error("[authStore] signInWithPassword failed:", error.message);
-      return { error: error.message };
+      return { error: mapAuthError(error) };
     }
     // Store updates via onAuthStateChange
     return { error: null };
   },
 
   signUp: async (email, password) => {
-    if (!isSyncEnabled()) return { error: "Cloud sync is disabled." };
+    if (!isSyncEnabled()) return { error: "La sincronización en la nube está desactivada." };
 
     const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
       console.error("[authStore] signUp failed:", error.message);
-      return { error: error.message };
+      return { error: mapAuthError(error) };
     }
     // Store updates via onAuthStateChange once email is confirmed
     return { error: null };

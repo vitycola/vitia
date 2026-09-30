@@ -1,5 +1,6 @@
 import { useBodyFatDashboard } from "@/hooks/useBodyFatDashboard";
 import { BODY_FAT_UNIT } from "@/lib/bodyFatDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import { buildScrubSeries } from "@/lib/scrubChart";
 import type { DashboardRange } from "@/stores/useProgressStore";
 import { useState } from "react";
@@ -18,7 +19,7 @@ function renderStateFor(pointCount: number): "empty" | "single" | "line" {
 }
 
 function formatValue(value: number): string {
-  return value.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  return formatNumber(value, { maxFractionDigits: 1 });
 }
 
 /**

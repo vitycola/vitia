@@ -1,4 +1,5 @@
 import type { GalleryItem } from "@/hooks/useProgressPhotoGallery";
+import { formatNumber } from "@/lib/formatNumber";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 interface PhotoLightboxProps {
@@ -42,9 +43,14 @@ export function PhotoLightbox({ items, index, onClose, onNavigate }: PhotoLightb
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
 
-  const weightLabel = entry.weightKg != null ? `${entry.weightKg} kg` : null;
-  const bodyFatLabel = entry.bodyFatPct != null ? `${entry.bodyFatPct.toFixed(1)} %` : null;
-  const waistLabel = entry.waistCm != null ? `${entry.waistCm} cm` : null;
+  const weightLabel =
+    entry.weightKg != null ? `${formatNumber(entry.weightKg, { maxFractionDigits: 1 })} kg` : null;
+  const bodyFatLabel =
+    entry.bodyFatPct != null
+      ? `${formatNumber(entry.bodyFatPct, { minFractionDigits: 1, maxFractionDigits: 1 })} %`
+      : null;
+  const waistLabel =
+    entry.waistCm != null ? `${formatNumber(entry.waistCm, { maxFractionDigits: 1 })} cm` : null;
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: custom full-screen modal, not a native <dialog>

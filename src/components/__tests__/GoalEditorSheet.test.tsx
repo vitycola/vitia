@@ -22,6 +22,17 @@ describe("GoalEditorSheet", () => {
     expect(screen.getByLabelText(/Grasas/)).toHaveValue(70);
   });
 
+  it("accepts decimal values (step=any) without native validation errors", () => {
+    render(<GoalEditorSheet initial={initial} onSave={jest.fn()} onClose={jest.fn()} />);
+
+    for (const label of [/Calorías/, /Proteínas/, /Carbohidratos/, /Grasas/]) {
+      const input = screen.getByLabelText(label) as HTMLInputElement;
+      expect(input).toHaveAttribute("step", "any");
+      fireEvent.change(input, { target: { value: "72.5" } });
+      expect(input.validity.valid).toBe(true);
+    }
+  });
+
   it("calls onSave with coerced numbers on valid submit", async () => {
     const onSave = jest.fn();
     render(<GoalEditorSheet initial={initial} onSave={onSave} onClose={jest.fn()} />);

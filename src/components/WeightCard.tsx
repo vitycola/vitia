@@ -1,4 +1,5 @@
 import { useWeightDashboard } from "@/hooks/useWeightDashboard";
+import { formatNumber } from "@/lib/formatNumber";
 import { WEIGHT_UNIT } from "@/lib/weightDashboard";
 import type { DashboardRange } from "@/lib/weightDashboard";
 import { useState } from "react";
@@ -25,12 +26,11 @@ export function WeightCard({ range }: WeightCardProps) {
 
   const { linePoints, renderState, latest, delta, window } = useWeightDashboard(range);
 
-  const latestText =
-    latest === null ? "—" : latest.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  const latestText = latest === null ? "—" : formatNumber(latest, { maxFractionDigits: 1 });
   const deltaText =
     delta === null
       ? null
-      : `${delta > 0 ? "+" : ""}${delta.toLocaleString("es-AR", { maximumFractionDigits: 1 })} desde inicio`;
+      : `${delta > 0 ? "+" : ""}${formatNumber(delta, { maxFractionDigits: 1 })} desde inicio`;
 
   return (
     <>

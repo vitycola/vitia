@@ -99,7 +99,7 @@ export function OnboardingRoute() {
       <div className="mx-auto max-w-md px-4 py-8">
         <h1 className="mb-2 text-2xl font-bold text-gray-900">Tu perfil</h1>
         <p className="mb-6 text-sm text-gray-500">
-          Completá tus datos para calcular tus objetivos calóricos.
+          Completa tus datos para calcular tus objetivos calóricos.
         </p>
 
         {/* Live TDEE preview */}
@@ -141,6 +141,7 @@ export function OnboardingRoute() {
               id="heightCm"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="Centímetros"
               {...register("heightCm")}
               className={fieldClass(!!errors.heightCm)}
@@ -159,6 +160,7 @@ export function OnboardingRoute() {
               id="weightKg"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="Kilogramos"
               {...register("weightKg")}
               className={fieldClass(!!errors.weightKg)}
@@ -174,7 +176,7 @@ export function OnboardingRoute() {
               Sexo
             </label>
             <select id="sex" {...register("sex")} className={fieldClass(!!errors.sex)}>
-              <option value="">Seleccioná...</option>
+              <option value="">Selecciona...</option>
               <option value="male">Masculino</option>
               <option value="female">Femenino</option>
             </select>
@@ -191,7 +193,7 @@ export function OnboardingRoute() {
               {...register("activityLevel")}
               className={fieldClass(!!errors.activityLevel)}
             >
-              <option value="">Seleccioná...</option>
+              <option value="">Selecciona...</option>
               <option value="sedentary">Sedentario (sin ejercicio)</option>
               <option value="lightly_active">Ligeramente activo (1–3 días/semana)</option>
               <option value="moderately_active">Moderadamente activo (3–5 días/semana)</option>
@@ -209,7 +211,7 @@ export function OnboardingRoute() {
               Objetivo
             </label>
             <select id="goal" {...register("goal")} className={fieldClass(!!errors.goal)}>
-              <option value="">Seleccioná...</option>
+              <option value="">Selecciona...</option>
               <option value="lose_weight">Perder peso</option>
               <option value="maintain">Mantener peso</option>
               <option value="gain_muscle">Ganar músculo</option>

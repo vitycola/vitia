@@ -44,7 +44,7 @@ export const progressEntrySchema = z
       data.thighCm !== undefined ||
       (data.photos !== undefined && data.photos.length > 0),
     {
-      message: "Ingresá al menos un dato: peso, una medida o una foto",
+      message: "Introduce al menos un dato: peso, una medida o una foto",
       path: ["weightKg"],
     }
   );

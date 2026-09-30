@@ -226,7 +226,7 @@ const MONTHS_ES_FULL = [
 
 /**
  * Format a date string (accepts YYYY-MM or YYYY-MM-DD) into a capitalized
- * es-AR "Month Year" label (e.g. "Julio 2026") for gallery month-section
+ * es-ES "Month Year" label (e.g. "Julio 2026") for gallery month-section
  * headers. Parses the date parts directly (no `new Date(isoDate)`) to avoid
  * timezone shifting, matching the other formatters in this module.
  */

@@ -1,5 +1,6 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { MEAL_EMOJI } from "@/lib/constants";
+import { formatNumber } from "@/lib/formatNumber";
 import type { MealType } from "@/types";
 import { Trash2 } from "lucide-react";
 import { useRef } from "react";
@@ -64,7 +65,9 @@ export function MealEntryRow({ entry, mealType, onDelete, onEdit }: MealEntryRow
       {/* Qty + kcal + delete */}
       <div className="flex flex-shrink-0 items-center gap-3">
         <div className="text-right">
-          <p className="text-xs text-gray-500">{entry.quantityG}g</p>
+          <p className="text-xs text-gray-500">
+            {formatNumber(entry.quantityG, { maxFractionDigits: 1 })}g
+          </p>
           <p className="text-sm font-semibold text-gray-700">{Math.round(entry.calories)} kcal</p>
         </div>
         <button

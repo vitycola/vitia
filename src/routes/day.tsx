@@ -1,6 +1,8 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
+import { MEAL_ORDER } from "@/lib/constants";
 import { formatAxisDateLabel, todayISO } from "@/lib/date";
+import { formatNumber } from "@/lib/formatNumber";
 import { CalorieCard } from "@/src/components/CalorieCard";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { HeaderMacroRow } from "@/src/components/HeaderMacroRow";
@@ -14,8 +16,6 @@ import type { MealType } from "@/types";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
 export function DayScreen() {
   const navigate = useNavigate();
@@ -202,7 +202,7 @@ export function DayScreen() {
         )}
 
         <div className="px-4">
-          {MEAL_TYPES.map((mealType) => (
+          {MEAL_ORDER.map((mealType) => (
             <MealSection
               key={mealType}
               mealType={mealType}
@@ -226,7 +226,8 @@ export function DayScreen() {
               <div className="flex flex-col items-start gap-1">
                 <span className="text-sm font-semibold text-gray-900">Progreso registrado</span>
                 <span className="text-xs text-gray-500">
-                  {progressEntry.weightKg != null && `Peso: ${progressEntry.weightKg} kg`}
+                  {progressEntry.weightKg != null &&
+                    `Peso: ${formatNumber(progressEntry.weightKg, { maxFractionDigits: 1 })} kg`}
                 </span>
               </div>
               <div className="flex items-center gap-1">

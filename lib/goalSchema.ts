@@ -12,19 +12,19 @@ import { z } from "zod";
  */
 export const goalEditorSchema = z.object({
   calorieGoal: z.coerce
-    .number({ invalid_type_error: "Ingresá las calorías" })
+    .number({ invalid_type_error: "Introduce las calorías" })
     .min(0, "No puede ser negativo")
     .max(10000, "Máximo 10000 kcal"),
   proteinGoalG: z.coerce
-    .number({ invalid_type_error: "Ingresá las proteínas" })
+    .number({ invalid_type_error: "Introduce las proteínas" })
     .min(0, "No puede ser negativo")
     .max(1000, "Máximo 1000 g"),
   carbsGoalG: z.coerce
-    .number({ invalid_type_error: "Ingresá los carbohidratos" })
+    .number({ invalid_type_error: "Introduce los carbohidratos" })
     .min(0, "No puede ser negativo")
     .max(1000, "Máximo 1000 g"),
   fatGoalG: z.coerce
-    .number({ invalid_type_error: "Ingresá las grasas" })
+    .number({ invalid_type_error: "Introduce las grasas" })
     .min(0, "No puede ser negativo")
     .max(1000, "Máximo 1000 g"),
 });

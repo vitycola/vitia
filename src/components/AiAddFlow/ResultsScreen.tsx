@@ -1,5 +1,6 @@
 import { groupResultsByMeal } from "@/lib/aiMealGroups";
 import { MEAL_LABELS } from "@/lib/constants";
+import { formatNumber } from "@/lib/formatNumber";
 import { useAiAddFlowStore } from "@/stores/useAiAddFlowStore";
 import { useShallow } from "zustand/shallow";
 import { ConfidenceBadge } from "./ConfidenceBadge";
@@ -57,13 +58,19 @@ export function ResultsScreen() {
                   <ConfidenceBadge confidence={item.confidence} />
                 </div>
                 <p className="text-xs text-gray-500">
-                  {item.quantity} {item.unit}
+                  {formatNumber(item.quantity, { maxFractionDigits: 1 })} {item.unit}
                 </p>
                 <div className="flex gap-3 text-xs text-gray-600">
                   <span>{Math.round(item.kcal)} kcal</span>
-                  <span>P: {item.protein.toFixed(1)}g</span>
-                  <span>C: {item.carbs.toFixed(1)}g</span>
-                  <span>G: {item.fat.toFixed(1)}g</span>
+                  <span>
+                    P: {formatNumber(item.protein, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
+                  <span>
+                    C: {formatNumber(item.carbs, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
+                  <span>
+                    G: {formatNumber(item.fat, { minFractionDigits: 1, maxFractionDigits: 1 })}g
+                  </span>
                 </div>
               </div>
             );

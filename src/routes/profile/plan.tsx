@@ -1,4 +1,5 @@
 import type { UserProfile } from "@/db/schema";
+import { formatNumber } from "@/lib/formatNumber";
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -147,10 +148,10 @@ export function PlanRoute() {
           Objetivos diarios
         </h2>
         <div className="space-y-2">
-          <PlanRow label="Objetivo calórico" value={`${Math.round(profile.calorieGoal)} kcal`} />
-          <PlanRow label="Proteínas" value={`${Math.round(profile.proteinGoalG)} g`} />
-          <PlanRow label="Carbohidratos" value={`${Math.round(profile.carbsGoalG)} g`} />
-          <PlanRow label="Grasas" value={`${Math.round(profile.fatGoalG)} g`} />
+          <PlanRow label="Objetivo calórico" value={`${formatNumber(profile.calorieGoal)} kcal`} />
+          <PlanRow label="Proteínas" value={`${formatNumber(profile.proteinGoalG)} g`} />
+          <PlanRow label="Carbohidratos" value={`${formatNumber(profile.carbsGoalG)} g`} />
+          <PlanRow label="Grasas" value={`${formatNumber(profile.fatGoalG)} g`} />
         </div>
 
         {!profile.useManualGoals && (
@@ -203,23 +204,23 @@ export function PlanRoute() {
               <span className="text-right text-xs text-gray-400">Nuevo</span>
               <PreviewRow
                 label="Calorías"
-                current={`${Math.round(profile.calorieGoal)} kcal`}
-                next={`${Math.round(preview.kcal)} kcal`}
+                current={`${formatNumber(profile.calorieGoal)} kcal`}
+                next={`${formatNumber(preview.kcal)} kcal`}
               />
               <PreviewRow
                 label="Proteínas"
-                current={`${Math.round(profile.proteinGoalG)} g`}
-                next={`${Math.round(preview.proteinG)} g`}
+                current={`${formatNumber(profile.proteinGoalG)} g`}
+                next={`${formatNumber(preview.proteinG)} g`}
               />
               <PreviewRow
                 label="Carbohidratos"
-                current={`${Math.round(profile.carbsGoalG)} g`}
-                next={`${Math.round(preview.carbsG)} g`}
+                current={`${formatNumber(profile.carbsGoalG)} g`}
+                next={`${formatNumber(preview.carbsG)} g`}
               />
               <PreviewRow
                 label="Grasas"
-                current={`${Math.round(profile.fatGoalG)} g`}
-                next={`${Math.round(preview.fatG)} g`}
+                current={`${formatNumber(profile.fatGoalG)} g`}
+                next={`${formatNumber(preview.fatG)} g`}
               />
             </div>
 

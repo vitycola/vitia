@@ -86,7 +86,7 @@ export function HeaderMacroRow({
           />
           <div className="h-6 w-px bg-gray-200" />
           <MacroChip
-            label="Carbs"
+            label="Carboh."
             consumed={carbsG}
             goal={carbsGoalG}
             unit="g"
