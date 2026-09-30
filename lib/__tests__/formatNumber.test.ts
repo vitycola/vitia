@@ -41,4 +41,14 @@ describe("formatNumber", () => {
   it("supports a custom fallback", () => {
     expect(formatNumber(null, { fallback: "" })).toBe("");
   });
+
+  it("renders negative zero and tiny negatives that round to zero as 0", () => {
+    expect(formatNumber(-0)).toBe("0");
+    expect(formatNumber(-0.04, { maxFractionDigits: 1 })).toBe("0");
+    expect(formatNumber(-0.04, { minFractionDigits: 1, maxFractionDigits: 1 })).toBe("0,0");
+  });
+
+  it("keeps the sign for real negatives", () => {
+    expect(formatNumber(-1.5, { maxFractionDigits: 1 })).toBe("-1,5");
+  });
 });

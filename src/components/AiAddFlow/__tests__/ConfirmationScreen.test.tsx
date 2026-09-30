@@ -162,6 +162,14 @@ describe("ConfirmationScreen — selection clarity", () => {
     expect(screen.getByText("0 de 2 alimentos seleccionados")).toBeInTheDocument();
   });
 
+  it("quantity inputs accept decimals (step=any)", () => {
+    setupStore();
+    render(<ConfirmationScreen />);
+    for (const input of screen.getAllByRole("spinbutton")) {
+      expect(input).toHaveAttribute("step", "any");
+    }
+  });
+
   it("offers an edit action per item that focuses its quantity input", () => {
     setupStore();
     render(<ConfirmationScreen />);

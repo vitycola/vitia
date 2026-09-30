@@ -31,5 +31,8 @@ export function formatNumber(
   const { minFractionDigits = 0, maxFractionDigits = 0, fallback = "—" } = opts;
   if (value === null || value === undefined || !Number.isFinite(value)) return fallback;
   const max = Math.max(maxFractionDigits, minFractionDigits);
-  return getFormatter(minFractionDigits, max).format(value);
+  const fmt = getFormatter(minFractionDigits, max);
+  const out = fmt.format(value);
+  // Normalize "-0" (from -0 or tiny negatives that round to zero) to "0".
+  return /^-0(,0+)?$/.test(out) ? out.slice(1) : out;
 }

@@ -192,7 +192,7 @@ export function ConfirmationScreen() {
                     }}
                     type="number"
                     min={0.1}
-                    step={1}
+                    step="any"
                     value={qty}
                     onChange={(e) => setQuantity(i, Number.parseFloat(e.target.value))}
                     className={[
