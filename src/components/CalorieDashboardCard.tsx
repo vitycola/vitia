@@ -10,11 +10,14 @@ interface CalorieDashboardCardProps {
 }
 
 // Period-total label + average unit per range, per spec Amendment 1
-// ("Calorias Card Stats Block").
+// ("Calorias Card Stats Block"). Windows are rolling (resolveDashboardWindow:
+// 7/30/90 days) and the average is over logged days only (imputedAverage),
+// for every range — the labels must say exactly that.
+const AVG_PER_LOGGED_DAY = "kcal/día registrado";
 const CAPTION_BY_RANGE: Record<DashboardRange, { totalLabel: string; avgUnit: string }> = {
-  week: { totalLabel: "total esta semana", avgUnit: "kcal prom/día" },
-  month: { totalLabel: "total este mes", avgUnit: "kcal prom/día" },
-  "3month": { totalLabel: "total últimos 3 meses", avgUnit: "kcal prom/mes" },
+  week: { totalLabel: "total últimos 7 días", avgUnit: AVG_PER_LOGGED_DAY },
+  month: { totalLabel: "total últimos 30 días", avgUnit: AVG_PER_LOGGED_DAY },
+  "3month": { totalLabel: "total últimos 90 días", avgUnit: AVG_PER_LOGGED_DAY },
 };
 
 /**
