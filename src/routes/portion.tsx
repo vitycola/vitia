@@ -339,6 +339,7 @@ export function PortionRoute() {
               id="quantity"
               type="number"
               inputMode="decimal"
+              step="any"
               value={quantityStr}
               onChange={(e) => setQuantityStr(e.target.value)}
               min={1}

@@ -221,6 +221,7 @@ export function ManualFormRoute() {
               id="servingSizeG"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("servingSizeG")}
               className={fieldClass(!!errors.servingSizeG)}
@@ -242,6 +243,7 @@ export function ManualFormRoute() {
               id="caloriesPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("caloriesPer100g")}
               className={fieldClass(!!errors.caloriesPer100g)}
@@ -263,6 +265,7 @@ export function ManualFormRoute() {
               id="proteinPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("proteinPer100g")}
               className={fieldClass(!!errors.proteinPer100g)}
@@ -281,6 +284,7 @@ export function ManualFormRoute() {
               id="carbsPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("carbsPer100g")}
               className={fieldClass(!!errors.carbsPer100g)}
@@ -299,6 +303,7 @@ export function ManualFormRoute() {
               id="fatPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("fatPer100g")}
               className={fieldClass(!!errors.fatPer100g)}

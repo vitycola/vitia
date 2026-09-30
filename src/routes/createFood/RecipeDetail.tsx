@@ -137,6 +137,7 @@ export function RecipeDetailRoute() {
                       id={`weight-${ingredient.food.id}`}
                       type="number"
                       inputMode="decimal"
+                      step="any"
                       value={ingredient.weightG}
                       onChange={(e) => updateWeight(ingredient.food.id, Number(e.target.value))}
                       className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-right text-sm text-gray-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"

@@ -109,6 +109,7 @@ export function CustomFoodRoute() {
               id="caloriesPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("caloriesPer100g")}
               className={fieldClass(!!errors.caloriesPer100g)}
@@ -130,6 +131,7 @@ export function CustomFoodRoute() {
               id="proteinGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("proteinGPer100g")}
               className={fieldClass(!!errors.proteinGPer100g)}
@@ -148,6 +150,7 @@ export function CustomFoodRoute() {
               id="carbsGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("carbsGPer100g")}
               className={fieldClass(!!errors.carbsGPer100g)}
@@ -166,6 +169,7 @@ export function CustomFoodRoute() {
               id="fatGPer100g"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="0"
               {...register("fatGPer100g")}
               className={fieldClass(!!errors.fatGPer100g)}

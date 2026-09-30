@@ -143,6 +143,7 @@ export function OnboardingRoute() {
               id="heightCm"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="Centímetros"
               {...register("heightCm")}
               className={fieldClass(!!errors.heightCm)}
@@ -161,6 +162,7 @@ export function OnboardingRoute() {
               id="weightKg"
               type="number"
               inputMode="decimal"
+              step="any"
               placeholder="Kilogramos"
               {...register("weightKg")}
               className={fieldClass(!!errors.weightKg)}
