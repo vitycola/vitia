@@ -1,7 +1,7 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
 import { MEAL_ORDER } from "@/lib/constants";
-import { formatFullDayLabel, todayISO } from "@/lib/date";
+import { formatAxisDateLabel, todayISO } from "@/lib/date";
 import { formatNumber } from "@/lib/formatNumber";
 import { CalorieCard } from "@/src/components/CalorieCard";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
@@ -39,7 +39,9 @@ export function DayScreen() {
   } = useProgressStore();
 
   const totals = useDailyTotals(entries);
-  const isToday = selectedDate === todayISO();
+  const today = todayISO();
+  const isToday = selectedDate === today;
+  const isFuture = selectedDate > today;
 
   const [editingGoals, setEditingGoals] = useState(false);
   const [progressSheetMode, setProgressSheetMode] = useState<"create" | "edit" | null>(null);
@@ -115,8 +117,8 @@ export function DayScreen() {
     void navigate(`/portion/${entry.foodId}?meal=${entry.mealType}&entryId=${entry.id}`);
   }
 
-  async function handleRepeatMeal(mealType: MealType, sourceDate?: string): Promise<number> {
-    return repeatMeal(mealType, sourceDate);
+  async function handleRepeatMeal(mealType: MealType): Promise<number> {
+    return repeatMeal(mealType);
   }
 
   async function handlePasteMeal(mealType: MealType): Promise<number> {
@@ -140,9 +142,6 @@ export function DayScreen() {
     <div className="flex h-full flex-col bg-surface">
       {/* Sticky header — sibling above scroll container */}
       <div className="z-10 bg-surface">
-        <p className="px-4 pt-3 text-sm font-semibold text-gray-900">
-          {formatFullDayLabel(selectedDate)}
-        </p>
         <WeekCalendarHeader
           selectedDate={selectedDate}
           onSelectDate={(date) => void setDate(date)}
@@ -197,7 +196,9 @@ export function DayScreen() {
         )}
 
         {!isToday && (
-          <p className="mb-2 text-center text-xs text-gray-400">Día anterior — solo lectura</p>
+          <p className="mb-2 text-center text-xs text-gray-500">
+            Registrando comidas del {formatAxisDateLabel(selectedDate)}
+          </p>
         )}
 
         <div className="px-4">
@@ -210,7 +211,6 @@ export function DayScreen() {
               onDeleteEntry={(id) => void deleteEntry(id)}
               onEditEntry={handleEditEntry}
               selectedDate={selectedDate}
-              isToday={isToday}
               onRepeatMeal={handleRepeatMeal}
               onPasteMeal={handlePasteMeal}
               onClearMeal={handleClearMeal}
@@ -250,13 +250,22 @@ export function DayScreen() {
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setProgressSheetMode("create")}
-              className="mt-3 w-full rounded-2xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/5"
-            >
-              Añadir progreso
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setProgressSheetMode("create")}
+                disabled={isFuture}
+                aria-describedby={isFuture ? "progress-future-hint" : undefined}
+                className="mt-3 w-full rounded-2xl border border-accent bg-white px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/5 disabled:opacity-50"
+              >
+                Añadir progreso
+              </button>
+              {isFuture && (
+                <p id="progress-future-hint" className="mt-1 text-center text-xs text-gray-500">
+                  No se puede registrar progreso en fechas futuras
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

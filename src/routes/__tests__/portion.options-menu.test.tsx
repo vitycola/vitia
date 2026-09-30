@@ -38,6 +38,7 @@ jest.mock("@/stores/useDayStore", () => ({
     addEntry: jest.fn(),
     updateEntry: jest.fn(),
     entries: [],
+    selectedDate: "2026-09-20",
   }),
 }));
 

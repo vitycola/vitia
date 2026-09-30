@@ -17,7 +17,7 @@ export function todayISO(): string {
 }
 
 /**
- * Format a YYYY-MM-DD date string for display in the DateNavigator.
+ * Format a YYYY-MM-DD date string for display as a short day label.
  * Returns "Hoy" when the date equals today, otherwise "DD MMM" (e.g. "20 Jun").
  *
  * Month abbreviations are in Spanish to match the Spanish locale of the app.
@@ -226,7 +226,7 @@ const MONTHS_ES_FULL = [
 
 /**
  * Format a date string (accepts YYYY-MM or YYYY-MM-DD) into a capitalized
- * es-AR "Month Year" label (e.g. "Julio 2026") for gallery month-section
+ * es-ES "Month Year" label (e.g. "Julio 2026") for gallery month-section
  * headers. Parses the date parts directly (no `new Date(isoDate)`) to avoid
  * timezone shifting, matching the other formatters in this module.
  */

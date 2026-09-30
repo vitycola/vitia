@@ -100,4 +100,81 @@ describe("useSwipeReveal", () => {
     expect(result.current.translateX).toBe(-96);
     expect(result.current.isOpen).toBe(true);
   });
+
+  it("consumeDragClick() reports true exactly once after a drag, then resets", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300 });
+      result.current.onPointerMove({ clientX: 240 });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(true);
+    expect(result.current.consumeDragClick()).toBe(false);
+  });
+
+  it("consumeDragClick() is false for a plain tap with no movement", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300 });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(false);
+  });
+
+  it("consumeDragClick() ignores jitter below the drag threshold", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300 });
+      result.current.onPointerMove({ clientX: 298 });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(false);
+  });
+
+  it("a new gesture clears a stale drag flag left by a drag whose click never fired", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300 });
+      result.current.onPointerMove({ clientX: 240 });
+      result.current.onPointerUp();
+    });
+    // Touch browsers suppress the click, so the flag is never consumed.
+    act(() => {
+      result.current.onPointerDown({ clientX: 200 });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(false);
+  });
+
+  it("consumeDragClick() ignores a touch wobble beyond the threshold (browser still fires the click)", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300, pointerType: "touch" });
+      result.current.onPointerMove({ clientX: 292, pointerType: "touch" });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(false);
+  });
+
+  it("consumeDragClick() flags a mouse move beyond the threshold", () => {
+    const { result } = renderHook(() => useSwipeReveal({ revealWidth: 96 }));
+
+    act(() => {
+      result.current.onPointerDown({ clientX: 300, pointerType: "mouse" });
+      result.current.onPointerMove({ clientX: 292, pointerType: "mouse" });
+      result.current.onPointerUp();
+    });
+
+    expect(result.current.consumeDragClick()).toBe(true);
+  });
 });

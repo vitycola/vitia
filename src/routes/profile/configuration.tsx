@@ -5,22 +5,13 @@ import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { ActivityLevel, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 
 type FormValues = z.infer<typeof profileFieldsSchema>;
-
-const MEASUREMENT_PLACEHOLDER_LABELS = [
-  "Cuello",
-  "Pecho",
-  "Brazo",
-  "Cintura",
-  "Cadera",
-  "Muslo",
-] as const;
 
 const SEX_LABELS: Record<Sex, string> = {
   male: "Masculino",
@@ -250,31 +241,6 @@ export function ConfigurationRoute() {
             </div>
           </form>
         )}
-      </section>
-
-      {/* Body measurements — visual placeholders only, no persistence (SDD-1 seam) */}
-      <section className="mb-3 rounded-2xl bg-white px-4 py-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Medidas corporales
-          </h2>
-          <button
-            type="button"
-            disabled
-            aria-label="Agregar medida — Próximamente"
-            className="text-gray-300"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {MEASUREMENT_PLACEHOLDER_LABELS.map((label) => (
-            <div key={label} className="flex items-center justify-between py-1">
-              <span className="text-sm text-gray-500">{label}</span>
-              <span className="text-sm text-gray-300">Próximamente</span>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Sign out — only shown when cloud sync is enabled */}

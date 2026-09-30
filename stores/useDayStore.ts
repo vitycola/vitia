@@ -69,11 +69,11 @@ interface DayActions {
    */
   updateEntry: (id: string, patch: Partial<Omit<NewMealEntry, "id">>) => Promise<void>;
   /**
-   * Repeat a meal: copy entries from a source date's meal into today.
-   * Source defaults to the day before the selected date when sourceDate is omitted.
+   * Repeat a meal: copy the day before the selected date's meal INTO the
+   * selected date (works on any day, not only today).
    * Returns the number of entries added (0 if the source meal was empty).
    */
-  repeatMeal: (mealType: MealType, sourceDate?: string) => Promise<number>;
+  repeatMeal: (mealType: MealType) => Promise<number>;
   /**
    * Paste entries from the clipboard into the specified meal type.
    * Destination meal type overrides the clipboard's original meal type.
@@ -114,8 +114,11 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     set({ selectedDate: date, isLoading: true });
     try {
       const entries = await mealEntriesRepo.getByDate(date);
+      // Ignore stale responses: a newer setDate call has already moved on.
+      if (get().selectedDate !== date) return;
       set({ entries, isLoading: false });
     } catch {
+      if (get().selectedDate !== date) return;
       set({ isLoading: false });
     }
   },
@@ -159,11 +162,11 @@ export const useDayStore = create<DayState & DayActions>()((set, get) => ({
     });
   },
 
-  repeatMeal: async (mealType: MealType, sourceDate?: string) => {
-    const from = sourceDate ?? addDays(get().selectedDate, -1);
-    const source = await getByDateAndMeal(from, mealType);
+  repeatMeal: async (mealType: MealType) => {
+    // Capture the destination before awaiting: the user may switch day mid-flight.
+    const destDate = get().selectedDate;
+    const source = await getByDateAndMeal(addDays(destDate, -1), mealType);
     if (source.length === 0) return 0;
-    const destDate = todayISO();
     const toInsert = retarget(source, destDate, mealType);
     const inserted = await insertBulk(toInsert);
     if (get().selectedDate === destDate) {

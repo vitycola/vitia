@@ -9,7 +9,7 @@
  * under test.
  */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 // jsdom does not implement URL.createObjectURL/revokeObjectURL.
 if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-url");
@@ -30,10 +30,12 @@ jest.mock("@/src/components/ProgressEntrySheet", () => ({
   ProgressEntrySheet: ({
     mode,
     onClose,
+    onSave,
     existingPhotos,
   }: {
     mode: string;
     onClose: () => void;
+    onSave: (input: { weightKg: number }) => Promise<void>;
     existingPhotos?: { id: string; url: string }[];
   }) => (
     <div>
@@ -43,6 +45,9 @@ jest.mock("@/src/components/ProgressEntrySheet", () => ({
       ))}
       <button type="button" onClick={onClose}>
         CloseSheet
+      </button>
+      <button type="button" onClick={() => void onSave({ weightKg: 70 })}>
+        SaveSheet
       </button>
     </div>
   ),
@@ -80,6 +85,7 @@ jest.mock("@/stores/useProgressStore", () => ({
   },
 }));
 
+import { todayISO } from "@/lib/date";
 import { DayScreen } from "../day";
 
 const baseDayState = {
@@ -304,5 +310,77 @@ describe("DayScreen — progress-log entry point", () => {
   it("calls loadByDate with the selected date on mount", () => {
     renderDayScreen();
     expect(mockLoadByDate).toHaveBeenCalledWith("2026-01-01");
+  });
+});
+
+describe("DayScreen — date-aware logging", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseProfileStore.mockReturnValue(baseProfile);
+    mockProgressState = { current: null, isLoading: false };
+    mockSaveEntry.mockResolvedValue(undefined);
+  });
+
+  const withDate = (selectedDate: string) =>
+    mockUseDayStore.mockReturnValue({ ...baseDayState, selectedDate });
+
+  it("shows the neutral date indicator and no read-only text on a past day", () => {
+    withDate("2025-10-05");
+    renderDayScreen();
+
+    expect(screen.getByText("Registrando comidas del 5 oct")).toBeInTheDocument();
+    expect(screen.queryByText(/solo lectura/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the same indicator, without read-only text, on a future day", () => {
+    withDate("2099-01-01");
+    renderDayScreen();
+
+    expect(screen.getByText("Registrando comidas del 1 ene")).toBeInTheDocument();
+    expect(screen.queryByText(/solo lectura/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/anterior/i)).not.toBeInTheDocument();
+  });
+
+  it("shows no indicator and no read-only text on today", () => {
+    withDate(todayISO());
+    renderDayScreen();
+
+    expect(screen.queryByText(/Registrando comidas del/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/solo lectura/i)).not.toBeInTheDocument();
+  });
+
+  it("disables 'Añadir progreso' with a hint on a future day", () => {
+    withDate("2099-01-01");
+    renderDayScreen();
+
+    const button = screen.getByRole("button", { name: "Añadir progreso" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription("No se puede registrar progreso en fechas futuras");
+    fireEvent.click(button);
+    expect(screen.queryByText("ProgressEntrySheet:create")).not.toBeInTheDocument();
+  });
+
+  it("keeps 'Añadir progreso' enabled and without hint on a past day and today", () => {
+    withDate("2025-10-05");
+    const { unmount } = renderDayScreen();
+    expect(screen.getByRole("button", { name: "Añadir progreso" })).toBeEnabled();
+    expect(screen.queryByText(/fechas futuras/)).not.toBeInTheDocument();
+    unmount();
+
+    withDate(todayISO());
+    renderDayScreen();
+    expect(screen.getByRole("button", { name: "Añadir progreso" })).toBeEnabled();
+  });
+
+  it("saves progress to the selected past date", async () => {
+    withDate("2025-10-05");
+    renderDayScreen();
+
+    fireEvent.click(screen.getByRole("button", { name: "Añadir progreso" }));
+    fireEvent.click(screen.getByText("SaveSheet"));
+
+    await waitFor(() =>
+      expect(mockSaveEntry).toHaveBeenCalledWith({ date: "2025-10-05", weightKg: 70 })
+    );
   });
 });

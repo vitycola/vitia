@@ -2,6 +2,7 @@ import { Check, X } from "lucide-react";
 
 interface CopyFromYesterdayBannerProps {
   count: number;
+  title?: string;
   busy: boolean;
   onAccept: () => void;
   onDismiss: () => void;
@@ -9,6 +10,7 @@ interface CopyFromYesterdayBannerProps {
 
 export function CopyFromYesterdayBanner({
   count,
+  title = "¿Copiar de ayer?",
   busy,
   onAccept,
   onDismiss,
@@ -16,7 +18,7 @@ export function CopyFromYesterdayBanner({
   return (
     <div className="mx-4 mb-2 flex items-center justify-between rounded-lg border border-[#E5E5EA] bg-surface px-3 py-2">
       <div>
-        <p className="text-sm font-semibold text-[#1C1C1E]">¿Copiar de ayer?</p>
+        <p className="text-sm font-semibold text-[#1C1C1E]">{title}</p>
         <p className="text-xs text-[#8E8E93]">
           {count} alimento{count !== 1 ? "s" : ""}
         </p>

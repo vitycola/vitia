@@ -36,7 +36,7 @@ export interface GalleryItem {
 export interface GalleryMonth {
   /** YYYY-MM grouping key. */
   key: string;
-  /** es-AR "Month Year" label, e.g. "Julio 2026". */
+  /** es-ES "Month Year" label, e.g. "Julio 2026". */
   label: string;
   /** Items within this month, newest-first. */
   items: GalleryItem[];

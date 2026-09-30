@@ -2,6 +2,7 @@ import type { Food } from "@/db/schema";
 import { useCreatedFoodsList } from "@/hooks/useCreatedFoodsList";
 import { useSwipeReveal } from "@/hooks/useSwipeReveal";
 import { categoryIcon } from "@/lib/foodCategories";
+import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 /** Width of the revealed red delete action, in px. */
@@ -74,10 +75,21 @@ function CreatedFoodRow({
   onSelect: (food: Food) => void;
   onRemove: (foodId: string) => Promise<void>;
 }) {
-  const { translateX, isOpen, isDragging, onPointerDown, onPointerMove, onPointerUp, close } =
-    useSwipeReveal({ revealWidth: REVEAL_WIDTH });
+  const {
+    translateX,
+    isOpen,
+    isDragging,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    consumeDragClick,
+    close,
+  } = useSwipeReveal({ revealWidth: REVEAL_WIDTH });
 
-  function handleTap() {
+  function handleTap(e: MouseEvent<HTMLButtonElement>) {
+    // Mouse fires a click after a drag; it's the tail of the swipe, not a tap.
+    // detail === 0 is a keyboard/assistive-tech click, never part of a drag.
+    if (e.detail > 0 && consumeDragClick()) return;
     if (isOpen) {
       close();
       return;

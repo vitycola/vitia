@@ -119,7 +119,7 @@ describe("PortionRoute — crudo/cocido conversion toggle", () => {
     fireEvent.change(screen.getByLabelText(/cantidad/i), { target: { value: "220" } });
     fireEvent.change(screen.getByLabelText(/tipo de peso/i), { target: { value: "cocido" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno/i }));
 
     await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
     const [entry] = mockAddEntry.mock.calls[0];
@@ -139,7 +139,7 @@ describe("PortionRoute — crudo/cocido conversion toggle", () => {
 
     fireEvent.change(screen.getByLabelText(/cantidad/i), { target: { value: "150" } });
     // Toggle defaults to "crudo" already — matches stored basis, no conversion.
-    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno/i }));
 
     await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
     const [entry] = mockAddEntry.mock.calls[0];
@@ -154,7 +154,7 @@ describe("PortionRoute — crudo/cocido conversion toggle", () => {
     await waitFor(() => expect(screen.getByText("Garbanzos secos")).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText(/cantidad/i), { target: { value: "330" } });
-    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^añadir a desayuno/i }));
 
     await waitFor(() => expect(mockAddEntry).toHaveBeenCalledTimes(1));
     const [entry] = mockAddEntry.mock.calls[0];

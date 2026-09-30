@@ -1,6 +1,6 @@
 import { RouteTabs } from "@/src/components/ui/RouteTabs";
 import { useProfileStore } from "@/stores/useProfileStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 const PROFILE_TABS = [
@@ -18,19 +18,22 @@ export function ProfileLayout() {
   const navigate = useNavigate();
   const { profile, hasProfile, load } = useProfileStore();
   const loadAttempted = useRef(false);
+  const [loadSettled, setLoadSettled] = useState(false);
 
   useEffect(() => {
     if (!loadAttempted.current) {
       loadAttempted.current = true;
-      void load();
+      void load().finally(() => setLoadSettled(true));
     }
   }, [load]);
 
+  // Only redirect once our own load() has settled; otherwise a full page load
+  // sees hasProfile=false while the profile is still being fetched.
   useEffect(() => {
-    if (loadAttempted.current && !hasProfile) {
+    if (loadSettled && !hasProfile) {
       void navigate("/onboarding", { replace: true });
     }
-  }, [hasProfile, navigate]);
+  }, [loadSettled, hasProfile, navigate]);
 
   if (!profile) {
     return (

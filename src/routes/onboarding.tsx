@@ -1,5 +1,5 @@
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
-import { profileFieldsSchema } from "@/lib/profileSchema";
+import { profileFieldsSchema, requiredOptionError } from "@/lib/profileSchema";
 import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -14,9 +14,7 @@ import { z } from "zod";
 // which only exists on first-run (Configuración edits the goal separately
 // via the Plan tab).
 const schema = profileFieldsSchema.extend({
-  goal: z.enum(["lose_weight", "maintain", "gain_muscle"], {
-    required_error: "Selecciona el objetivo",
-  }),
+  goal: z.enum(["lose_weight", "maintain", "gain_muscle"], requiredOptionError),
 });
 
 type FormValues = z.infer<typeof schema>;

@@ -104,7 +104,7 @@ describe("ConfigurationRoute", () => {
     fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/mínimo 10 años/i)).toBeInTheDocument();
+      expect(screen.getByText(/debe estar entre 10 y 120 años/i)).toBeInTheDocument();
     });
     expect(saveProfile).not.toHaveBeenCalled();
   });
@@ -121,14 +121,10 @@ describe("ConfigurationRoute", () => {
     expect(saveProfile).not.toHaveBeenCalled();
   });
 
-  it("renders non-interactive body-measurement placeholder rows that persist nothing", () => {
+  it("does not render a body-measurements placeholder (measurements live in Progreso)", () => {
     renderRoute();
 
-    const cuello = screen.getByText("Cuello");
-    expect(cuello.closest("button")).toBeNull();
-
-    for (const label of ["Cuello", "Pecho", "Brazo", "Cintura", "Cadera", "Muslo"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
+    expect(screen.queryByText("Medidas corporales")).not.toBeInTheDocument();
+    expect(screen.queryByText("Próximamente")).not.toBeInTheDocument();
   });
 });

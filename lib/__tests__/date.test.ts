@@ -273,7 +273,7 @@ describe("relativeBucketLabel", () => {
 // ---------------------------------------------------------------------------
 
 describe("formatMonthLabel", () => {
-  it("formats a YYYY-MM-DD date into a capitalized es-AR 'Month Year' label", () => {
+  it("formats a YYYY-MM-DD date into a capitalized es-ES 'Month Year' label", () => {
     expect(formatMonthLabel("2026-07-08")).toBe("Julio 2026");
   });
 
