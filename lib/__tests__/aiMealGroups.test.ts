@@ -26,7 +26,7 @@ describe("groupResultsByMeal", () => {
 
   it("uses the shared labels, including Merienda for snack", () => {
     const groups = groupResultsByMeal([item("Fruta", "snack"), item("Sopa", "dinner")]);
-    expect(groups.map((g) => g.label)).toEqual(["Cena", "Merienda"]);
+    expect(groups.map((g) => g.label)).toEqual(["Merienda", "Cena"]);
   });
 
   it("returns a single header-less group when items are untagged", () => {

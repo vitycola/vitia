@@ -1,5 +1,6 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
+import { MEAL_ORDER } from "@/lib/constants";
 import { formatFullDayLabel, todayISO } from "@/lib/date";
 import { formatNumber } from "@/lib/formatNumber";
 import { CalorieCard } from "@/src/components/CalorieCard";
@@ -15,8 +16,6 @@ import type { MealType } from "@/types";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
 export function DayScreen() {
   const navigate = useNavigate();
@@ -202,7 +201,7 @@ export function DayScreen() {
         )}
 
         <div className="px-4">
-          {MEAL_TYPES.map((mealType) => (
+          {MEAL_ORDER.map((mealType) => (
             <MealSection
               key={mealType}
               mealType={mealType}

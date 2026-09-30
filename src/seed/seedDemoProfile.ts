@@ -28,6 +28,7 @@ import * as mealEntriesRepo from "@/db/repos/mealEntries";
 import * as profileRepo from "@/db/repos/profile";
 import * as progressRepo from "@/db/repos/progress";
 import type { NewFood, NewMealEntry } from "@/db/schema";
+import { MEAL_ORDER } from "@/lib/constants";
 import { generateId } from "@/lib/id";
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
 import { isSyncEnabled } from "@/src/lib/supabase";
@@ -620,7 +621,7 @@ async function clearPreviouslySeededRows(): Promise<void> {
   const mealOffsets = [5, 4, 3, 2, 1, 0];
   for (const offset of mealOffsets) {
     const date = daysAgo(offset);
-    for (const mealType of ["breakfast", "lunch", "dinner", "snack"] as const) {
+    for (const mealType of MEAL_ORDER) {
       await mealEntriesRepo.deleteByDateAndMeal(date, mealType);
     }
   }

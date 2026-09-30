@@ -66,8 +66,8 @@ describe("InputScreen — per-meal submit", () => {
   it("submits one entry per non-empty meal, in canonical order", () => {
     setupStore({ inputMode: "text" });
     render(<InputScreen />);
-    const boxes = screen.getAllByRole("textbox"); // breakfast, lunch, dinner, snack
-    fireEvent.change(boxes[2], { target: { value: "  sopa  " } });
+    const boxes = screen.getAllByRole("textbox"); // breakfast, lunch, snack, dinner
+    fireEvent.change(boxes[3], { target: { value: "  sopa  " } });
     fireEvent.change(boxes[0], { target: { value: "tostada" } });
     fireEvent.click(screen.getByRole("button", { name: /analizar con ia/i }));
     expect(mockSubmitText).toHaveBeenCalledTimes(1);

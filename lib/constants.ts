@@ -16,7 +16,7 @@ export const MEAL_LABELS: Record<MealType, string> = {
 };
 
 /** Fixed display order for meal-type sections across the app. */
-export const MEAL_ORDER: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+export const MEAL_ORDER: MealType[] = ["breakfast", "lunch", "snack", "dinner"];
 
 /**
  * Calorie goal tolerance band — within [90 %, 110 %] counts as "on target".

@@ -1,4 +1,5 @@
 import type { MealEntry } from "@/db/schema";
+import { MEAL_ORDER } from "@/lib/constants";
 import type { MealType } from "@/types";
 import { useMemo } from "react";
 
@@ -12,8 +13,6 @@ export interface MealTotals {
 export interface DailyTotals extends MealTotals {
   byMeal: Record<MealType, MealTotals>;
 }
-
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
 function emptyTotals(): MealTotals {
   return { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
@@ -41,7 +40,7 @@ function sumEntries(entries: MealEntry[]): MealTotals {
 export function useDailyTotals(entries: MealEntry[]): DailyTotals {
   return useMemo(() => {
     const byMeal = Object.fromEntries(
-      MEAL_TYPES.map((meal) => [meal, sumEntries(entries.filter((e) => e.mealType === meal))])
+      MEAL_ORDER.map((meal) => [meal, sumEntries(entries.filter((e) => e.mealType === meal))])
     ) as Record<MealType, MealTotals>;
 
     const total = sumEntries(entries);

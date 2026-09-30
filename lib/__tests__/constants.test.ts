@@ -1,5 +1,5 @@
 import type { MealType } from "@/types";
-import { MEAL_EMOJI } from "../constants";
+import { MEAL_EMOJI, MEAL_LABELS, MEAL_ORDER } from "../constants";
 
 const ALL_MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
@@ -30,5 +30,15 @@ describe("MEAL_EMOJI", () => {
     for (const mealType of ALL_MEAL_TYPES) {
       expect(MEAL_EMOJI[mealType].length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("MEAL_ORDER", () => {
+  it("lists meals as Desayuno, Almuerzo, Merienda, Cena", () => {
+    expect(MEAL_ORDER).toEqual(["breakfast", "lunch", "snack", "dinner"]);
+  });
+
+  it("labels snack as Merienda", () => {
+    expect(MEAL_LABELS.snack).toBe("Merienda");
   });
 });

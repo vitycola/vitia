@@ -1,18 +1,12 @@
 import { getByDateAndMeal } from "@/db/repos/mealEntries";
 import type { MealEntryView } from "@/db/repos/mealEntries";
+import { MEAL_LABELS } from "@/lib/constants";
 import { CopyFromYesterdayBanner } from "@/src/components/CopyFromYesterdayBanner";
 import { MealEntryRow } from "@/src/components/MealEntryRow";
 import { useMealClipboardStore } from "@/stores/useMealClipboardStore";
 import type { MealType } from "@/types";
 import { ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
-const MEAL_LABELS: Record<MealType, string> = {
-  breakfast: "Desayuno",
-  lunch: "Almuerzo",
-  dinner: "Cena",
-  snack: "Merienda",
-};
 
 interface MealSectionProps {
   mealType: MealType;
