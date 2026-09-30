@@ -121,6 +121,31 @@ export function deriveMacros(calorieGoal: number): MacroTargets {
   };
 }
 
+export interface AutoGoals {
+  calorieGoal: number;
+  proteinGoalG: number;
+  carbsGoalG: number;
+  fatGoalG: number;
+}
+
+/**
+ * Single source of the automatic-goals formula:
+ * BMR -> TDEE -> calorie goal -> macros.
+ */
+export function computeAutoGoals(input: {
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  sex: UserProfile["sex"];
+  activityLevel: UserProfile["activityLevel"];
+  goal: UserProfile["goal"];
+}): AutoGoals {
+  const tdee = computeTDEE(computeBMR(input), input.activityLevel);
+  const calorieGoal = deriveCalorieGoal(tdee, input.goal);
+  const { proteinG, carbsG, fatG } = deriveMacros(calorieGoal);
+  return { calorieGoal, proteinGoalG: proteinG, carbsGoalG: carbsG, fatGoalG: fatG };
+}
+
 /**
  * Scale food macros for a given portion in grams.
  * All values are derived from the food's per-100g data.

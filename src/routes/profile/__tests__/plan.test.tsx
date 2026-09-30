@@ -54,6 +54,48 @@ describe("PlanRoute", () => {
     expect(screen.getByText(/55 g/)).toBeInTheDocument();
   });
 
+  describe("recalculate feedback", () => {
+    const computed = deriveCalorieGoal(
+      computeTDEE(computeBMR(baseProfile as never), baseProfile.activityLevel as never),
+      baseProfile.goal as never
+    );
+
+    it("reports the kcal change when goals were out of date", async () => {
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /recalcular objetivos/i }));
+
+      expect(
+        await screen.findByText(`Objetivos actualizados: 1800 → ${computed} kcal`)
+      ).toBeInTheDocument();
+    });
+
+    it("clears the recalc message when a goal change is confirmed or a goal sheet opens", async () => {
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /recalcular objetivos/i }));
+      await screen.findByText(/Objetivos actualizados/);
+
+      fireEvent.click(screen.getByRole("button", { name: /mantener peso/i }));
+      expect(screen.queryByText(/Objetivos actualizados/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(screen.getByRole("status")).toHaveTextContent("Objetivo actualizado");
+      expect(screen.queryByText(/Objetivos actualizados/)).not.toBeInTheDocument();
+    });
+
+    it("says goals are already up to date when nothing changes", async () => {
+      mockUseProfileStore.mockReturnValue(
+        makeStore({ profile: { ...baseProfile, calorieGoal: computed } })
+      );
+      render(<PlanRoute />);
+
+      fireEvent.click(screen.getByRole("button", { name: /recalcular objetivos/i }));
+
+      expect(await screen.findByText("Tus objetivos ya están al día")).toBeInTheDocument();
+    });
+  });
+
   it("renders all 3 goal presets", () => {
     render(<PlanRoute />);
 

@@ -8,6 +8,14 @@ jest.mock("@/stores/useProfileStore", () => ({
   useProfileStore: jest.fn(),
 }));
 
+jest.mock("@/stores/useProgressStore", () => ({
+  useProgressStore: jest.fn(),
+}));
+
+jest.mock("@/lib/date", () => ({
+  todayISO: () => "2026-03-10",
+}));
+
 jest.mock("@/src/lib/supabase", () => ({
   isSyncEnabled: jest.fn(() => false),
 }));
@@ -18,7 +26,11 @@ jest.mock("@/src/stores/useAuthStore", () => ({
 
 import { useProfileStore } from "@/stores/useProfileStore";
 
+import { useProgressStore } from "@/stores/useProgressStore";
+
 const mockUseProfileStore = useProfileStore as unknown as jest.Mock;
+const mockUseProgressStore = useProgressStore as unknown as jest.Mock;
+const recordWeight = jest.fn().mockResolvedValue(undefined);
 
 const baseProfile = {
   id: "p1",
@@ -35,6 +47,9 @@ function renderRoute(saveProfile = jest.fn().mockResolvedValue(undefined)) {
     profile: baseProfile,
     saveProfile,
   });
+  mockUseProgressStore.mockImplementation((selector: (s: unknown) => unknown) =>
+    selector({ recordWeight })
+  );
   render(
     <MemoryRouter>
       <ConfigurationRoute />
@@ -50,6 +65,9 @@ function openEditMode() {
 describe("ConfigurationRoute", () => {
   beforeEach(() => {
     mockUseProfileStore.mockReset();
+    mockUseProgressStore.mockReset();
+    recordWeight.mockReset();
+    recordWeight.mockResolvedValue(undefined);
   });
 
   it("renders personal data as read-only rows by default, with an edit (gear) affordance", () => {
@@ -94,6 +112,63 @@ describe("ConfigurationRoute", () => {
       });
     });
     expect(screen.queryByLabelText(/peso/i)).not.toBeInTheDocument();
+  });
+
+  it("records a changed weight as today's weigh-in", async () => {
+    renderRoute();
+
+    openEditMode();
+    fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: "75" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
+
+    await waitFor(() => {
+      expect(recordWeight).toHaveBeenCalledWith("2026-03-10", 75);
+    });
+  });
+
+  it("records the weigh-in before saving the rest of the profile", async () => {
+    const order: string[] = [];
+    recordWeight.mockImplementation(async () => {
+      order.push("record");
+    });
+    const saveProfile = jest.fn(async () => {
+      order.push("save");
+    });
+    renderRoute(saveProfile);
+
+    openEditMode();
+    fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: "75" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
+
+    await waitFor(() => expect(order).toEqual(["record", "save"]));
+  });
+
+  it("shows an inline error and stays in edit mode when saving fails", async () => {
+    recordWeight.mockRejectedValueOnce(new Error("boom"));
+    const { saveProfile } = renderRoute();
+
+    openEditMode();
+    fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: "75" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No se pudieron guardar los cambios. Inténtalo de nuevo."
+    );
+    expect(saveProfile).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/peso/i)).toBeInTheDocument();
+  });
+
+  it("does not record a weigh-in when the weight is unchanged", async () => {
+    const { saveProfile } = renderRoute();
+
+    openEditMode();
+    fireEvent.change(screen.getByLabelText(/edad/i), { target: { value: "31" } });
+    fireEvent.click(screen.getByRole("button", { name: /guardar cambios/i }));
+
+    await waitFor(() => {
+      expect(saveProfile).toHaveBeenCalled();
+    });
+    expect(recordWeight).not.toHaveBeenCalled();
   });
 
   it("blocks submission and does not call saveProfile when a field is invalid", async () => {

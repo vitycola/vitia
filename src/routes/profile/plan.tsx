@@ -1,6 +1,6 @@
 import type { UserProfile } from "@/db/schema";
 import { formatNumber } from "@/lib/formatNumber";
-import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
+import { computeAutoGoals } from "@/lib/nutrition";
 import { GoalEditorSheet } from "@/src/components/GoalEditorSheet";
 import { useProfileStore } from "@/stores/useProfileStore";
 import type { Goal } from "@/types";
@@ -14,25 +14,15 @@ const GOAL_LABELS: Record<string, string> = {
 
 const GOAL_PRESETS = ["lose_weight", "maintain", "gain_muscle"] as const;
 
-interface GoalPreview {
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
 /**
  * Pure preview of the targets the store would persist for `goal`, using the
- * same functions as `saveProfile`. Nothing is written.
+ * same formula as `saveProfile`. Nothing is written.
  */
 function previewForGoal(
   input: Pick<UserProfile, "age" | "heightCm" | "weightKg" | "sex" | "activityLevel">,
   goal: Goal
-): GoalPreview {
-  const tdee = computeTDEE(computeBMR(input), input.activityLevel);
-  const kcal = deriveCalorieGoal(tdee, goal);
-  const { proteinG, carbsG, fatG } = deriveMacros(kcal);
-  return { kcal, proteinG, carbsG, fatG };
+) {
+  return computeAutoGoals({ ...input, goal });
 }
 
 /**
@@ -51,13 +41,25 @@ export function PlanRoute() {
   const [savingGoal, setSavingGoal] = useState(false);
   const [goalError, setGoalError] = useState(false);
   const [goalUpdated, setGoalUpdated] = useState(false);
+  const [recalcMessage, setRecalcMessage] = useState<string | null>(null);
 
   if (!profile) return null;
 
   async function handleRecalc() {
+    if (!profile) return;
     setRecalcing(true);
+    setRecalcMessage(null);
     try {
+      // The button is only rendered for automatic goals, so the store's
+      // manual-goals no-op guard is never hit from here.
+      const before = profile.calorieGoal;
+      const after = previewForGoal(profile, profile.goal).calorieGoal;
       await recalcFromProfile();
+      setRecalcMessage(
+        after === before
+          ? "Tus objetivos ya están al día"
+          : `Objetivos actualizados: ${formatNumber(before)} → ${formatNumber(after)} kcal`
+      );
     } finally {
       setRecalcing(false);
     }
@@ -76,6 +78,7 @@ export function PlanRoute() {
     if (!profile || goal === profile.goal) return;
     setGoalError(false);
     setGoalUpdated(false);
+    setRecalcMessage(null);
     setPendingGoal(goal);
   }
 
@@ -99,6 +102,7 @@ export function PlanRoute() {
         goal: pendingGoal,
       });
       setPendingGoal(null);
+      setRecalcMessage(null);
       setGoalUpdated(true);
     } catch {
       setGoalError(true);
@@ -165,6 +169,10 @@ export function PlanRoute() {
           </button>
         )}
 
+        {recalcMessage && (
+          <output className="mt-3 block text-xs font-medium text-accent">{recalcMessage}</output>
+        )}
+
         {profile.useManualGoals && (
           <button
             type="button"
@@ -205,22 +213,22 @@ export function PlanRoute() {
               <PreviewRow
                 label="Calorías"
                 current={`${formatNumber(profile.calorieGoal)} kcal`}
-                next={`${formatNumber(preview.kcal)} kcal`}
+                next={`${formatNumber(preview.calorieGoal)} kcal`}
               />
               <PreviewRow
                 label="Proteínas"
                 current={`${formatNumber(profile.proteinGoalG)} g`}
-                next={`${formatNumber(preview.proteinG)} g`}
+                next={`${formatNumber(preview.proteinGoalG)} g`}
               />
               <PreviewRow
                 label="Carbohidratos"
                 current={`${formatNumber(profile.carbsGoalG)} g`}
-                next={`${formatNumber(preview.carbsG)} g`}
+                next={`${formatNumber(preview.carbsGoalG)} g`}
               />
               <PreviewRow
                 label="Grasas"
                 current={`${formatNumber(profile.fatGoalG)} g`}
-                next={`${formatNumber(preview.fatG)} g`}
+                next={`${formatNumber(preview.fatGoalG)} g`}
               />
             </div>
 
