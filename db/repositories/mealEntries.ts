@@ -33,6 +33,14 @@ export async function getByDateAndMeal(
 }
 
 /**
+ * Get every meal entry (all dates), ordered by date then logged_at.
+ * Used by the sync backfill, which must not be capped by a date window.
+ */
+export async function getAll(): Promise<MealEntry[]> {
+  return db.select().from(mealEntries).orderBy(asc(mealEntries.date), asc(mealEntries.loggedAt));
+}
+
+/**
  * Insert a new meal entry and return the inserted row.
  */
 export async function insert(entry: NewMealEntry): Promise<MealEntry> {

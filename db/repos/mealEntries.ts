@@ -12,6 +12,7 @@ import { dexieAdapter } from "@/db/client";
 import * as _impl from "@/db/repositories/mealEntries";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { mealEntryToRemote } from "@/src/services/syncMappers";
 import { enqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 
@@ -41,6 +42,11 @@ export async function getByDateAndMeal(
 ): Promise<MealEntry[]> {
   if (dexieAdapter) return dexieAdapter.mealEntries.getByDateAndMeal(date, mealType);
   return _impl.getByDateAndMeal(date, mealType);
+}
+
+export async function getAll(): Promise<MealEntry[]> {
+  if (dexieAdapter) return dexieAdapter.mealEntries.getAll();
+  return _impl.getAll();
 }
 
 export async function insert(entry: NewMealEntry): Promise<MealEntry> {
@@ -129,7 +135,7 @@ function _enqueueMealOp(entry: MealEntry, op: "upsert" | "delete"): void {
   void enqueue({
     table: "meal_entries",
     op,
-    row: JSON.stringify({ ...entry, user_id: userId }),
+    row: JSON.stringify(mealEntryToRemote(entry, userId)),
     userId,
     updatedAt: new Date().toISOString(),
   });
