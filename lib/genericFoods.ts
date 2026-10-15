@@ -15,6 +15,10 @@ export interface GenericFoodRow {
   fat_per_100g: number;
   category: string | null;
   data_basis: "crudo" | "cocido" | null;
+  /** Optional: absent on rows/schemas that predate generic-food-brand-migration.sql. */
+  brand?: string | null;
+  /** Optional: cooked grams per raw gram for this product (> 0). */
+  cooking_factor?: number | null;
   source: string;
   created_at: string;
   updated_at: string;
@@ -24,13 +28,14 @@ export interface GenericFoodRow {
 
 /**
  * Map a raw generic_foods row into the local NewFood shape.
- * source is always "generic"; brand, servingSizeG, offProductCode, imageUrl are null.
+ * source is always "generic"; servingSizeG, offProductCode, imageUrl are null.
+ * brand and cookingFactor are carried through when present (null otherwise).
  */
 export function normalizeGenericRow(row: GenericFoodRow): NewFood {
   return {
     id: row.id,
     name: row.name,
-    brand: null,
+    brand: row.brand?.trim() || null,
     caloriesPer100g: row.calories_per_100g,
     proteinPer100g: row.protein_per_100g,
     carbsPer100g: row.carbs_per_100g,
@@ -42,14 +47,33 @@ export function normalizeGenericRow(row: GenericFoodRow): NewFood {
     imageUrl: null,
     category: row.category,
     dataBasis: row.data_basis,
+    cookingFactor:
+      typeof row.cooking_factor === "number" &&
+      Number.isFinite(row.cooking_factor) &&
+      row.cooking_factor > 0
+        ? row.cooking_factor
+        : null,
   };
+}
+
+/**
+ * True only for an "undefined column" error caused by the missing `brand`
+ * column: Postgres 42703 (what PostgREST forwards for an unknown column in a
+ * filter), or PGRST204 (PostgREST schema-cache miss) — each only when the
+ * message names brand in "column ... does not exist" / "could not find" form.
+ */
+function isMissingBrandColumn(error: { code?: string; message?: string }): boolean {
+  const message = error.message ?? "";
+  if (error.code === "42703") return /\bbrand\b/i.test(message) || message === "";
+  if (error.code === "PGRST204") return /could not find the 'brand' column/i.test(message);
+  return false;
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Search generic_foods in Supabase via case-insensitive partial match on
- * name_normalized. Results are normalized into NewFood and batch-upserted into
+ * name_normalized or brand. Results are normalized into NewFood and batch-upserted into
  * the local cache.
  *
  * Non-fatal: any error (network, missing env, RLS) causes the function to
@@ -66,14 +90,28 @@ export async function search(query: string, signal?: AbortSignal): Promise<NewFo
 
   const client = getSupabasePublicClient();
 
-  const dbQuery = client
-    .from("generic_foods")
-    .select("*")
-    .ilike("name_normalized", `%${norm}%`)
-    .order("name")
-    .limit(25);
+  // Only plain letters/digits/spaces are interpolated into the PostgREST
+  // `or()` filter string (commas, parentheses, dots and wildcards would change
+  // its structure). Anything else falls back to the name-only ilike, which
+  // passes the value as a single parameter.
+  const brandSafe = /^[\p{L}\p{N} ]+$/u.test(norm);
 
-  const { data, error } = await (signal ? dbQuery.abortSignal(signal) : dbQuery);
+  const run = async (matchBrand: boolean) => {
+    const base = client.from("generic_foods").select("*");
+    const filtered = matchBrand
+      ? base.or(`name_normalized.ilike.%${norm}%,brand.ilike.%${norm}%`)
+      : base.ilike("name_normalized", `%${norm}%`);
+    const dbQuery = filtered.order("name").limit(25);
+    return signal ? dbQuery.abortSignal(signal) : dbQuery;
+  };
+
+  let { data, error } = await run(brandSafe);
+
+  // Deployed before generic-food-brand-migration.sql: the `brand` column does
+  // not exist yet (Postgres 42703). Retry matching by name only.
+  if (error && brandSafe && isMissingBrandColumn(error)) {
+    ({ data, error } = await run(false));
+  }
 
   if (signal?.aborted) {
     throw new DOMException("Aborted", "AbortError");

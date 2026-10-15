@@ -132,9 +132,9 @@ export function PortionRoute() {
   // the stored basis — in either case the entered grams are used unchanged.
   const conversionDirection = showConversionToggle ? directionFor(food.dataBasis, basis) : null;
   const conversionResult = conversionDirection
-    ? convertWeight(food.category, grams, conversionDirection)
+    ? convertWeight(food.category, grams, conversionDirection, food.cookingFactor)
     : null;
-  // showConversionToggle (canConvert) already guarantees hasCookingFactor(food.category)
+  // showConversionToggle (canConvert) already guarantees a resolvable factor
   // whenever conversionDirection is non-null, so "converted" is always the
   // actual branch here — the fallback keeps this expression total.
   const effectiveGrams = conversionResult?.kind === "converted" ? conversionResult.grams : grams;

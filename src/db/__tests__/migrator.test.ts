@@ -31,6 +31,28 @@ function makeInMemoryExecutor(): { executor: MigratorExecutor; db: Database.Data
   return { executor, db };
 }
 
+describe("migration 0009 (foods.cooking_factor)", () => {
+  it("keeps pre-0009 rows and adds a NULL cooking_factor column", async () => {
+    const { executor, db } = makeInMemoryExecutor();
+    // Apply 0000-0008 only by running all, then rebuild the pre-0009 state.
+    await runWebMigrations(executor);
+    db.exec("ALTER TABLE foods DROP COLUMN cooking_factor");
+    db.exec("DELETE FROM __drizzle_migrations WHERE tag = '0009_food_cooking_factor'");
+    db.prepare(
+      "INSERT INTO foods (id, name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, source) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).run("f1", "Arroz", 130, 2.7, 28, 0.3, "generic");
+
+    await runWebMigrations(executor);
+
+    const row = db.prepare("SELECT name, cooking_factor FROM foods WHERE id = 'f1'").get() as {
+      name: string;
+      cooking_factor: number | null;
+    };
+    expect(row.name).toBe("Arroz");
+    expect(row.cooking_factor).toBeNull();
+  });
+});
+
 describe("runWebMigrations", () => {
   it("creates the __drizzle_migrations tracking table on first run", async () => {
     const { executor, db } = makeInMemoryExecutor();
@@ -62,8 +84,8 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Nine migrations: 0000, 0001, 0002, 0003, 0004, 0005, 0006, 0007, and 0008
-    expect(rows).toHaveLength(9);
+    // Ten migrations: 0000 through 0009
+    expect(rows).toHaveLength(10);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
     expect(rows[2].tag).toBe("0002_user_session_persistence");
@@ -73,6 +95,7 @@ describe("runWebMigrations", () => {
     expect(rows[6].tag).toBe("0006_progress_log");
     expect(rows[7].tag).toBe("0007_progress_measurements");
     expect(rows[8].tag).toBe("0008_raw_cooked_conversion");
+    expect(rows[9].tag).toBe("0009_food_cooking_factor");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -80,11 +103,11 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly nine migration rows — no duplicate inserts
+    // Still exactly ten migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(9);
+    expect(rows.c).toBe(10);
   });
 
   it("records migration tag 0005_composite_foods and creates food_ingredients table (Phase 1)", async () => {

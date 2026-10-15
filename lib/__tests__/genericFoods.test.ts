@@ -62,7 +62,19 @@ describe("normalizeGenericRow()", () => {
     expect(result.source).toBe("generic");
   });
 
-  it("brand is null", () => {
+  it("carries brand and cooking_factor through", () => {
+    const result = normalizeGenericRow({ ...sampleRow, brand: " Hacendado ", cooking_factor: 2.4 });
+    expect(result.brand).toBe("Hacendado");
+    expect(result.cookingFactor).toBe(2.4);
+  });
+
+  it("drops invalid cooking_factor values", () => {
+    for (const bad of [0, -1, Number.NaN, null, undefined]) {
+      expect(normalizeGenericRow({ ...sampleRow, cooking_factor: bad }).cookingFactor).toBeNull();
+    }
+  });
+
+  it("brand is null when the row has no brand (older schema)", () => {
     const result = normalizeGenericRow(sampleRow);
     expect(result.brand).toBeNull();
   });
@@ -103,6 +115,7 @@ function makeMockClient(result: { data: unknown; error: unknown }) {
   const chain: Record<string, jest.Mock> & { then?: unknown } = {
     select: jest.fn().mockReturnThis(),
     ilike: jest.fn().mockReturnThis(),
+    or: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     abortSignal: jest.fn().mockReturnThis(),
@@ -130,8 +143,8 @@ describe("search()", () => {
     expect(results).toHaveLength(1);
     expect(results[0].id).toBe("abc-123");
     expect(results[0].source).toBe("generic");
-    // ilike should be called with the name_normalized column.
-    expect(_chain.ilike).toHaveBeenCalledWith("name_normalized", expect.stringContaining("pollo"));
+    // Name and brand are matched together through a single or() filter.
+    expect(_chain.or).toHaveBeenCalledWith("name_normalized.ilike.%pollo%,brand.ilike.%pollo%");
   });
 
   it("(b) query is normalized before passing to ilike", async () => {
@@ -143,7 +156,9 @@ describe("search()", () => {
     // Uppercase with accent — should be normalized to lowercase ascii.
     await search("PECHUGA");
 
-    expect(_chain.ilike).toHaveBeenCalledWith("name_normalized", expect.stringMatching(/pechuga/));
+    expect(_chain.or).toHaveBeenCalledWith(
+      expect.stringMatching(/name_normalized\.ilike\.%pechuga%/)
+    );
   });
 
   it("(c) network error causes the function to throw", async () => {
@@ -151,6 +166,7 @@ describe("search()", () => {
     const chain: Record<string, jest.Mock> & { then?: unknown } = {
       select: jest.fn().mockReturnThis(),
       ilike: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       abortSignal: jest.fn().mockReturnThis(),
@@ -171,6 +187,7 @@ describe("search()", () => {
     const chain: Record<string, jest.Mock> & { then?: unknown } = {
       select: jest.fn().mockReturnThis(),
       ilike: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       abortSignal: jest.fn().mockReturnThis(),
@@ -187,6 +204,75 @@ describe("search()", () => {
     controller.abort();
 
     await expect(search("pollo", controller.signal)).rejects.toThrow("Aborted");
+  });
+
+  it("uses name-only ilike when the query has filter-structural characters", async () => {
+    const { from, _chain } = makeMockClient({ data: [], error: null });
+    mockedGetClient.mockReturnValue({ from } as unknown as ReturnType<
+      typeof getSupabasePublicClient
+    >);
+
+    await search("a),brand.eq.x(");
+
+    expect(_chain.or).not.toHaveBeenCalled();
+    expect(_chain.ilike).toHaveBeenCalledWith("name_normalized", "%a),brand.eq.x(%");
+  });
+
+  it("retries name-only when the brand column does not exist yet", async () => {
+    const results = [
+      {
+        data: null,
+        error: { code: "42703", message: "column generic_foods.brand does not exist" },
+      },
+      { data: [sampleRow], error: null },
+    ];
+    let i = 0;
+    const chain: Record<string, jest.Mock> = {
+      select: jest.fn().mockReturnThis(),
+      ilike: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      abortSignal: jest.fn().mockReturnThis(),
+      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for Supabase query chain
+      then: jest.fn((resolve: (v: unknown) => unknown) =>
+        Promise.resolve(results[i++]).then(resolve)
+      ),
+    };
+    mockedGetClient.mockReturnValue({
+      from: jest.fn(() => chain),
+    } as unknown as ReturnType<typeof getSupabasePublicClient>);
+
+    const found = await search("pollo");
+
+    expect(found).toHaveLength(1);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.ilike).toHaveBeenCalledWith("name_normalized", "%pollo%");
+  });
+
+  it("does not retry on an unrelated error that merely mentions brand", async () => {
+    const chain: Record<string, jest.Mock> = {
+      select: jest.fn().mockReturnThis(),
+      ilike: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      abortSignal: jest.fn().mockReturnThis(),
+      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for Supabase query chain
+      then: jest.fn((resolve: (v: unknown) => unknown) =>
+        Promise.resolve({
+          data: null,
+          error: { code: "57014", message: "timeout while scanning brand index" },
+        }).then(resolve)
+      ),
+    };
+    mockedGetClient.mockReturnValue({
+      from: jest.fn(() => chain),
+    } as unknown as ReturnType<typeof getSupabasePublicClient>);
+
+    await expect(search("pollo")).rejects.toThrow("timeout");
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.ilike).not.toHaveBeenCalled();
   });
 
   it("upserts results into local cache", async () => {

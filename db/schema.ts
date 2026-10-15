@@ -62,6 +62,10 @@ export const foods = sqliteTable(
     // (see lib/cookingConversion.ts CookingBasis). Design: raw-cooked-conversion
     // D6.1 (sdd/raw-cooked-conversion/design).
     dataBasis: text("data_basis", { enum: ["crudo", "cocido"] }),
+    // Nullable: cooked grams per 1 raw gram for THIS product (> 0). Takes
+    // priority over the per-category factor in lib/cookingFactors.ts. Sourced
+    // from the generic_foods catalog; null = fall back to the category factor.
+    cookingFactor: real("cooking_factor"),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({

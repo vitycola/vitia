@@ -20,6 +20,8 @@ create table if not exists generic_foods (
     )
   ),
   data_basis         text        check (data_basis is null or data_basis in ('crudo', 'cocido')),
+  brand              text,
+  cooking_factor     real        check (cooking_factor is null or cooking_factor > 0),
   source             text        not null default 'bedca',
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
