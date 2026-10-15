@@ -5,6 +5,7 @@ import "./index.css";
 import { dbReady } from "@/db/client";
 import { UpdateToast } from "@/src/components/UpdateToast";
 import { seedDemoProfile } from "@/src/seed/seedDemoProfile";
+import { bindSyncToAuth } from "@/src/services/syncService";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { router } from "./router";
 
@@ -19,6 +20,8 @@ dbReady
   .then(async () => {
     // Init auth session after DB is ready so repos can read userId synchronously
     await useAuthStore.getState().initFromSession();
+    // Start/stop cloud sync with the auth session (no-op in local-only mode)
+    bindSyncToAuth();
     // Demo seed (non-production only, idempotent) — must run before first
     // render reaches a gated route so the onboarding-gate check
     // (profileRepo.getProfile() !== null) already sees the seeded profile.

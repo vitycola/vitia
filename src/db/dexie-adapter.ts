@@ -295,6 +295,8 @@ export interface FavoritesRepo {
 export interface ProfileRepo {
   getProfile(): Promise<UserProfile | null>;
   upsertProfile(data: Omit<NewUserProfile, "id">): Promise<UserProfile>;
+  /** Writes a cloud-pulled profile, preserving its updatedAt. */
+  replaceProfileFromRemote(data: Omit<NewUserProfile, "id">): Promise<UserProfile>;
 }
 
 /** A photo attached to a progress entry — always a Blob at the repo boundary. */
@@ -389,6 +391,7 @@ export interface DayTotals {
 export interface MealEntriesRepo {
   getByDate(date: string): Promise<MealEntry[]>;
   getByDateAndMeal(date: string, mealType: MealEntry["mealType"]): Promise<MealEntry[]>;
+  getAll(): Promise<MealEntry[]>;
   getLoggedTotalsByDateRange(from: string, to: string): Promise<DayTotals[]>;
   insert(entry: NewMealEntry): Promise<MealEntry>;
   insertBulk(entries: NewMealEntry[]): Promise<MealEntry[]>;
@@ -729,6 +732,28 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       await db.users_profile.put(row);
       return row;
     },
+
+    async replaceProfileFromRemote(data) {
+      const row: UserProfileRow = {
+        id: PROFILE_ID,
+        userId: data.userId ?? null,
+        age: data.age,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        sex: data.sex,
+        activityLevel: data.activityLevel,
+        goal: data.goal,
+        calorieGoal: data.calorieGoal,
+        proteinGoalG: data.proteinGoalG,
+        carbsGoalG: data.carbsGoalG,
+        fatGoalG: data.fatGoalG,
+        useManualGoals: data.useManualGoals ?? false,
+        createdAt: data.createdAt ?? now(),
+        updatedAt: data.updatedAt ?? now(),
+      };
+      await db.users_profile.put(row);
+      return row;
+    },
   };
 
   // ── MealEntries ──────────────────────────────────────────────────────────
@@ -737,6 +762,13 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     async getByDate(date) {
       const rows = await db.meal_entries.where("date").equals(date).toArray();
       return rows.sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
+    },
+
+    async getAll() {
+      const rows = await db.meal_entries.toArray();
+      return rows.sort(
+        (a, b) => a.date.localeCompare(b.date) || a.loggedAt.localeCompare(b.loggedAt)
+      );
     },
 
     async getByDateAndMeal(date, mealType) {

@@ -12,6 +12,7 @@ import { dexieAdapter } from "@/db/client";
 import * as _impl from "@/db/repositories/profile";
 import type { NewUserProfile, UserProfile } from "@/db/schema";
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { profileToRemote } from "@/src/services/syncMappers";
 import { enqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 
@@ -34,6 +35,17 @@ export async function upsertProfile(data: Omit<NewUserProfile, "id">): Promise<U
   return profile;
 }
 
+/**
+ * Write a profile pulled from the cloud: keeps the remote updatedAt and
+ * never enqueues a sync op (avoids echoing the pulled row back).
+ */
+export async function replaceProfileFromRemote(
+  data: Omit<NewUserProfile, "id">
+): Promise<UserProfile> {
+  if (dexieAdapter) return dexieAdapter.profile.replaceProfileFromRemote(data);
+  return _impl.replaceProfileFromRemote(data);
+}
+
 // ── Private helpers ───────────────────────────────────────────────────
 
 function _enqueueProfileOp(profile: UserProfile, userId: string | null): void {
@@ -42,7 +54,7 @@ function _enqueueProfileOp(profile: UserProfile, userId: string | null): void {
   void enqueue({
     table: "users_profile",
     op: "upsert",
-    row: JSON.stringify({ ...profile, user_id: userId }),
+    row: JSON.stringify(profileToRemote(profile, userId)),
     userId,
     updatedAt: new Date().toISOString(),
   });

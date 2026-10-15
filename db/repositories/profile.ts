@@ -44,3 +44,20 @@ export async function upsertProfile(data: Omit<NewUserProfile, "id">): Promise<U
 
   return rows[0];
 }
+
+/**
+ * Replace the profile with a row pulled from the cloud, preserving its
+ * updatedAt (needed for last-write-wins). Unlike upsertProfile this does not
+ * stamp "now"; callers must not enqueue a sync op for it.
+ */
+export async function replaceProfileFromRemote(
+  data: Omit<NewUserProfile, "id">
+): Promise<UserProfile> {
+  const { userId: _u, ...rest } = data;
+  const rows = await db
+    .insert(usersProfile)
+    .values({ ...data, id: PROFILE_ID })
+    .onConflictDoUpdate({ target: usersProfile.id, set: { ...rest, userId: data.userId } })
+    .returning();
+  return rows[0];
+}
