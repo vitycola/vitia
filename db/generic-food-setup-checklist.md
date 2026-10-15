@@ -18,14 +18,31 @@ from information_schema.columns
 where table_name = 'generic_foods'
 order by ordinal_position;
 ```
-Expected: 12 rows (id, name, name_normalized, calories_per_100g, protein_per_100g,
-carbs_per_100g, fat_per_100g, category, data_basis, source, created_at, updated_at).
+Expected: 14 rows (id, name, name_normalized, calories_per_100g, protein_per_100g,
+carbs_per_100g, fat_per_100g, category, data_basis, brand, cooking_factor, source,
+created_at, updated_at).
 
 **Verify — table is empty (no rows yet):**
 ```sql
 select count(*) from generic_foods;
 ```
 Expected: `0`
+
+---
+
+## Step 1b — Existing projects only: add brand and cooking_factor
+
+If `generic_foods` was created before these columns existed, run the full
+contents of `db/generic-food-brand-migration.sql` in the SQL Editor (idempotent,
+safe to re-run). Fresh installs already get both columns from Step 1.
+
+**Verify:**
+```sql
+select column_name, data_type, is_nullable
+from information_schema.columns
+where table_name = 'generic_foods' and column_name in ('brand', 'cooking_factor');
+```
+Expected: 2 rows, both nullable (`brand` text, `cooking_factor` real).
 
 ---
 

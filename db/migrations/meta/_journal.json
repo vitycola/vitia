@@ -64,6 +64,13 @@
       "when": 1820000000000,
       "tag": "0008_raw_cooked_conversion",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1825000000000,
+      "tag": "0009_food_cooking_factor",
+      "breakpoints": true
     }
   ]
 }

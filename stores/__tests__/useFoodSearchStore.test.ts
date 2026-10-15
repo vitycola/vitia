@@ -54,6 +54,7 @@ const localFood = {
   source: "custom" as const,
   category: null,
   dataBasis: null,
+  cookingFactor: null,
   offProductCode: null,
   imageUrl: null,
   nameNormalized: "cached food",

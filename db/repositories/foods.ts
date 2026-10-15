@@ -64,6 +64,8 @@ export async function upsert(food: NewFood): Promise<Food> {
         fatPer100g: food.fatPer100g,
         servingSizeG: food.servingSizeG,
         offProductCode: food.offProductCode,
+        // Never overwrite a known factor with null (mirrors the Dexie path).
+        cookingFactor: sql`coalesce(${food.cookingFactor ?? null}, ${foods.cookingFactor})`,
       },
     })
     .returning();
@@ -100,6 +102,8 @@ export async function upsertMany(foodsToUpsert: NewFood[]): Promise<Food[]> {
         fatPer100g: sql`excluded.fat_per_100g`,
         servingSizeG: sql`excluded.serving_size_g`,
         offProductCode: sql`excluded.off_product_code`,
+        // Never overwrite a known factor with null (mirrors the Dexie path).
+        cookingFactor: sql`coalesce(excluded.cooking_factor, ${foods.cookingFactor})`,
       },
     })
     .returning();
