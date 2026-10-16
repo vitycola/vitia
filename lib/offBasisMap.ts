@@ -6,11 +6,13 @@ import type { CookingBasis } from "@/lib/cookingConversion";
  * offline-first). Sourced from OFF's published category TAXONOMY (not the
  * product dump).
  *
- * FAIL-CLOSED ASYMMETRY (see `basisFromOffTags`): this list is intentionally
- * one-directional — it only ever asserts "cocido" on a positive signal. There
- * is no equivalent "raw-signal" list because OFF's taxonomy does not reliably
- * mark raw products; absence of a cooked signal must resolve to unknown
- * (null), never "crudo" (spec: "OFF product with no cooked-signal tag").
+ * FAIL-CLOSED ASYMMETRY (see `basisFromOffTags`): this TAG list is
+ * intentionally one-directional — it only ever asserts "cocido" on a positive
+ * signal. OFF's taxonomy has no reliable raw tag, so tags alone never yield
+ * "crudo". The only path to "crudo" is the separate, narrow staple rule in
+ * lib/offBasisInference.ts (pasta/rice/dried legumes/quinoa-type grains,
+ * energy-density based). Every other product with no cooked signal stays
+ * unknown (null).
  */
 export const OFF_BASIS_RULES: ReadonlyArray<{ tag: string; basis: CookingBasis }> = [
   { tag: "en:cooked", basis: "cocido" },
@@ -24,15 +26,15 @@ export const OFF_BASIS_RULES: ReadonlyArray<{ tag: string; basis: CookingBasis }
 ];
 
 /** Bump when the rule set changes — enables future audit. */
-export const OFF_BASIS_VERSION = 1;
+export const OFF_BASIS_VERSION = 2; // v2: staple energy-density inference lives in offBasisInference.ts
 
 /**
  * Returns "cocido" if any cooked-signal tag from OFF_BASIS_RULES is present
- * in the product's `categories_tags`. Otherwise returns null (unknown) —
- * NEVER "crudo". Absence of a cooked signal does not prove the product is
- * raw; many raw products simply lack any raw-signal tag in OFF's taxonomy.
- * Keeping the result null (rather than guessing crudo) keeps the conversion
- * toggle hidden until a curator resolves the basis explicitly (BR-5 spirit).
+ * in the product's `categories_tags`. Otherwise returns null (unknown); this
+ * function alone never returns "crudo", since absence of a cooked signal does
+ * not prove the product is raw. Callers that have the product's kcal/100 g
+ * should use `resolveOffBasis` (lib/offBasisInference.ts), which adds the
+ * staple-only raw inference on top of this function.
  */
 export function basisFromOffTags(tags: string[] | undefined): CookingBasis | null {
   if (!tags || tags.length === 0) return null;
