@@ -12,6 +12,7 @@ import { dexieAdapter } from "@/db/client";
 import * as _impl from "@/db/repositories/profile";
 import type { NewUserProfile, UserProfile } from "@/db/schema";
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { isDemoDevice } from "@/src/services/demoGuard";
 import { profileToRemote } from "@/src/services/syncMappers";
 import { enqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
@@ -50,6 +51,8 @@ export async function replaceProfileFromRemote(
 
 function _enqueueProfileOp(profile: UserProfile, userId: string | null): void {
   if (!isSyncEnabled() || !userId) return;
+  // A seeded demo device must never push its (demo) profile.
+  if (isDemoDevice()) return;
 
   void enqueue({
     table: "users_profile",
