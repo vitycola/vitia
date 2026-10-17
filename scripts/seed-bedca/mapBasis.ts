@@ -11,7 +11,7 @@
  */
 
 /** Spanish/BEDCA terms that indicate a raw/unprocessed item. */
-const RAW_TERMS = [
+export const RAW_TERMS = [
   "crudo",
   "cruda",
   "crudos",
@@ -35,7 +35,7 @@ const RAW_TERMS = [
 ];
 
 /** Spanish/BEDCA terms that indicate a cooked item. */
-const COOKED_TERMS = [
+export const COOKED_TERMS = [
   "cocido",
   "cocida",
   "cocidos",
