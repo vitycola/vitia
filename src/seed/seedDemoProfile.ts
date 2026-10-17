@@ -33,6 +33,12 @@ import { generateId } from "@/lib/id";
 import { computeBMR, computeTDEE, deriveCalorieGoal, deriveMacros } from "@/lib/nutrition";
 import { isSyncEnabled } from "@/src/lib/supabase";
 import { getDemoSeedEnv, getHostname, getLocationSearch } from "@/src/seed/env";
+import {
+  DEMO_SEED_MARKER_KEY,
+  DEMO_SEED_MARKER_VALUE,
+  DEMO_SEED_STARTED_KEY,
+  hasEverHeldAuthSession,
+} from "@/src/services/demoGuard";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 
 // ---------------------------------------------------------------------------
@@ -75,7 +81,9 @@ export function shouldSeed(): boolean {
   const onKnownProdHost = env.PROD === true && KNOWN_PROD_HOSTS.includes(getHostname());
   const { userId } = useAuthStore.getState();
   const wouldSync = isSyncEnabled() && userId != null;
-  return flagEnabled && !onKnownProdHost && !wouldSync;
+  // A browser that ever held a Supabase session is a real user's device, even
+  // if it boots looking anonymous (offline / failed token refresh).
+  return flagEnabled && !onKnownProdHost && !wouldSync && !hasEverHeldAuthSession();
 }
 
 // ---------------------------------------------------------------------------
@@ -591,8 +599,9 @@ export function makePlaceholderPhoto(hue: number): Promise<PlaceholderPhoto> {
 // Idempotency marker + reset (REQ-8)
 // ---------------------------------------------------------------------------
 
-const SEED_MARKER_KEY = "vitia.demoSeed";
-const SEED_MARKER_VALUE = "v1";
+// Shared with the sync kill switch (src/services/demoGuard.ts).
+const SEED_MARKER_KEY = DEMO_SEED_MARKER_KEY;
+const SEED_MARKER_VALUE = DEMO_SEED_MARKER_VALUE;
 
 function hasSeedMarker(): boolean {
   return window.localStorage.getItem(SEED_MARKER_KEY) === SEED_MARKER_VALUE;
@@ -660,6 +669,10 @@ export async function seedDemoProfile(): Promise<void> {
     }
 
     if (hasSeedMarker()) return;
+
+    // 0. Mark the device as demo BEFORE any write, so a half-failed seed can
+    // never let the demo profile/meals sync later (see demoGuard.isDemoDevice).
+    window.localStorage.setItem(DEMO_SEED_STARTED_KEY, "1");
 
     // 1. Profile — satisfies the onboarding gate (REQ-1, REQ-6).
     await profileRepo.upsertProfile(buildDemoProfileUpsert());

@@ -78,6 +78,7 @@ import {
   seedDemoProfile,
   shouldSeed,
 } from "@/src/seed/seedDemoProfile";
+import { DEMO_FOOD_IDS, isDemoDevice } from "@/src/services/demoGuard";
 
 const SEED_MARKER_KEY = "vitia.demoSeed";
 
@@ -364,6 +365,16 @@ describe("src/seed/seedDemoProfile.ts", () => {
 
   // ── Task 6 — Environment gating (REQ-7) ──────────────────────────────
   describe("shouldSeed — environment gating matrix (REQ-7)", () => {
+    it("returns false when this browser ever held a Supabase auth session", () => {
+      expect(shouldSeed()).toBe(true);
+      window.localStorage.setItem("sb-abcdef-auth-token", "{}");
+      expect(shouldSeed()).toBe(false);
+    });
+
+    it("DEMO_FOOD_IDS matches the DEMO_FOODS fixture", () => {
+      expect([...DEMO_FOOD_IDS].sort()).toEqual(DEMO_FOODS.map((f) => f.id).sort());
+    });
+
     it("returns false when VITE_ENABLE_DEMO_SEED is unset and DEV is false", () => {
       setImportMetaEnv({ DEV: false, PROD: false, VITE_ENABLE_DEMO_SEED: undefined });
       expect(shouldSeed()).toBe(false);
@@ -469,6 +480,18 @@ describe("src/seed/seedDemoProfile.ts", () => {
       await seedDemoProfile();
 
       expect(window.localStorage.getItem(SEED_MARKER_KEY)).toBeNull();
+    });
+
+    it("leaves the device marked as demo when seeding fails after the profile step", async () => {
+      stubCanvas();
+      mockUpsertMany.mockRejectedValueOnce(new Error("simulated foods failure"));
+
+      await seedDemoProfile();
+
+      expect(mockUpsertProfile).toHaveBeenCalled();
+      expect(window.localStorage.getItem(SEED_MARKER_KEY)).toBeNull();
+      expect(window.localStorage.getItem("vitia.demoSeedStarted")).not.toBeNull();
+      expect(isDemoDevice()).toBe(true);
     });
 
     it("never throws even when an internal write fails (main.tsx boot-hook contract)", async () => {

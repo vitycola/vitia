@@ -38,6 +38,11 @@ jest.mock("@/stores/useProfileStore", () => ({
   useProfileStore: { getState: () => ({ load: jest.fn() }) },
 }));
 
+const mockCleanupDemoData = jest.fn();
+jest.mock("@/src/services/demoCleanup", () => ({
+  cleanupDemoData: (...a: unknown[]) => mockCleanupDemoData(...a),
+}));
+
 const mockDrain = jest.fn();
 const mockRemove = jest.fn();
 jest.mock("@/src/services/syncQueue", () => ({
@@ -66,8 +71,10 @@ import {
   bindSyncToAuth,
   flush,
   reconcile,
+  resetDemoWarningForTests,
   start,
   stop,
+  sync,
 } from "@/src/services/syncService";
 
 const mockedIsSyncEnabled = isSyncEnabled as jest.Mock;
@@ -450,6 +457,43 @@ describe("reconcile", () => {
     );
   });
 
+  it("does not ingest remote demo rows locally", async () => {
+    const remote = (id: string, food_id: string) => ({
+      id,
+      user_id: "user-1",
+      date: "2025-01-01",
+      meal_type: "lunch",
+      food_id,
+      food_name: "X",
+      quantity_g: 1,
+      calories: 1,
+      protein_g: 1,
+      carbs_g: 1,
+      fat_g: 1,
+      logged_at: "2025-01-01T10:00:00.000Z",
+      updated_at: null,
+    });
+    mockRemote({ entries: [remote("r-demo", "demo-food-salad"), remote("r-real", "off-1")] });
+
+    await reconcile("user-1");
+
+    const inserted = mockDexie.mealEntries.insert.mock.calls.map((c) => c[0].id);
+    expect(inserted).toEqual(["r-real"]);
+  });
+
+  it("never pushes demo meal entries in the 30-day push", async () => {
+    mockRemote({});
+    mockDexie.mealEntries.getByDate.mockImplementation(async (d: string) =>
+      d === new Date().toISOString().slice(0, 10)
+        ? [{ ...makeEntry(1), foodId: "demo-food-salad" }, makeEntry(2)]
+        : []
+    );
+
+    await reconcile("user-1");
+
+    expect(mockUpsert.mock.calls[0][0].map((r: { id: string }) => r.id)).toEqual(["e2"]);
+  });
+
   it("warns when the remote entries fetch fails", async () => {
     mockRemote({ entriesError: { message: "boom" } });
 
@@ -472,5 +516,116 @@ describe("reconcile", () => {
     await reconcile("user-1");
 
     expect(mockUpsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("demo data protection", () => {
+  const demoEntry = { ...makeEntry(1), foodId: "demo-food-oatmeal", foodName: "Yogur griego" };
+
+  it("backfill skips demo entries", async () => {
+    mockGetAll.mockResolvedValue([demoEntry, makeEntry(2)]);
+
+    await backfillMealEntries("user-1");
+
+    expect(mockUpsert.mock.calls[0][0].map((r: { id: string }) => r.id)).toEqual(["e2"]);
+  });
+
+  it("flush drops queued demo ops (snake_case and legacy camelCase) without upserting", async () => {
+    const op = (id: string, row: unknown) => ({
+      id,
+      table: "meal_entries",
+      op: "upsert",
+      row: JSON.stringify(row),
+      userId: "user-1",
+      updatedAt: "x",
+    });
+    mockDrain.mockResolvedValue([
+      op("q-snake", { id: "e1", food_id: "demo-food-salad", user_id: "user-1" }),
+      op("q-camel", demoEntry),
+      op("q-real", makeEntry(3)),
+    ]);
+
+    await flush();
+
+    expect(mockRemove).toHaveBeenCalledWith("q-snake");
+    expect(mockRemove).toHaveBeenCalledWith("q-camel");
+    expect(mockRemove).toHaveBeenCalledWith("q-real");
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
+    expect(mockUpsert.mock.calls[0][0].id).toBe("e3");
+  });
+
+  describe("kill switch (seed marker present)", () => {
+    beforeEach(() => {
+      store["vitia.demoSeed"] = "v1";
+    });
+
+    it("blocks start, bindSyncToAuth, sync, flush, backfill and reconcile", async () => {
+      start("user-1");
+      const unsubscribe = bindSyncToAuth();
+      unsubscribe();
+      await flush();
+      await expect(backfillMealEntries("user-1")).resolves.toBe(false);
+      await reconcile("user-1");
+      await sync("user-1");
+
+      expect(window.addEventListener).not.toHaveBeenCalled();
+      expect(authSubscribers).toHaveLength(0);
+      expect(mockGetSession).not.toHaveBeenCalled();
+      expect(mockDrain).not.toHaveBeenCalled();
+      expect(mockGetAll).not.toHaveBeenCalled();
+      expect(mockUpsert).not.toHaveBeenCalled();
+      expect(mockGetProfile).not.toHaveBeenCalled();
+      expect(mockCleanupDemoData).not.toHaveBeenCalled();
+    });
+
+    it("also engages when only the seed-started marker exists", async () => {
+      Reflect.deleteProperty(store, "vitia.demoSeed");
+      store["vitia.demoSeedStarted"] = "1";
+
+      await sync("user-1");
+
+      expect(mockGetSession).not.toHaveBeenCalled();
+      expect(mockDrain).not.toHaveBeenCalled();
+    });
+
+    it("warns once per boot that sync is disabled, without clearing markers", async () => {
+      resetDemoWarningForTests();
+
+      await flush();
+      await flush();
+      await reconcile("user-1");
+
+      const calls = warnSpy.mock.calls.filter((c) => String(c[0]).includes("demo seed"));
+      expect(calls).toHaveLength(1);
+      expect(String(calls[0][0])).toContain("vitia.demoSeedStarted");
+      expect(store["vitia.demoSeed"]).toBe("v1");
+    });
+
+    it("never pushes a demo profile on reconcile", async () => {
+      mockGetProfile.mockResolvedValue({
+        id: 1,
+        userId: null,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      });
+
+      await reconcile("user-1");
+
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+  });
+
+  it("sync runs the demo cleanup before flushing when a session exists", async () => {
+    const order: string[] = [];
+    mockCleanupDemoData.mockImplementation(async () => {
+      order.push("cleanup");
+    });
+    mockDrain.mockImplementation(async () => {
+      order.push("drain");
+      return [];
+    });
+
+    await sync("user-1");
+
+    expect(order.slice(0, 2)).toEqual(["cleanup", "drain"]);
   });
 });
