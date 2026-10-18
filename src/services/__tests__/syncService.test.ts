@@ -40,9 +40,13 @@ jest.mock("@/stores/useProfileStore", () => ({
 
 const mockDrain = jest.fn();
 const mockRemove = jest.fn();
+let enqueueListener: (() => void) | null = null;
 jest.mock("@/src/services/syncQueue", () => ({
   drain: (...a: unknown[]) => mockDrain(...a),
   remove: (...a: unknown[]) => mockRemove(...a),
+  setOnEnqueue: (cb: (() => void) | null) => {
+    enqueueListener = cb;
+  },
 }));
 
 const authSubscribers: Array<(s: { status: string; userId: string | null }) => void> = [];
@@ -97,6 +101,7 @@ let errorSpy: jest.SpyInstance;
 beforeEach(() => {
   jest.clearAllMocks();
   authSubscribers.length = 0;
+  enqueueListener = null;
   authState = { status: "authed", userId: "user-1" };
   store = {};
   (globalThis as { localStorage?: unknown }).localStorage = {
@@ -472,5 +477,500 @@ describe("reconcile", () => {
     await reconcile("user-1");
 
     expect(mockUpsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("flush ordering and compaction", () => {
+  const calls: string[] = [];
+  let failDelete: ((label: string) => boolean) | null = null;
+
+  beforeEach(() => {
+    failDelete = null;
+  });
+
+  function mockRemoteWithDelete() {
+    calls.length = 0;
+    mockUpsert.mockImplementation(async (payload: { id: string }) => {
+      calls.push(`upsert:${payload.id}`);
+      return { error: null };
+    });
+    mockFrom.mockImplementation((() => ({
+      upsert: mockUpsert,
+      delete: () => {
+        const filters: Record<string, string> = {};
+        const idx = calls.push("delete:?") - 1;
+        const label = () =>
+          filters.id ? `delete:${filters.id}` : `bulk:${filters.date}:${filters.meal_type}`;
+        const makeChain = (
+          result: { error: unknown } = { error: null }
+        ): Promise<unknown> & { eq: (k: string, v: string) => unknown } =>
+          Object.assign(Promise.resolve(result), {
+            eq: (k: string, v: string) => {
+              filters[k] = v;
+              calls[idx] = label();
+              return makeChain(failDelete?.(label()) ? { error: { message: "boom" } } : undefined);
+            },
+          });
+        return makeChain();
+      },
+    })) as never);
+  }
+
+  const op = (
+    id: string,
+    kind: "upsert" | "delete",
+    updatedAt: string,
+    row: object,
+    userId = "user-1"
+  ) => ({
+    id,
+    table: "meal_entries",
+    op: kind,
+    row: JSON.stringify(row),
+    userId,
+    updatedAt,
+  });
+
+  const up = (qid: string, rowId: string, t: string) =>
+    op(qid, "upsert", t, { ...makeEntry(1), id: rowId });
+
+  it("never sends a superseded upsert and deletes after the surviving ops in order", async () => {
+    mockRemoteWithDelete();
+    mockDrain.mockResolvedValue([
+      op("c", "delete", "2026-01-01T00:00:03.000Z", { id: "X" }),
+      up("b", "Y", "2026-01-01T00:00:02.000Z"),
+      up("a", "X", "2026-01-01T00:00:01.000Z"),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["upsert:Y", "delete:X"]);
+    expect(mockRemove).toHaveBeenCalledWith("a");
+    expect(mockRemove.mock.calls.map((c) => c[0]).sort()).toEqual(["a", "b", "c"]);
+  });
+
+  it("sends a bulk delete after earlier ops and drops matching upserts", async () => {
+    mockRemoteWithDelete();
+    mockDrain.mockResolvedValue([
+      op("z", "delete", "2026-01-01T00:00:05.000Z", {
+        date: "2025-01-01",
+        meal_type: "lunch",
+        bulk: true,
+      }),
+      up("a", "X", "2026-01-01T00:00:01.000Z"),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["bulk:2025-01-01:lunch"]);
+    expect(mockRemove).toHaveBeenCalledWith("a");
+  });
+
+  it("keeps a failing op queued while the others proceed", async () => {
+    mockRemoteWithDelete();
+    mockUpsert.mockImplementation(async (payload: { id: string }) => {
+      calls.push(`upsert:${payload.id}`);
+      return payload.id === "A" ? { error: { message: "boom" } } : { error: null };
+    });
+    mockDrain.mockResolvedValue([
+      up("q1", "A", "2026-01-01T00:00:01.000Z"),
+      up("q2", "B", "2026-01-01T00:00:02.000Z"),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["upsert:A", "upsert:B"]);
+    expect(mockRemove).toHaveBeenCalledTimes(1);
+    expect(mockRemove).toHaveBeenCalledWith("q2");
+  });
+
+  it("a failed single delete holds back later upserts of the same row", async () => {
+    mockRemoteWithDelete();
+    failDelete = (l) => l === "delete:X";
+    mockDrain.mockResolvedValue([
+      op("d", "delete", "2026-01-01T00:00:02.000Z", { id: "X" }),
+      up("uX", "X", "2026-01-01T00:00:03.000Z"),
+      op("uY", "upsert", "2026-01-01T00:00:04.000Z", {
+        ...makeEntry(2),
+        id: "Y",
+        mealType: "dinner",
+      }),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["delete:X", "upsert:Y"]);
+    expect(mockRemove.mock.calls.map((c) => c[0])).toEqual(["uY"]);
+  });
+
+  it("a failed bulk delete holds back later upserts of that slot only", async () => {
+    mockRemoteWithDelete();
+    failDelete = (l) => l.startsWith("bulk:");
+    mockDrain.mockResolvedValue([
+      op("bulk", "delete", "2026-01-01T00:00:02.000Z", {
+        date: "2025-01-01",
+        meal_type: "lunch",
+        bulk: true,
+      }),
+      up("sameSlot", "A", "2026-01-01T00:00:03.000Z"),
+      op("otherSlot", "upsert", "2026-01-01T00:00:04.000Z", {
+        ...makeEntry(2),
+        id: "B",
+        mealType: "dinner",
+      }),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["bulk:2025-01-01:lunch", "upsert:B"]);
+    expect(mockRemove.mock.calls.map((c) => c[0])).toEqual(["otherSlot"]);
+  });
+
+  it("never sends or compacts another user's ops in a shuffled multi-user queue", async () => {
+    mockRemoteWithDelete();
+    mockDrain.mockResolvedValue([
+      op("o2", "delete", "2026-01-01T00:00:03.000Z", { id: "X" }, "other-user"),
+      up("m2", "Y", "2026-01-01T00:00:02.000Z"),
+      op("o1", "upsert", "2026-01-01T00:00:01.000Z", { ...makeEntry(1), id: "X" }, "other-user"),
+      up("m1", "X", "2026-01-01T00:00:01.000Z"),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["upsert:X", "upsert:Y"]);
+    expect(mockRemove.mock.calls.map((c) => c[0])).toEqual(["m1", "m2"]);
+  });
+
+  it("sends only one upsert when two edits of a row share a timestamp", async () => {
+    mockRemoteWithDelete();
+    mockDrain.mockResolvedValue([
+      up("b", "X", "2026-01-01T00:00:01.000Z"),
+      up("a", "X", "2026-01-01T00:00:01.000Z"),
+    ]);
+
+    await flush();
+
+    expect(calls).toEqual(["upsert:X"]);
+    expect(mockRemove.mock.calls.map((c) => c[0]).sort()).toEqual(["a", "b"]);
+  });
+
+  it("logs and continues when removing a superseded op fails", async () => {
+    mockRemoteWithDelete();
+    mockRemove.mockRejectedValueOnce(new Error("idb"));
+    mockDrain.mockResolvedValue([
+      up("a", "X", "2026-01-01T00:00:01.000Z"),
+      op("d", "delete", "2026-01-01T00:00:02.000Z", { id: "X" }),
+    ]);
+
+    await flush();
+
+    expect(warnSpy).toHaveBeenCalled();
+    expect(calls).toEqual(["delete:X"]);
+    expect(mockRemove).toHaveBeenCalledWith("d");
+  });
+});
+
+describe("flush after writes (debounced)", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  async function startAndSettle() {
+    start("user-1");
+    await jest.advanceTimersByTimeAsync(0);
+    mockDrain.mockClear();
+  }
+
+  it("registers a listener on start and unregisters on stop", () => {
+    start("user-1");
+    expect(enqueueListener).toBeInstanceOf(Function);
+    stop();
+    expect(enqueueListener).toBeNull();
+  });
+
+  it("collapses several enqueues within the window into one flush", async () => {
+    await startAndSettle();
+
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(300);
+    enqueueListener?.();
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(799);
+    expect(mockDrain).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(2);
+
+    expect(mockDrain).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels the pending flush on stop", async () => {
+    await startAndSettle();
+
+    enqueueListener?.();
+    stop();
+    await jest.advanceTimersByTimeAsync(2000);
+
+    expect(mockDrain).not.toHaveBeenCalled();
+  });
+
+  it("runs a follow-up flush for ops enqueued during an in-flight flush", async () => {
+    await startAndSettle();
+    let release: () => void = () => {};
+    mockDrain.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        })
+    );
+
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900); // first flush now blocked in drain
+    expect(mockDrain).toHaveBeenCalledTimes(1);
+
+    enqueueListener?.(); // enqueue while the flush is in flight
+    await jest.advanceTimersByTimeAsync(900);
+    expect(mockDrain).toHaveBeenCalledTimes(1); // still waiting on the first
+
+    release();
+    await jest.advanceTimersByTimeAsync(0);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(mockDrain).toHaveBeenCalledTimes(2);
+  });
+
+  it("flushes within the max wait even when writes never pause", async () => {
+    await startAndSettle();
+
+    for (let t = 0; t < 4500; t += 500) {
+      enqueueListener?.();
+      await jest.advanceTimersByTimeAsync(500);
+    }
+    expect(mockDrain).not.toHaveBeenCalled();
+
+    for (let t = 0; t < 1000 && mockDrain.mock.calls.length === 0; t += 100) {
+      enqueueListener?.();
+      await jest.advanceTimersByTimeAsync(100);
+    }
+
+    expect(mockDrain).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not run a stale follow-up flush after stop() and restart", async () => {
+    await startAndSettle();
+    let release: () => void = () => {};
+    mockDrain.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        })
+    );
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900);
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900); // marks a follow-up as wanted
+
+    stop();
+    start("user-1"); // joins the in-flight flush
+    release();
+    await jest.advanceTimersByTimeAsync(0);
+    await jest.advanceTimersByTimeAsync(0);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(mockDrain).toHaveBeenCalledTimes(1);
+  });
+
+  it("collapses two enqueue bursts during one in-flight flush into one follow-up", async () => {
+    await startAndSettle();
+    let release: () => void = () => {};
+    mockDrain.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        })
+    );
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900);
+
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900);
+    enqueueListener?.();
+    await jest.advanceTimersByTimeAsync(900);
+
+    release();
+    for (let i = 0; i < 5; i++) await jest.advanceTimersByTimeAsync(0);
+
+    expect(mockDrain).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("reconcile with pending deletes", () => {
+  function remoteRow(id: string, mealType = "lunch", date = "2026-01-01") {
+    return {
+      id,
+      user_id: "user-1",
+      date,
+      meal_type: mealType,
+      food_id: "f",
+      food_name: "Food",
+      quantity_g: 100,
+      calories: 100,
+      protein_g: 1,
+      carbs_g: 1,
+      fat_g: 1,
+      logged_at: "2026-01-01T10:00:00.000Z",
+      updated_at: null,
+    };
+  }
+
+  function mockEntries(entries: unknown[]) {
+    mockFrom.mockImplementation(((table: string) =>
+      table === "users_profile"
+        ? {
+            select: () => ({
+              eq: () => ({ single: async () => ({ data: null, error: { code: "PGRST116" } }) }),
+            }),
+            upsert: mockUpsert,
+          }
+        : {
+            select: () => ({ eq: async () => ({ data: entries, error: null }) }),
+            upsert: mockUpsert,
+          }) as never);
+  }
+
+  const del = (id: string, row: object, userId = "user-1") => ({
+    id,
+    table: "meal_entries",
+    op: "delete",
+    row: JSON.stringify(row),
+    userId,
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
+
+  it("does not re-insert a remote row with a pending single delete", async () => {
+    mockEntries([remoteRow("zombie"), remoteRow("keep")]);
+    mockDrain.mockResolvedValue([del("q1", { id: "zombie" })]);
+
+    await reconcile("user-1");
+
+    const inserted = mockDexie.mealEntries.insert.mock.calls.map((c) => c[0].id);
+    expect(inserted).toEqual(["keep"]);
+  });
+
+  it("does not re-insert rows matching a pending bulk delete", async () => {
+    mockEntries([
+      remoteRow("a", "lunch", "2026-01-01"),
+      remoteRow("b", "dinner", "2026-01-01"),
+      remoteRow("c", "lunch", "2026-01-02"),
+    ]);
+    mockDrain.mockResolvedValue([
+      del("q1", { date: "2026-01-01", meal_type: "lunch", bulk: true }),
+    ]);
+
+    await reconcile("user-1");
+
+    const inserted = mockDexie.mealEntries.insert.mock.calls.map((c) => c[0].id).sort();
+    expect(inserted).toEqual(["b", "c"]);
+  });
+
+  it("still inserts a remote-only row when no delete is pending", async () => {
+    mockEntries([remoteRow("r1")]);
+
+    await reconcile("user-1");
+
+    expect(mockDexie.mealEntries.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "r1" })
+    );
+  });
+
+  it("ignores pending deletes owned by another user", async () => {
+    mockEntries([remoteRow("r1")]);
+    mockDrain.mockResolvedValue([del("q1", { id: "r1" }, "other-user")]);
+
+    await reconcile("user-1");
+
+    expect(mockDexie.mealEntries.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it("honours a pending bulk delete with a legacy camelCase mealType", async () => {
+    mockEntries([remoteRow("a", "lunch", "2026-01-01"), remoteRow("b", "dinner", "2026-01-01")]);
+    mockDrain.mockResolvedValue([del("q1", { date: "2026-01-01", mealType: "lunch", bulk: true })]);
+
+    await reconcile("user-1");
+
+    expect(mockDexie.mealEntries.insert.mock.calls.map((c) => c[0].id)).toEqual(["b"]);
+  });
+
+  it("does not resurrect a row whose delete was delivered mid-reconcile", async () => {
+    // The delete is still queued until the remote fetch happens, then "flushed".
+    let fetched = false;
+    mockFrom.mockImplementation(((table: string) =>
+      table === "users_profile"
+        ? {
+            select: () => ({
+              eq: () => ({ single: async () => ({ data: null, error: { code: "PGRST116" } }) }),
+            }),
+            upsert: mockUpsert,
+          }
+        : {
+            select: () => ({
+              eq: async () => {
+                fetched = true;
+                return { data: [remoteRow("zombie")], error: null };
+              },
+            }),
+            upsert: mockUpsert,
+          }) as never);
+    mockDrain.mockImplementation(async () => (fetched ? [] : [del("q1", { id: "zombie" })]));
+
+    await reconcile("user-1");
+
+    expect(mockDexie.mealEntries.insert).not.toHaveBeenCalled();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("runs one flush after a reconcile when flushes were requested during it", async () => {
+    start("user-1");
+    for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+    mockDrain.mockClear();
+
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mockFrom.mockImplementation(((table: string) =>
+      table === "users_profile"
+        ? {
+            select: () => ({
+              eq: () => ({ single: async () => ({ data: null, error: { code: "PGRST116" } }) }),
+            }),
+            upsert: mockUpsert,
+          }
+        : {
+            select: () => ({
+              eq: async () => {
+                await gate;
+                return { data: [], error: null };
+              },
+            }),
+            upsert: mockUpsert,
+          }) as never);
+
+    const running = reconcile("user-1");
+    for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(mockDrain).toHaveBeenCalledTimes(1); // pending-delete snapshot only
+
+    await flush();
+    await flush();
+    expect(mockDrain).toHaveBeenCalledTimes(1); // flushes held back
+
+    release();
+    await running;
+    for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+
+    // snapshot before + snapshot after + exactly one deferred flush
+    expect(mockDrain).toHaveBeenCalledTimes(3);
   });
 });

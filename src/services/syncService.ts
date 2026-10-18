@@ -29,7 +29,8 @@ import {
   profileFromRemote,
   profileToRemote,
 } from "@/src/services/syncMappers";
-import { drain, remove } from "@/src/services/syncQueue";
+import { describeMealOp, planFlush } from "@/src/services/syncPlanner";
+import { drain, remove, setOnEnqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useDayStore } from "@/stores/useDayStore";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -40,6 +41,20 @@ let _startedFor: string | null = null;
 /** Bumped on every start/stop so in-flight work for a previous user can bail out. */
 let _generation = 0;
 let _flushInFlight: Promise<void> | null = null;
+/** Set when an enqueue-triggered flush was requested while one was in flight. */
+let _flushAgain = false;
+let _enqueueTimer: ReturnType<typeof setTimeout> | null = null;
+/** When the current burst of enqueues started (for the max-wait cap). */
+let _enqueueBurstStart: number | null = null;
+/** Number of reconciles currently running; flushes are held back meanwhile. */
+let _reconcileCount = 0;
+/** A flush was requested while a reconcile was running. */
+let _flushDeferred = false;
+
+/** Trailing debounce for flushes triggered by local writes. */
+const ENQUEUE_FLUSH_DEBOUNCE_MS = 800;
+/** Upper bound so continuous writes cannot postpone the flush forever. */
+const ENQUEUE_FLUSH_MAX_WAIT_MS = 5000;
 
 const BACKFILL_BATCH_SIZE = 500;
 const BACKFILL_FLAG_PREFIX = "vitia:sync:mealEntriesBackfilled:";
@@ -73,9 +88,13 @@ export function start(userId: string): void {
   window.addEventListener("online", handleOnline);
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
+  setOnEnqueue(scheduleFlush);
+
   _cleanupFns = [
     () => window.removeEventListener("online", handleOnline),
     () => document.removeEventListener("visibilitychange", handleVisibilityChange),
+    () => setOnEnqueue(null),
+    clearEnqueueTimer,
   ];
 
   void sync(userId);
@@ -88,7 +107,45 @@ export function stop(): void {
   for (const fn of _cleanupFns) fn();
   _cleanupFns = [];
   _startedFor = null;
+  _flushAgain = false;
+  _flushDeferred = false;
   _generation++;
+}
+
+function clearEnqueueTimer(): void {
+  if (_enqueueTimer !== null) {
+    clearTimeout(_enqueueTimer);
+    _enqueueTimer = null;
+  }
+  _enqueueBurstStart = null;
+}
+
+/**
+ * Debounced flush after local writes, so a delete lands on the remote soon
+ * after the upsert it follows instead of sitting in the queue until the next
+ * online/visibility event. If a flush is already running, ops enqueued meanwhile
+ * may have been missed by its drain, so one more flush is chained after it.
+ */
+function scheduleFlush(): void {
+  if (_startedFor === null) return;
+  const now = Date.now();
+  const burstStart = _enqueueBurstStart ?? now;
+  if (_enqueueTimer !== null) clearTimeout(_enqueueTimer);
+  _enqueueBurstStart = burstStart;
+  const delay = Math.max(
+    0,
+    Math.min(ENQUEUE_FLUSH_DEBOUNCE_MS, burstStart + ENQUEUE_FLUSH_MAX_WAIT_MS - now)
+  );
+  _enqueueTimer = setTimeout(() => {
+    _enqueueTimer = null;
+    _enqueueBurstStart = null;
+    if (_startedFor === null) return;
+    if (_flushInFlight) {
+      _flushAgain = true;
+      return;
+    }
+    flush().catch((err) => console.warn("[syncService] scheduled flush failed:", err));
+  }, delay);
 }
 
 async function getSessionUserId(
@@ -125,9 +182,22 @@ export function bindSyncToAuth(): () => void {
 export function flush(): Promise<void> {
   if (!isSyncEnabled()) return Promise.resolve();
   if (_flushInFlight) return _flushInFlight;
+  // A reconcile compares a remote snapshot with the queue; flushing in the
+  // middle would let a delete disappear from the queue while the snapshot
+  // still contains the row. Run one flush after the reconcile instead.
+  if (_reconcileCount > 0) {
+    _flushDeferred = true;
+    return Promise.resolve();
+  }
 
   _flushInFlight = runFlush().finally(() => {
     _flushInFlight = null;
+    if (_flushAgain) {
+      _flushAgain = false;
+      if (_startedFor !== null) {
+        flush().catch((err) => console.warn("[syncService] follow-up flush failed:", err));
+      }
+    }
   });
   return _flushInFlight;
 }
@@ -139,12 +209,34 @@ async function runFlush(): Promise<void> {
   const sessionUserId = await getSessionUserId(supabase);
   if (!sessionUserId) return;
 
-  const ops = await drain();
+  // Ops queued by another account stay queued until that account signs in.
+  const queued = (await drain()).filter((op) => op.userId === sessionUserId);
 
-  for (const op of ops) {
+  // Chronological order + compaction: a delete must never run before the
+  // upsert of the same row, and redundant ops are dropped without being sent.
+  const { ordered, superseded } = planFlush(queued);
+
+  for (const id of superseded) {
+    if (generation !== _generation) return;
+    try {
+      await remove(id);
+    } catch (err) {
+      console.warn(`[syncService] flush: could not drop superseded op ${id}:`, err);
+    }
+  }
+
+  // A failed delete holds back later upserts of the same row / slot within
+  // this flush; otherwise the retried delete would wipe a newer remote row.
+  const blockedIds = new Set<string>();
+  const blockedSlots = new Set<string>();
+
+  for (const op of ordered) {
     if (generation !== _generation) return; // user switched / sync stopped
-    // Ops queued by another account stay queued until that account signs in.
-    if (op.userId !== sessionUserId) continue;
+
+    const info = describeMealOp(op);
+    if (info?.kind === "upsert" && (blockedIds.has(info.id) || blockedSlots.has(info.slot))) {
+      continue;
+    }
 
     try {
       const parsed = JSON.parse(op.row as string) as Record<string, unknown>;
@@ -184,6 +276,8 @@ async function runFlush(): Promise<void> {
 
       await remove(op.id);
     } catch (err) {
+      if (info?.kind === "delete") blockedIds.add(info.id);
+      else if (info?.kind === "bulkDelete") blockedSlots.add(info.slot);
       // Leave op in queue — it will be retried on next flush
       console.warn(`[syncService] flush: op ${op.id} failed, will retry:`, err);
     }
@@ -198,6 +292,25 @@ async function runFlush(): Promise<void> {
 export async function reconcile(userId: string): Promise<void> {
   if (!isSyncEnabled()) return;
 
+  // Let any running flush finish first, then hold new flushes back until done.
+  while (_flushInFlight) {
+    await _flushInFlight.catch(() => {});
+  }
+  _reconcileCount++;
+  try {
+    await runReconcile(userId);
+  } finally {
+    _reconcileCount--;
+    if (_reconcileCount === 0 && _flushDeferred) {
+      _flushDeferred = false;
+      if (_startedFor !== null) {
+        flush().catch((err) => console.warn("[syncService] deferred flush failed:", err));
+      }
+    }
+  }
+}
+
+async function runReconcile(userId: string): Promise<void> {
   const supabase = getSupabaseClient();
   const generation = _generation;
   const isStale = () => generation !== _generation;
@@ -244,6 +357,11 @@ export async function reconcile(userId: string): Promise<void> {
     }
 
     // ── Meal entries reconcile ────────────────────────────────────────
+    // Snapshot pending deletes BEFORE the remote fetch and again after it: a
+    // delete delivered in between must still be honoured (union of both).
+    const pendingBefore = await getPendingMealDeletes(userId);
+    if (isStale()) return;
+
     // Pull remote rows not present locally
     const { data: remoteEntries, error: entriesError } = await supabase
       .from("meal_entries")
@@ -254,8 +372,22 @@ export async function reconcile(userId: string): Promise<void> {
     if (entriesError) {
       console.warn("[syncService] reconcile: meal_entries fetch failed:", entriesError);
     } else if (remoteEntries) {
+      // Local deletes not yet pushed: never resurrect those rows from remote.
+      const pendingAfter = await getPendingMealDeletes(userId);
+      if (isStale()) return;
+      const pendingDeletes = {
+        ids: new Set([...pendingBefore.ids, ...pendingAfter.ids]),
+        slots: new Set([...pendingBefore.slots, ...pendingAfter.slots]),
+      };
+
       for (const remote of remoteEntries as RemoteMealEntry[]) {
         if (isStale()) return;
+        if (
+          pendingDeletes.ids.has(remote.id) ||
+          pendingDeletes.slots.has(`${userId}|${remote.date}|${remote.meal_type}`)
+        ) {
+          continue;
+        }
         // Check if entry exists locally
         let existsLocally = false;
         if (dexieAdapter) {
@@ -334,6 +466,20 @@ export async function reconcile(userId: string): Promise<void> {
   } catch (err) {
     console.error("[syncService] reconcile failed:", err);
   }
+}
+
+async function getPendingMealDeletes(
+  userId: string
+): Promise<{ ids: Set<string>; slots: Set<string> }> {
+  const ids = new Set<string>();
+  const slots = new Set<string>();
+  for (const op of await drain()) {
+    if (op.op !== "delete" || op.userId !== userId) continue;
+    const info = describeMealOp(op);
+    if (info?.kind === "delete") ids.add(info.id);
+    else if (info?.kind === "bulkDelete") slots.add(info.slot);
+  }
+  return { ids, slots };
 }
 
 async function pushProfile(
