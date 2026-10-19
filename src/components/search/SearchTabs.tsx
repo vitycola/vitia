@@ -1,4 +1,11 @@
-export type SearchTabId = "database" | "favorites" | "created" | "ai";
+export const SEARCH_TAB_IDS = ["database", "favorites", "created", "ai"] as const;
+
+export type SearchTabId = (typeof SEARCH_TAB_IDS)[number];
+
+/** Parses a raw `tab` URL param; unknown or missing values fall back to "database". */
+export function parseSearchTab(value: string | null): SearchTabId {
+  return SEARCH_TAB_IDS.find((id) => id === value) ?? "database";
+}
 
 interface Tab {
   id: SearchTabId;
