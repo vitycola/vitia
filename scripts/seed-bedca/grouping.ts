@@ -56,13 +56,21 @@ export function normalizeBaseName(name: string): string {
 
 const PUNCT_RE = /[.,;:!?()"'`]+$/g;
 
+// Terms that only count as cooking-state descriptors when they are a whole
+// comma segment ("Lenteja, seca, cruda"); inside a longer segment they are
+// part of the food's identity ("Frutos secos", "al natural").
+const SEGMENT_ONLY_TERMS = new Set(["seco", "seca", "secos", "secas", "natural", "naturales"]);
+const DANGLING_WORDS = new Set(["y", "o", "e", "al", "a", "con", "de", "en", "sin"]);
+
 /**
- * Strips a single comma-separated segment of any raw/cooked descriptor terms
- * it contains, preserving the segment's original casing. Returns "" if the
- * whole segment (once trimmed of trailing punctuation) IS a descriptor term,
- * so the caller drops it entirely (e.g. "cruda" as its own segment).
+ * Strips a single comma-separated segment of raw/cooked descriptor terms,
+ * preserving the segment's original casing. Returns "" if the whole segment
+ * (once trimmed of trailing punctuation) IS a descriptor term, so the caller
+ * drops it entirely (e.g. "cruda" as its own segment). The leading word of the
+ * name is never stripped ("Tostada de maíz"), and connector words left
+ * dangling by a removal ("cocido y congelado" -> "y congelado") are trimmed.
  */
-function stripTermsFromSegment(segment: string): string {
+function stripTermsFromSegment(segment: string, isFirstSegment: boolean): string {
   const bare = segment.trim().replace(PUNCT_RE, "");
   if (ALL_TERMS.includes(bare.toLowerCase())) return "";
 
@@ -74,12 +82,17 @@ function stripTermsFromSegment(segment: string): string {
     );
   }
 
-  stripped = stripped
-    .split(/\s+/)
-    .filter((token) => token.length > 0 && !SINGLE_WORD_TERMS.has(token.toLowerCase()))
-    .join(" ");
+  const tokens = stripped.split(/\s+/).filter((token) => token.length > 0);
+  const kept = tokens.filter((token, index) => {
+    const lower = token.toLowerCase();
+    if (isFirstSegment && index === 0) return true;
+    return !SINGLE_WORD_TERMS.has(lower) || SEGMENT_ONLY_TERMS.has(lower);
+  });
 
-  return stripped.trim();
+  while (kept.length > 0 && DANGLING_WORDS.has(kept[kept.length - 1].toLowerCase())) kept.pop();
+  while (kept.length > 0 && ["y", "o", "e"].includes(kept[0].toLowerCase())) kept.shift();
+
+  return kept.join(" ").trim();
 }
 
 /**
@@ -93,7 +106,7 @@ function stripTermsFromSegment(segment: string): string {
 export function toDisplayName(name: string): string {
   const segments = name
     .split(",")
-    .map(stripTermsFromSegment)
+    .map((segment, index) => stripTermsFromSegment(segment, index === 0))
     .filter((segment) => segment.length > 0);
 
   if (segments.length === 0) return name.trim();

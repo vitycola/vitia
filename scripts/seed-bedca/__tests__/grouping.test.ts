@@ -74,6 +74,25 @@ describe("toDisplayName()", () => {
     expect(toDisplayName("Lenteja, en conserva")).toBe("Lenteja, en conserva");
   });
 
+  it("keeps 'secos' inside a longer segment ('Frutos secos' is a food, not a state)", () => {
+    expect(toDisplayName("Frutos secos")).toBe("Frutos secos");
+  });
+
+  it("keeps 'al natural' intact instead of leaving a dangling 'al'", () => {
+    expect(toDisplayName("Atún, al natural")).toBe("Atún, al natural");
+  });
+
+  it("trims connectors left dangling by a removal", () => {
+    expect(toDisplayName("Puerro, cocido y congelado")).toBe("Puerro, congelado");
+    expect(toDisplayName("Café, tostado o molido, descafeinado")).toBe(
+      "Café, molido, descafeinado"
+    );
+  });
+
+  it("never strips the leading word of the name", () => {
+    expect(toDisplayName("Tostada de maíz")).toBe("Tostada de maíz");
+  });
+
   it("falls back to the original name when stripping would empty the result", () => {
     expect(toDisplayName("Cruda")).toBe("Cruda");
   });
