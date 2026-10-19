@@ -12,6 +12,7 @@ import { dexieAdapter } from "@/db/client";
 import * as _impl from "@/db/repositories/mealEntries";
 import type { MealEntry, NewMealEntry } from "@/db/schema";
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { isDemoDevice, isDemoMealEntry } from "@/src/services/demoGuard";
 import { mealEntryToRemote } from "@/src/services/syncMappers";
 import { enqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
@@ -131,6 +132,8 @@ export async function deleteByDateAndMeal(
 function _enqueueMealOp(entry: MealEntry, op: "upsert" | "delete"): void {
   const { userId } = useAuthStore.getState();
   if (!isSyncEnabled() || !userId) return;
+  // Demo rows and demo devices never sync (covers insert, update and bulk paths).
+  if (isDemoMealEntry(entry) || isDemoDevice()) return;
 
   void enqueue({
     table: "meal_entries",

@@ -20,6 +20,8 @@ import * as profileRepo from "@/db/repos/profile";
 import { mealEntries as mealEntriesTable } from "@/db/schema";
 import type { MealEntry, NewMealEntry, UserProfile } from "@/db/schema";
 import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
+import { cleanupDemoData } from "@/src/services/demoCleanup";
+import { isDemoDevice, isDemoMealEntry } from "@/src/services/demoGuard";
 import {
   type RemoteMealEntry,
   type RemoteProfile,
@@ -56,6 +58,27 @@ const ENQUEUE_FLUSH_DEBOUNCE_MS = 800;
 /** Upper bound so continuous writes cannot postpone the flush forever. */
 const ENQUEUE_FLUSH_MAX_WAIT_MS = 5000;
 
+/** Sync runs only when enabled AND this device was never seeded with demo data. */
+function isSyncActive(): boolean {
+  if (!isSyncEnabled()) return false;
+  if (!isDemoDevice()) return true;
+  if (!_demoWarned && useAuthStore.getState().userId) {
+    _demoWarned = true;
+    console.warn(
+      "[syncService] Sync is disabled: this origin was used for the demo seed. " +
+        "Remove localStorage keys 'vitia.demoSeed' and 'vitia.demoSeedStarted' to re-enable it."
+    );
+  }
+  return false;
+}
+
+let _demoWarned = false;
+
+/** Test helper: reset the once-per-boot kill-switch warning. */
+export function resetDemoWarningForTests(): void {
+  _demoWarned = false;
+}
+
 const BACKFILL_BATCH_SIZE = 500;
 const BACKFILL_FLAG_PREFIX = "vitia:sync:mealEntriesBackfilled:";
 const _backfillInFlight = new Map<string, Promise<boolean>>();
@@ -68,7 +91,7 @@ const _backfillInFlight = new Map<string, Promise<boolean>>();
  * a different user restarts the service.
  */
 export function start(userId: string): void {
-  if (!isSyncEnabled()) return;
+  if (!isSyncActive()) return;
   if (_startedFor === userId) return;
 
   stop(); // clean up previous listeners if any
@@ -161,7 +184,7 @@ async function getSessionUserId(
  * No-op when sync is disabled (local-only mode).
  */
 export function bindSyncToAuth(): () => void {
-  if (!isSyncEnabled()) return () => {};
+  if (!isSyncActive()) return () => {};
 
   const apply = (state: { status: string; userId: string | null }) => {
     if (state.status === "authed" && state.userId) {
@@ -180,7 +203,7 @@ export function bindSyncToAuth(): () => void {
  * Each op is removed from the queue only after a successful push.
  */
 export function flush(): Promise<void> {
-  if (!isSyncEnabled()) return Promise.resolve();
+  if (!isSyncActive()) return Promise.resolve();
   if (_flushInFlight) return _flushInFlight;
   // A reconcile compares a remote snapshot with the queue; flushing in the
   // middle would let a delete disappear from the queue while the snapshot
@@ -200,6 +223,16 @@ export function flush(): Promise<void> {
     }
   });
   return _flushInFlight;
+}
+
+/** True when a queued meal upsert (snake_case or legacy camelCase) targets a demo food. */
+function isDemoQueuedUpsert(op: { row: unknown; table: string; userId: string }): boolean {
+  try {
+    const parsed = JSON.parse(op.row as string) as Record<string, unknown>;
+    return isDemoMealEntry(normalizeQueuedPayload(op.table, parsed, op.userId));
+  } catch {
+    return false;
+  }
 }
 
 async function runFlush(): Promise<void> {
@@ -232,6 +265,17 @@ async function runFlush(): Promise<void> {
 
   for (const op of ordered) {
     if (generation !== _generation) return; // user switched / sync stopped
+
+    // Demo rows must never reach the cloud: drop the op unsent (even if it
+    // would otherwise be held back) instead of retrying. Deletes still go through.
+    if (op.table === "meal_entries" && op.op === "upsert" && isDemoQueuedUpsert(op)) {
+      try {
+        await remove(op.id);
+      } catch (err) {
+        console.warn(`[syncService] flush: could not drop demo op ${op.id}:`, err);
+      }
+      continue;
+    }
 
     const info = describeMealOp(op);
     if (info?.kind === "upsert" && (blockedIds.has(info.id) || blockedSlots.has(info.slot))) {
@@ -290,7 +334,7 @@ async function runFlush(): Promise<void> {
  * After reconcile, triggers store reload so UI reflects the merged state.
  */
 export async function reconcile(userId: string): Promise<void> {
-  if (!isSyncEnabled()) return;
+  if (!isSyncActive()) return;
 
   // Let any running flush finish first, then hold new flushes back until done.
   while (_flushInFlight) {
@@ -382,6 +426,8 @@ async function runReconcile(userId: string): Promise<void> {
 
       for (const remote of remoteEntries as RemoteMealEntry[]) {
         if (isStale()) return;
+        // Demo rows must never be ingested locally on any device.
+        if (isDemoMealEntry(remote)) continue;
         if (
           pendingDeletes.ids.has(remote.id) ||
           pendingDeletes.slots.has(`${userId}|${remote.date}|${remote.meal_type}`)
@@ -446,7 +492,10 @@ async function runReconcile(userId: string): Promise<void> {
 
     const remoteIds = new Set(((remoteEntries ?? []) as RemoteMealEntry[]).map((e) => e.id));
     const missing = localEntries.filter(
-      (e) => !remoteIds.has(e.id) && (e.userId == null || e.userId === sessionUserId)
+      (e) =>
+        !remoteIds.has(e.id) &&
+        !isDemoMealEntry(e) &&
+        (e.userId == null || e.userId === sessionUserId)
     );
     if (isStale()) return;
 
@@ -527,7 +576,7 @@ function markBackfillDone(userId: string): void {
  * Returns true when the backfill is complete (now or previously).
  */
 export function backfillMealEntries(userId: string): Promise<boolean> {
-  if (!isSyncEnabled()) return Promise.resolve(false);
+  if (!isSyncActive()) return Promise.resolve(false);
 
   const inFlight = _backfillInFlight.get(userId);
   if (inFlight) return inFlight;
@@ -554,7 +603,7 @@ async function runBackfill(userId: string): Promise<boolean> {
     // Only rows that are unowned or owned by this session user may be uploaded;
     // rows left on the device by another account must never be re-stamped.
     const entries = (await mealEntriesRepo.getAll()).filter(
-      (e) => e.userId == null || e.userId === sessionUserId
+      (e) => !isDemoMealEntry(e) && (e.userId == null || e.userId === sessionUserId)
     );
     const generation = _generation;
 
@@ -587,9 +636,20 @@ async function runBackfill(userId: string): Promise<boolean> {
  * Call this after login or on reconnect.
  */
 export async function sync(userId: string): Promise<void> {
+  if (!isSyncActive()) return;
   const generation = _generation;
   await flush();
   if (generation !== _generation) return;
+  // Remove leftover demo rows; their remote deletes are enqueued and sent by a
+  // second flush. Needs a real session; cleanupDemoData never throws.
+  const sessionUserId = await getSessionUserId(getSupabaseClient());
+  if (generation !== _generation) return;
+  if (sessionUserId && sessionUserId === userId) {
+    const removed = await cleanupDemoData(sessionUserId);
+    if (generation !== _generation) return;
+    if (removed > 0) await flush();
+    if (generation !== _generation) return;
+  }
   await backfillMealEntries(userId);
   if (generation !== _generation) return;
   await reconcile(userId);
