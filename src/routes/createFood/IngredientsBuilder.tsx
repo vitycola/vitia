@@ -20,8 +20,13 @@ function effectiveWeight(ingredient: RecipeIngredient): number {
   if (!canConvert(ingredient.food) || !ingredient.basis) return ingredient.weightG;
   const dir = directionFor(ingredient.food.dataBasis, ingredient.basis);
   if (!dir) return ingredient.weightG;
-  const result = convertWeight(ingredient.food.category, ingredient.weightG, dir);
-  // canConvert() already guarantees hasCookingFactor(ingredient.food.category),
+  const result = convertWeight(
+    ingredient.food.category,
+    ingredient.weightG,
+    dir,
+    ingredient.food.cookingFactor
+  );
+  // canConvert() already guarantees a resolvable factor,
   // so this is always the "converted" branch — the fallback is unreachable
   // in practice but keeps this function total or a "no-factor" category.
   return result.kind === "converted" ? result.grams : ingredient.weightG;

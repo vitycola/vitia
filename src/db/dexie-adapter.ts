@@ -99,6 +99,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0006_progress_log", when: 1810000000000 },
   { tag: "0007_progress_measurements", when: 1815000000000 },
   { tag: "0008_raw_cooked_conversion", when: 1820000000000 },
+  { tag: "0009_food_cooking_factor", when: 1825000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -497,6 +498,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
         category: food.category ?? existing?.category ?? null,
         dataBasis: food.dataBasis ?? existing?.dataBasis ?? null,
+        cookingFactor: food.cookingFactor ?? existing?.cookingFactor ?? null,
         createdAt: existing?.createdAt ?? food.createdAt ?? now(),
       };
       await db.foods.put(row);
@@ -519,6 +521,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
         imageUrl: food.imageUrl ?? null,
         category: food.category ?? null,
         dataBasis: food.dataBasis ?? null,
+        cookingFactor: food.cookingFactor ?? null,
         createdAt: food.createdAt ?? now(),
       };
       // Dexie .add() throws ConstraintError on duplicate key, matching SQL behaviour
@@ -553,6 +556,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
             imageUrl: food.imageUrl ?? existing?.imageUrl ?? null,
             category: food.category ?? existing?.category ?? null,
             dataBasis: food.dataBasis ?? existing?.dataBasis ?? null,
+            cookingFactor: food.cookingFactor ?? existing?.cookingFactor ?? null,
             createdAt: existing?.createdAt ?? food.createdAt ?? now(),
           };
         });
@@ -599,6 +603,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
           imageUrl: food.imageUrl ?? null,
           category: food.category ?? null,
           dataBasis: food.dataBasis ?? null,
+          cookingFactor: food.cookingFactor ?? null,
           createdAt: food.createdAt ?? now(),
         };
         await db.foods.add(row);

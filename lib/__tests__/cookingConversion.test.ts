@@ -103,3 +103,54 @@ describe("directionFor", () => {
     expect(directionFor("cocido", "crudo")).toBe("crudo_to_cocido");
   });
 });
+
+describe("per-food cooking factor", () => {
+  it("takes priority over the category factor", () => {
+    // cereales_y_granos category factor is 3.0; pasta-like product uses 2.2.
+    const fwd = convertWeight("cereales_y_granos", 100, "crudo_to_cocido", 2.2);
+    expect(fwd.kind === "converted" && fwd.grams).toBeCloseTo(220, 6);
+    const back = convertWeight("cereales_y_granos", 220, "cocido_to_crudo", 2.2);
+    expect(back.kind === "converted" && back.grams).toBeCloseTo(100, 6);
+  });
+
+  it("converts with no category when a per-food factor exists", () => {
+    expect(convertWeight(null, 100, "crudo_to_cocido", 2)).toEqual({
+      kind: "converted",
+      grams: 200,
+    });
+  });
+
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    "ignores invalid per-food factor %p and falls back to the category factor",
+    (bad) => {
+      expect(convertWeight("cereales_y_granos", 100, "crudo_to_cocido", bad)).toEqual({
+        kind: "converted",
+        grams: 300,
+      });
+    }
+  );
+
+  it("invalid per-food factor + no category factor is fail-closed", () => {
+    expect(convertWeight("bebidas", 100, "crudo_to_cocido", 0)).toEqual({ kind: "no-factor" });
+    expect(convertWeight(null, 100, "crudo_to_cocido", Number.NaN)).toEqual({
+      kind: "no-factor",
+    });
+  });
+
+  it("canConvert is true with a per-food factor and basis even without a category factor", () => {
+    expect(canConvert({ category: null, dataBasis: "crudo", cookingFactor: 2.5 })).toBe(true);
+    expect(canConvert({ category: "bebidas", dataBasis: "cocido", cookingFactor: 2.5 })).toBe(true);
+  });
+
+  it("canConvert is false without a resolved dataBasis even with a per-food factor", () => {
+    expect(canConvert({ category: "carnes", dataBasis: null, cookingFactor: 2.5 })).toBe(false);
+  });
+
+  it("canConvert is false with no factor and no basis", () => {
+    expect(canConvert({ category: null, dataBasis: null, cookingFactor: null })).toBe(false);
+  });
+
+  it("canConvert is false for an invalid per-food factor without a category factor", () => {
+    expect(canConvert({ category: null, dataBasis: "crudo", cookingFactor: -3 })).toBe(false);
+  });
+});
