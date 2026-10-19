@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "seed:bedca": "tsx scripts/seed-bedca/run.ts",
+    "seed:hacendado": "tsx scripts/seed-hacendado/run.ts",
     "prepare": "husky"
   },
   "dependencies": {

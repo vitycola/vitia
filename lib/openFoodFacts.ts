@@ -1,6 +1,6 @@
 import { upsert, upsertMany } from "@/db/repos/foods";
 import type { NewFood } from "@/db/schema";
-import { basisFromOffTags } from "@/lib/offBasisMap";
+import { deriveOffCookingFields } from "@/lib/offBasisInference";
 import { categoryFromOffTags } from "@/lib/offCategoryMap";
 import type { OffProxyProduct, OffProxyResponse } from "@/lib/offTypes";
 
@@ -59,6 +59,10 @@ export function normalizeOffProduct(
   const hasMissingData =
     caloriesPer100g === 0 && proteinPer100g === 0 && carbsPer100g === 0 && fatPer100g === 0;
 
+  // Cooked signal wins; staples (pasta/rice/dried legumes/grains) may infer
+  // "crudo"/"cocido" from kcal/100 g; everything else stays null.
+  const { dataBasis, cookingFactor } = deriveOffCookingFields(p.categories_tags, caloriesPer100g);
+
   return {
     id: p.code,
     name,
@@ -76,9 +80,10 @@ export function normalizeOffProduct(
     // Design D3/D6: single insertion point — both search() and
     // getByBarcode() call normalizeOffProduct, so both inherit category and
     // dataBasis resolution for free. Unmapped/unresolved tags leave these
-    // null (fail-closed — never a guessed category or a guessed "crudo").
+    // null (fail-closed; "crudo" is only inferred for staples, see offBasisInference).
     category: categoryFromOffTags(p.categories_tags) ?? null,
-    dataBasis: basisFromOffTags(p.categories_tags) ?? null,
+    dataBasis,
+    ...(cookingFactor !== null ? { cookingFactor } : {}),
     hasMissingData,
   };
 }
