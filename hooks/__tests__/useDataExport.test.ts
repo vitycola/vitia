@@ -175,10 +175,12 @@ describe("useDataExport PDF branch", () => {
 
 function deferred<T>() {
   let resolve: (v: T) => void = () => {};
-  const promise = new Promise<T>((r) => {
-    resolve = r;
+  let reject: (e: unknown) => void = () => {};
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 describe("useDataExport selection changes during a run", () => {
@@ -322,6 +324,107 @@ describe("useDataExport share step (iOS)", () => {
       await result.current.shareNow();
     });
     expect(share).not.toHaveBeenCalled();
+  });
+
+  describe("while a share is in flight", () => {
+    function startShare(hook: Awaited<ReturnType<typeof runToReady>>) {
+      const gate = deferred<void>();
+      share.mockReturnValue(gate.promise);
+      let first: Promise<void> = Promise.resolve();
+      act(() => {
+        first = hook.result.current.shareNow();
+      });
+      return { gate, first };
+    }
+
+    it("ignores a second shareNow and returns to idle when the first resolves", async () => {
+      const hook = await runToReady();
+      const { gate, first } = startShare(hook);
+      expect(hook.result.current.sharing).toBe(true);
+
+      await act(async () => {
+        await hook.result.current.shareNow();
+      });
+      expect(share).toHaveBeenCalledTimes(1);
+      expect(hook.result.current.status).toBe("ready-to-share");
+
+      await act(async () => {
+        gate.resolve();
+        await first;
+      });
+      expect(hook.result.current.status).toBe("idle");
+      expect(hook.result.current.sharing).toBe(false);
+    });
+
+    it("keeps ready-to-share and the file when the first share is dismissed", async () => {
+      const hook = await runToReady();
+      const { gate, first } = startShare(hook);
+
+      await act(async () => {
+        await hook.result.current.shareNow();
+      });
+      expect(share).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        gate.reject(Object.assign(new Error("cancel"), { name: "AbortError" }));
+        await first;
+      });
+      expect(hook.result.current.status).toBe("ready-to-share");
+      expect(hook.result.current.sharing).toBe(false);
+
+      share.mockResolvedValue(undefined);
+      await act(async () => {
+        await hook.result.current.shareNow();
+      });
+      expect(share).toHaveBeenCalledTimes(2);
+      expect(hook.result.current.status).toBe("idle");
+    });
+
+    it("releases the guard when the share fails", async () => {
+      const hook = await runToReady();
+      const { gate, first } = startShare(hook);
+      await act(async () => {
+        gate.reject(Object.assign(new Error("denied"), { name: "NotAllowedError" }));
+        await first;
+      });
+      expect(hook.result.current.status).toBe("error");
+      expect(hook.result.current.sharing).toBe(false);
+    });
+
+    it("reset() is a no-op until the share settles, then works", async () => {
+      const hook = await runToReady();
+      const { gate, first } = startShare(hook);
+
+      act(() => hook.result.current.reset());
+      expect(hook.result.current.status).toBe("ready-to-share");
+
+      await act(async () => {
+        gate.reject(Object.assign(new Error("cancel"), { name: "AbortError" }));
+        await first;
+      });
+      expect(hook.result.current.status).toBe("ready-to-share");
+
+      act(() => hook.result.current.reset());
+      expect(hook.result.current.status).toBe("idle");
+    });
+
+    it("writes no state when the share settles after unmount", async () => {
+      const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const hook = await runToReady();
+        const { gate, first } = startShare(hook);
+        hook.unmount();
+        await act(async () => {
+          gate.resolve();
+          await first;
+        });
+        expect(hook.result.current.status).toBe("ready-to-share");
+        expect(hook.result.current.sharing).toBe(true);
+        expect(errorSpy).not.toHaveBeenCalled();
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
   });
 
   it("does not share after unmount", async () => {

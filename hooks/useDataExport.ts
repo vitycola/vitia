@@ -35,13 +35,16 @@ export async function loadExportModel(range: ExportRange): Promise<ExportModel> 
  */
 export function useDataExport(): {
   status: ExportStatus;
+  sharing: boolean;
   run: (range: ExportRange, format: ExportFormat) => Promise<void>;
   shareNow: () => Promise<void>;
   reset: () => void;
 } {
   const [status, setStatus] = useState<ExportStatus>("idle");
+  const [sharing, setSharing] = useState(false);
   const fileRef = useRef<File | null>(null);
   const busyRef = useRef(false);
+  const sharingRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -86,22 +89,33 @@ export function useDataExport(): {
 
   // Must stay free of awaits before navigator.share: it needs the tap's activation.
   const shareNow = useCallback((): Promise<void> => {
+    // A second concurrent share would reject with InvalidStateError and lose the file.
+    if (sharingRef.current) return Promise.resolve();
     const file = fileRef.current;
     if (!file) return Promise.resolve();
-    let sharing: Promise<void>;
+    sharingRef.current = true;
+    setSharing(true);
+    const release = () => {
+      sharingRef.current = false;
+      if (mountedRef.current) setSharing(false);
+    };
+    let pending: Promise<void>;
     try {
-      sharing = navigator.share({ files: [file] });
+      pending = navigator.share({ files: [file] });
     } catch {
+      release();
       fileRef.current = null;
       setStatus("error");
       return Promise.resolve();
     }
-    return sharing.then(
+    return pending.then(
       () => {
+        release();
         fileRef.current = null;
         if (mountedRef.current) setStatus("idle");
       },
       (err: unknown) => {
+        release();
         // Dismissing the sheet keeps the file so the user can tap again.
         if (err instanceof Error && err.name === "AbortError") return;
         fileRef.current = null;
@@ -110,12 +124,12 @@ export function useDataExport(): {
     );
   }, []);
 
-  // Selection changes must not disturb a running export.
+  // Selection changes must not disturb a running export or an open share sheet.
   const reset = useCallback(() => {
-    if (busyRef.current) return;
+    if (busyRef.current || sharingRef.current) return;
     fileRef.current = null;
     setStatus("idle");
   }, []);
 
-  return { status, run, shareNow, reset };
+  return { status, sharing, run, shareNow, reset };
 }

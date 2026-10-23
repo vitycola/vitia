@@ -20,10 +20,12 @@ const mockRun = jest.fn();
 const mockReset = jest.fn();
 const mockShareNow = jest.fn();
 let mockStatus: "idle" | "working" | "ready-to-share" | "error" = "idle";
+let mockSharing = false;
 const mockLoad = jest.fn();
 jest.mock("@/hooks/useDataExport", () => ({
   useDataExport: () => ({
     status: mockStatus,
+    sharing: mockSharing,
     run: mockRun,
     shareNow: mockShareNow,
     reset: mockReset,
@@ -64,6 +66,7 @@ function pickCustom(from: string, to: string) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockStatus = "idle";
+  mockSharing = false;
   setData(24);
 });
 
@@ -236,7 +239,7 @@ describe("ExportRoute share step", () => {
     await screen.findByText(/30 días/);
     expect(screen.queryByRole("button", { name: "Compartir archivo" })).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Tu archivo está listo. Toca para compartirlo.")
+      screen.queryByText("Tu archivo está listo. Tocá para compartirlo.")
     ).not.toBeInTheDocument();
   });
 
@@ -245,7 +248,7 @@ describe("ExportRoute share step", () => {
     renderRoute();
     await screen.findByText(/30 días/);
     expect(screen.getByRole("button", { name: "Compartir archivo" })).toBeEnabled();
-    expect(screen.getByText("Tu archivo está listo. Toca para compartirlo.")).toBeVisible();
+    expect(screen.getByText("Tu archivo está listo. Tocá para compartirlo.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Descargar CSV" })).not.toBeInTheDocument();
   });
 
@@ -256,6 +259,40 @@ describe("ExportRoute share step", () => {
     fireEvent.click(screen.getByRole("button", { name: "Compartir archivo" }));
     expect(mockShareNow).toHaveBeenCalledTimes(1);
     expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("disables the share button, presets, formats and dates while a share is in flight", async () => {
+    mockStatus = "ready-to-share";
+    mockSharing = true;
+    renderRoute();
+    await screen.findByText(/30 días/);
+    expect(screen.getByRole("button", { name: "Compartir archivo" })).toBeDisabled();
+    for (const name of ["7", "30", "90", "Personalizado", "CSV", "PDF"]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+  });
+
+  it("disables the custom date inputs while a share is in flight", async () => {
+    const view = renderRoute();
+    await screen.findByText(/30 días/);
+    fireEvent.click(screen.getByRole("button", { name: "Personalizado" }));
+    mockStatus = "ready-to-share";
+    mockSharing = true;
+    view.rerender(
+      <MemoryRouter>
+        <ExportRoute />
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText("Desde")).toBeDisabled();
+    expect(screen.getByLabelText("Hasta")).toBeDisabled();
+  });
+
+  it("enables the share button when no share is in flight", async () => {
+    mockStatus = "ready-to-share";
+    renderRoute();
+    await screen.findByText(/30 días/);
+    expect(screen.getByRole("button", { name: "Compartir archivo" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "7" })).toBeEnabled();
   });
 
   it("changing the range calls reset, which hides the share step", async () => {

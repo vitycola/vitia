@@ -36,7 +36,7 @@ function summaryText(s: ExportSummary): string {
 export function ExportRoute() {
   const navigate = useNavigate();
   const today = todayISO();
-  const { status, run, shareNow, reset } = useDataExport();
+  const { status, sharing, run, shareNow, reset } = useDataExport();
 
   const [preset, setPreset] = useState<Preset>(30);
   const [format, setFormat] = useState<ExportFormat>("csv");
@@ -94,6 +94,8 @@ export function ExportRoute() {
   const noData = summary !== null && summary.logged === 0 && !summary.hasProgress;
   const onlyBody = summary !== null && summary.logged === 0 && summary.hasProgress;
   const working = status === "working";
+  // Selectors lock during an export and while the native share sheet is open.
+  const locked = working || sharing;
   const readyToShare = status === "ready-to-share";
   // A failed summary load must not trap the user: the download reports its own errors.
   const canDownload =
@@ -125,7 +127,7 @@ export function ExportRoute() {
                 key={p}
                 selected={preset === p}
                 onClick={() => changePreset(p)}
-                disabled={working}
+                disabled={locked}
                 label={p === "custom" ? "Personalizado" : String(p)}
               />
             ))}
@@ -139,7 +141,7 @@ export function ExportRoute() {
                 value={customFrom}
                 max={today}
                 onChange={changeCustomFrom}
-                disabled={working}
+                disabled={locked}
               />
               <DateField
                 id="export-to"
@@ -147,7 +149,7 @@ export function ExportRoute() {
                 value={customTo}
                 max={today}
                 onChange={changeCustomTo}
-                disabled={working}
+                disabled={locked}
               />
             </div>
           )}
@@ -183,14 +185,14 @@ export function ExportRoute() {
               onClick={() => changeFormat("csv")}
               label="CSV"
               large
-              disabled={working}
+              disabled={locked}
             />
             <ChipButton
               selected={format === "pdf"}
               onClick={() => changeFormat("pdf")}
               label="PDF"
               large
-              disabled={working}
+              disabled={locked}
             />
           </div>
         </section>
@@ -203,11 +205,12 @@ export function ExportRoute() {
 
         {readyToShare ? (
           <>
-            <p className="text-sm text-secondary">Tu archivo está listo. Toca para compartirlo.</p>
+            <p className="text-sm text-secondary">Tu archivo está listo. Tocá para compartirlo.</p>
             <button
               type="button"
+              disabled={sharing}
               onClick={() => void shareNow()}
-              className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
+              className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
             >
               Compartir archivo
             </button>
