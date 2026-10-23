@@ -27,6 +27,7 @@ jest.mock("@/src/routes/portion", () => ({ PortionRoute: () => <div>Portion</div
 jest.mock("@/src/routes/profile/configuration", () => ({
   ConfigurationRoute: () => <div>Configuration</div>,
 }));
+jest.mock("@/src/routes/profile/export", () => ({ ExportRoute: () => <div>Export</div> }));
 jest.mock("@/src/routes/profile/layout", () => ({ ProfileLayout: () => <div>ProfileLayout</div> }));
 jest.mock("@/src/routes/profile/plan", () => ({ PlanRoute: () => <div>Plan</div> }));
 jest.mock("@/src/routes/profile/progress", () => ({ ProgressRoute: () => <div>Progress</div> }));
@@ -130,5 +131,17 @@ describe("router.tsx — progress-photos-gallery route registration", () => {
       (child: RouteObjectLike) => child.path === "/profile/progress/photos"
     );
     expect(isChildOfProfile).toBe(false);
+  });
+});
+
+describe("router.tsx — data export route registration", () => {
+  it("registers /profile/export as a top-level AuthGuard route, not a ProfileLayout child", async () => {
+    const { router } = await import("@/src/router");
+    const route = router.routes.find((r) => r.path === "/profile/export");
+    expect(route).toBeDefined();
+    expect(isAuthGuarded(route)).toBe(true);
+
+    const profile = findRoute(router.routes, "profile");
+    expect(profile?.children?.some((r: RouteObjectLike) => r.path === "export")).toBe(false);
   });
 });
