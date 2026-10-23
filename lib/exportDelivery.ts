@@ -7,9 +7,17 @@ interface DeliveryEnv {
 
 type ShareNavigator = Navigator & { standalone?: boolean };
 
-/** iOS standalone PWAs ignore the anchor `download` attribute, so share instead. */
+/** Keep the blob URL alive long enough for slow browsers to start fetching it. */
+const REVOKE_DELAY_MS = 60_000;
+
+/**
+ * iOS standalone PWAs ignore the anchor `download` attribute, so share instead.
+ * iPadOS 13+ reports a Macintosh user agent, so detect it by touch support.
+ */
 function isIosStandalone(nav: ShareNavigator): boolean {
-  return /iPad|iPhone|iPod/.test(nav.userAgent) && nav.standalone === true;
+  const iosUa = /iPad|iPhone|iPod/.test(nav.userAgent);
+  const ipadOs = nav.platform === "MacIntel" && nav.maxTouchPoints > 1;
+  return (iosUa || ipadOs) && nav.standalone === true;
 }
 
 /**
@@ -33,7 +41,8 @@ export async function deliverFile(
         return "shared";
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return "cancelled";
-        throw err;
+        // Share can fail once transient activation is gone (async work before
+        // delivery); fall through to the anchor download instead of erroring.
       }
     }
   }
@@ -49,7 +58,6 @@ export async function deliverFile(
   doc.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  // Revoke on the next tick so the browser has started the download.
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
   return "downloaded";
 }

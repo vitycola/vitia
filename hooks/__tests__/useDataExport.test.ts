@@ -108,6 +108,18 @@ describe("useDataExport", () => {
     expect(result.current.status).toBe("idle");
   });
 
+  it("reset() returns an errored hook to idle", async () => {
+    deliver.mockRejectedValue(new Error("no path"));
+    const { result } = renderHook(() => useDataExport());
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+    expect(result.current.status).toBe("error");
+
+    act(() => result.current.reset());
+    expect(result.current.status).toBe("idle");
+  });
+
   it("treats a cancelled share as success, not an error", async () => {
     deliver.mockResolvedValue("cancelled");
     const { result } = renderHook(() => useDataExport());

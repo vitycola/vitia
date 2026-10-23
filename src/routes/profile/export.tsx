@@ -36,13 +36,32 @@ function summaryText(s: ExportSummary): string {
 export function ExportRoute() {
   const navigate = useNavigate();
   const today = todayISO();
-  const { status, run } = useDataExport();
+  const { status, run, reset } = useDataExport();
 
   const [preset, setPreset] = useState<Preset>(30);
   const [format, setFormat] = useState<ExportFormat>("csv");
   const [customFrom, setCustomFrom] = useState(() => presetRange(30, todayISO()).from);
   const [customTo, setCustomTo] = useState(() => todayISO());
   const [summary, setSummary] = useState<ExportSummary | null>(null);
+  const [summaryError, setSummaryError] = useState(false);
+
+  // Any selection change invalidates a previous export error.
+  const changePreset = (p: Preset) => {
+    setPreset(p);
+    reset();
+  };
+  const changeFormat = (f: ExportFormat) => {
+    setFormat(f);
+    reset();
+  };
+  const changeCustomFrom = (v: string) => {
+    setCustomFrom(v);
+    reset();
+  };
+  const changeCustomTo = (v: string) => {
+    setCustomTo(v);
+    reset();
+  };
 
   const range: ExportRange | null =
     preset === "custom"
@@ -57,6 +76,7 @@ export function ExportRoute() {
   // Rebuild the model whenever a valid range changes; ignore stale responses.
   useEffect(() => {
     setSummary(null);
+    setSummaryError(false);
     if (!from || !to || validateRange({ from, to }, today)) return;
     let cancelled = false;
     loadExportModel({ from, to })
@@ -64,7 +84,7 @@ export function ExportRoute() {
         if (!cancelled) setSummary(summarize(model));
       })
       .catch(() => {
-        if (!cancelled) setSummary(null);
+        if (!cancelled) setSummaryError(true);
       });
     return () => {
       cancelled = true;
@@ -74,7 +94,9 @@ export function ExportRoute() {
   const noData = summary !== null && summary.logged === 0 && !summary.hasProgress;
   const onlyBody = summary !== null && summary.logged === 0 && summary.hasProgress;
   const working = status === "working";
-  const canDownload = range !== null && !rangeError && summary !== null && !noData && !working;
+  // A failed summary load must not trap the user: the download reports its own errors.
+  const canDownload =
+    range !== null && !rangeError && (summary !== null || summaryError) && !noData && !working;
   const formatLabel = format === "csv" ? "CSV" : "PDF";
 
   return (
@@ -101,7 +123,7 @@ export function ExportRoute() {
               <ChipButton
                 key={p}
                 selected={preset === p}
-                onClick={() => setPreset(p)}
+                onClick={() => changePreset(p)}
                 label={p === "custom" ? "Personalizado" : String(p)}
               />
             ))}
@@ -114,14 +136,14 @@ export function ExportRoute() {
                 label="Desde"
                 value={customFrom}
                 max={today}
-                onChange={setCustomFrom}
+                onChange={changeCustomFrom}
               />
               <DateField
                 id="export-to"
                 label="Hasta"
                 value={customTo}
                 max={today}
-                onChange={setCustomTo}
+                onChange={changeCustomTo}
               />
             </div>
           )}
@@ -133,6 +155,11 @@ export function ExportRoute() {
           )}
           {!rangeError && summary && (
             <p className="mt-3 text-sm text-secondary">{summaryText(summary)}</p>
+          )}
+          {!rangeError && summaryError && (
+            <p role="alert" className="mt-3 text-xs text-destructive">
+              No se pudo cargar el resumen del período.
+            </p>
           )}
           {noData && <p className="mt-2 text-sm text-secondary">No hay datos en este período.</p>}
           {onlyBody && (
@@ -149,13 +176,13 @@ export function ExportRoute() {
           <div className="grid grid-cols-2 gap-3">
             <ChipButton
               selected={format === "csv"}
-              onClick={() => setFormat("csv")}
+              onClick={() => changeFormat("csv")}
               label="CSV"
               large
             />
             <ChipButton
               selected={format === "pdf"}
-              onClick={() => setFormat("pdf")}
+              onClick={() => changeFormat("pdf")}
               label="PDF"
               large
             />

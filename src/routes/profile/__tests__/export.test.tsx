@@ -17,10 +17,11 @@ jest.mock("react-router-dom", () => ({
 }));
 
 const mockRun = jest.fn();
+const mockReset = jest.fn();
 let mockStatus: "idle" | "working" | "error" = "idle";
 const mockLoad = jest.fn();
 jest.mock("@/hooks/useDataExport", () => ({
-  useDataExport: () => ({ status: mockStatus, run: mockRun }),
+  useDataExport: () => ({ status: mockStatus, run: mockRun, reset: mockReset }),
   loadExportModel: (range: unknown) => mockLoad(range),
 }));
 
@@ -169,6 +170,52 @@ describe("ExportRoute format and download", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Descargar CSV" })).toBeEnabled()
     );
+  });
+
+  it("does not reset on first render", async () => {
+    renderRoute();
+    await screen.findByText(/30 días/);
+    expect(mockReset).not.toHaveBeenCalled();
+  });
+
+  it("resets a stale export error when the preset, format or dates change", async () => {
+    mockStatus = "error";
+    renderRoute();
+    await screen.findByText(/30 días/);
+
+    fireEvent.click(screen.getByRole("button", { name: "7" }));
+    expect(mockReset).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "PDF" }));
+    expect(mockReset).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Personalizado" }));
+    expect(mockReset).toHaveBeenCalledTimes(3);
+    fireEvent.change(screen.getByLabelText("Desde"), { target: { value: "2026-10-01" } });
+    expect(mockReset).toHaveBeenCalledTimes(4);
+    fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: "2026-10-10" } });
+    expect(mockReset).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe("ExportRoute summary load failure", () => {
+  it("shows an error and keeps download usable so the failure is reported", async () => {
+    mockLoad.mockRejectedValue(new Error("db down"));
+    renderRoute();
+    expect(await screen.findByText("No se pudo cargar el resumen del período.")).toBeVisible();
+    const button = screen.getByRole("button", { name: "Descargar CSV" });
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(mockRun).toHaveBeenCalledWith({ from: "2026-09-24", to: "2026-10-23" }, "csv");
+  });
+
+  it("clears the summary error when the range changes and loads fine", async () => {
+    mockLoad.mockRejectedValueOnce(new Error("db down"));
+    renderRoute();
+    await screen.findByText("No se pudo cargar el resumen del período.");
+    fireEvent.click(screen.getByRole("button", { name: "7" }));
+    expect(await screen.findByText(/^7 días/)).toBeVisible();
+    expect(screen.queryByText("No se pudo cargar el resumen del período.")).not.toBeInTheDocument();
   });
 });
 

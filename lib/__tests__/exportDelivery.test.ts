@@ -41,7 +41,10 @@ describe("deliverFile", () => {
     expect((seen as unknown as HTMLAnchorElement).download).toBe("vitia-a_b.csv");
     expect((seen as unknown as HTMLAnchorElement).href).toContain("blob:mock");
     expect(document.body.contains(seen)).toBe(false);
-    jest.runAllTimers();
+    jest.advanceTimersByTime(59_999);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
   });
 
@@ -79,14 +82,55 @@ describe("deliverFile", () => {
     expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("cancelled");
   });
 
-  it("propagates non-abort share errors", async () => {
+  it("falls back to the anchor download when share rejects with a non-abort error", async () => {
+    const click = jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const denied = Object.assign(new Error("denied"), { name: "NotAllowedError" });
+    const share = jest.fn().mockRejectedValue(denied);
+    const nav = makeNav({ userAgent: IOS_UA, standalone: true, share, canShare: () => true });
+
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("downloaded");
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws when share fails and no download path exists", async () => {
+    Object.assign(URL, { createObjectURL: undefined });
     const nav = makeNav({
       userAgent: IOS_UA,
       standalone: true,
       share: jest.fn().mockRejectedValue(new Error("boom")),
       canShare: () => true,
     });
-    await expect(deliverFile(blob, "x.csv", { nav, doc: document })).rejects.toThrow("boom");
+    await expect(deliverFile(blob, "x.csv", { nav, doc: document })).rejects.toThrow(
+      "No se pudo iniciar la descarga en este dispositivo."
+    );
+  });
+
+  it("shares on iPadOS, which reports a Macintosh user agent", async () => {
+    const share = jest.fn().mockResolvedValue(undefined);
+    const nav = makeNav({
+      platform: "MacIntel",
+      maxTouchPoints: 5,
+      standalone: true,
+      share,
+      canShare: () => true,
+    });
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("shared");
+    expect(share).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps desktop Mac (no touch points) on the anchor download", async () => {
+    jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const share = jest.fn();
+    const nav = makeNav({
+      platform: "MacIntel",
+      maxTouchPoints: 0,
+      standalone: true,
+      share,
+      canShare: () => true,
+    });
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("downloaded");
+    expect(share).not.toHaveBeenCalled();
   });
 
   it("throws when no delivery path is possible", async () => {

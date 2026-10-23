@@ -32,6 +32,7 @@ export async function loadExportModel(range: ExportRange): Promise<ExportModel> 
 export function useDataExport(): {
   status: ExportStatus;
   run: (range: ExportRange, format: ExportFormat) => Promise<void>;
+  reset: () => void;
 } {
   const [status, setStatus] = useState<ExportStatus>("idle");
 
@@ -54,5 +55,7 @@ export function useDataExport(): {
     }
   }, []);
 
-  return { status, run };
+  const reset = useCallback(() => setStatus("idle"), []);
+
+  return { status, run, reset };
 }
