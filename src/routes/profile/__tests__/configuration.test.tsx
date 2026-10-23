@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ConfigurationRoute } from "../configuration";
 
 jest.mock("@/stores/useProfileStore", () => ({
@@ -26,6 +26,7 @@ jest.mock("@/src/stores/useAuthStore", () => ({
 
 import { useProfileStore } from "@/stores/useProfileStore";
 
+import { isSyncEnabled } from "@/src/lib/supabase";
 import { useProgressStore } from "@/stores/useProgressStore";
 
 const mockUseProfileStore = useProfileStore as unknown as jest.Mock;
@@ -201,5 +202,48 @@ describe("ConfigurationRoute", () => {
 
     expect(screen.queryByText("Medidas corporales")).not.toBeInTheDocument();
     expect(screen.queryByText("Próximamente")).not.toBeInTheDocument();
+  });
+});
+
+describe("ConfigurationRoute export entry", () => {
+  beforeEach(() => {
+    mockUseProfileStore.mockReturnValue({ profile: baseProfile, saveProfile: jest.fn() });
+    mockUseProgressStore.mockImplementation((selector: (s: unknown) => unknown) =>
+      selector({ recordWeight })
+    );
+  });
+
+  afterEach(() => {
+    (isSyncEnabled as jest.Mock).mockReturnValue(false);
+  });
+
+  it("places the Exportar datos card between Datos personales and sign-out", () => {
+    (isSyncEnabled as jest.Mock).mockReturnValue(true);
+    render(
+      <MemoryRouter>
+        <ConfigurationRoute />
+      </MemoryRouter>
+    );
+
+    const personal = screen.getByText("Datos personales");
+    const exportCard = screen.getByRole("button", { name: /exportar datos/i });
+    const signOut = screen.getByRole("button", { name: /sign out/i });
+
+    expect(personal.compareDocumentPosition(exportCard)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(exportCard.compareDocumentPosition(signOut)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("navigates to /profile/export when tapped", () => {
+    render(
+      <MemoryRouter initialEntries={["/profile"]}>
+        <Routes>
+          <Route path="/profile" element={<ConfigurationRoute />} />
+          <Route path="/profile/export" element={<p>export page</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /exportar datos/i }));
+    expect(screen.getByText("export page")).toBeInTheDocument();
   });
 });

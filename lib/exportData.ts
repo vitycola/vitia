@@ -5,7 +5,7 @@ import { addDays, enumerateDays, rollingWindow } from "./date";
 export const MAX_EXPORT_DAYS = 366;
 
 export type ExportRange = { from: string; to: string };
-export type RangeError = "invalid_order" | "future" | "too_long" | null;
+export type ExportRangeError = "invalid_order" | "future" | "too_long" | null;
 
 /** Daily meal totals as returned by the meal-entries facade. */
 export interface ExportDayTotals {
@@ -58,7 +58,7 @@ export interface ExportSummary {
 }
 
 /** Validate a range against the export rules. Dates are device-local ISO strings. */
-export function validateRange(r: ExportRange, today: string): RangeError {
+export function validateRange(r: ExportRange, today: string): ExportRangeError {
   if (r.to < r.from) return "invalid_order";
   if (r.from > today || r.to > today) return "future";
   // Latest allowed `to` for this `from` is from + (MAX - 1) days.

@@ -11,6 +11,7 @@ import { LoginRoute } from "@/src/routes/login";
 import { OnboardingRoute } from "@/src/routes/onboarding";
 import { PortionRoute } from "@/src/routes/portion";
 import { ConfigurationRoute } from "@/src/routes/profile/configuration";
+import { ExportRoute } from "@/src/routes/profile/export";
 import { ProfileLayout } from "@/src/routes/profile/layout";
 import { PlanRoute } from "@/src/routes/profile/plan";
 import { ProgressRoute } from "@/src/routes/profile/progress";
@@ -68,6 +69,16 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <ProgressPhotosRoute />
+      </AuthGuard>
+    ),
+  },
+  {
+    // Full-screen data export page; owns its back header like the photos
+    // gallery above (no tab bar, no profile RouteTabs).
+    path: "/profile/export",
+    element: (
+      <AuthGuard>
+        <ExportRoute />
       </AuthGuard>
     ),
   },

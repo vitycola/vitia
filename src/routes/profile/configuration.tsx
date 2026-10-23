@@ -7,7 +7,7 @@ import { useProfileStore } from "@/stores/useProfileStore";
 import { useProgressStore } from "@/stores/useProgressStore";
 import type { ActivityLevel, Sex } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Settings } from "lucide-react";
+import { ChevronRight, Download, Settings } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -262,6 +262,16 @@ export function ConfigurationRoute() {
           </form>
         )}
       </section>
+
+      <button
+        type="button"
+        onClick={() => void navigate("/profile/export")}
+        className="flex w-full items-center gap-3 rounded-2xl bg-white px-4 py-4 text-left shadow-sm transition-colors hover:bg-gray-50"
+      >
+        <Download size={20} className="text-accent" />
+        <span className="flex-1 text-sm font-semibold text-gray-900">Exportar datos</span>
+        <ChevronRight size={18} className="text-gray-400" />
+      </button>
 
       {/* Sign out — only shown when cloud sync is enabled */}
       {isSyncEnabled() && (
