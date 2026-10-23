@@ -18,7 +18,7 @@ function displayDate(iso: string): string {
 }
 
 const kcal = (v: number | null) => formatNumber(v, { maxFractionDigits: 0 });
-const grams = (v: number | null) => formatNumber(v, { maxFractionDigits: 1 });
+const grams = (v: number | null) => formatNumber(v, { minFractionDigits: 1, maxFractionDigits: 1 });
 
 function bodyRow(r: ExportRow): (string | CellDef)[] {
   const weight = grams(r.weightKg);
@@ -103,7 +103,7 @@ export async function toPdf(m: ExportModel): Promise<Blob> {
     margin: { left: MARGIN, right: MARGIN },
     head: [["Fecha", "kcal", "P", "C", "G", "Peso"]],
     body: m.rows.map(bodyRow),
-    headStyles: { fillColor: ACCENT, textColor: [255, 255, 255] },
+    headStyles: { fillColor: ACCENT, textColor: [255, 255, 255], fontStyle: "bold" },
     styles: { fontSize: 9, cellPadding: 1.8, textColor: TEXT },
     columnStyles: {
       1: { halign: "right" },
@@ -114,6 +114,10 @@ export async function toPdf(m: ExportModel): Promise<Blob> {
     },
     showHead: "everyPage",
     didParseCell: (data) => {
+      // Header alignment must mirror the body's (columnStyles only reach the body here)
+      if (data.section === "head" && data.column.index > 0) {
+        data.cell.styles.halign = "right";
+      }
       if (data.section === "body" && !m.rows[data.row.index]?.logged) {
         data.cell.styles.textColor = MUTED;
         data.cell.styles.fontStyle = "italic";

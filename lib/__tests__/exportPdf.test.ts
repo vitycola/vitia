@@ -51,7 +51,7 @@ function tableOptions() {
   return mockAutoTable.mock.calls[0][1] as {
     head: string[][];
     body: unknown[][];
-    headStyles: { fillColor: number[] };
+    headStyles: { fillColor: number[]; textColor: number[]; fontStyle: string };
     didParseCell: (data: unknown) => void;
   };
 }
@@ -76,15 +76,54 @@ describe("toPdf", () => {
     const opts = tableOptions();
     expect(opts.head).toEqual([["Fecha", "kcal", "P", "C", "G", "Peso"]]);
     expect(opts.headStyles.fillColor).toEqual([245, 166, 35]);
+    expect(opts.headStyles.textColor).toEqual([255, 255, 255]);
+    expect(opts.headStyles.fontStyle).toBe("bold");
+  });
+
+  it("right-aligns numeric header cells and keeps Fecha left, matching the body", async () => {
+    await toPdf(buildModel());
+    const opts = tableOptions();
+    const cols = opts as unknown as { columnStyles: Record<number, { halign: string }> };
+    for (let i = 0; i <= 5; i++) {
+      const cell = {
+        section: "head",
+        column: { index: i },
+        row: { index: 0 },
+        cell: { styles: {} as Record<string, unknown> },
+      };
+      opts.didParseCell(cell);
+      if (i === 0) {
+        expect(cell.cell.styles.halign).toBeUndefined();
+      } else {
+        expect(cell.cell.styles.halign).toBe("right");
+        expect(cols.columnStyles[i].halign).toBe("right");
+      }
+    }
+  });
+
+  it("always prints weight with one decimal and comma", async () => {
+    const m = buildExportModel(
+      range,
+      [],
+      [
+        { date: "2026-10-01", weightKg: 80, waistCm: null },
+        { date: "2026-10-02", weightKg: 79.9, waistCm: null },
+      ] as unknown as Parameters<typeof buildExportModel>[2],
+      null
+    );
+    await toPdf(m);
+    const { body } = tableOptions();
+    expect(body[0][2]).toBe("80,0");
+    expect(body[1][2]).toBe("79,9");
   });
 
   it("renders one body row per day, unlogged days as Sin registro, weight kept", async () => {
     await toPdf(buildModel());
     const { body } = tableOptions();
     expect(body).toHaveLength(4);
-    expect(body[0]).toEqual(["01/10/2026", "2000", "100", "200", "60", "—"]);
+    expect(body[0]).toEqual(["01/10/2026", "2000", "100,0", "200,0", "60,0", "—"]);
     expect(body[1]).toEqual(["02/10/2026", { content: "Sin registro", colSpan: 4 }, "72,5"]);
-    expect(body[2]).toEqual(["03/10/2026", "1000", "50", "100", "30,5", "—"]);
+    expect(body[2]).toEqual(["03/10/2026", "1000", "50,0", "100,0", "30,5", "—"]);
     expect(body[3]).toEqual(["04/10/2026", { content: "Sin registro", colSpan: 4 }, "—"]);
   });
 
@@ -95,6 +134,7 @@ describe("toPdf", () => {
     const unlogged = {
       section: "body",
       row: { index: 1 },
+      column: { index: 1 },
       cell: { styles: {} as Record<string, unknown> },
     };
     didParseCell(unlogged);
@@ -103,6 +143,7 @@ describe("toPdf", () => {
     const logged = {
       section: "body",
       row: { index: 0 },
+      column: { index: 1 },
       cell: { styles: {} as Record<string, unknown> },
     };
     didParseCell(logged);
@@ -118,6 +159,8 @@ describe("toPdf", () => {
     expect(text).toContain("Generado");
     // avg of 2000 and 1000 kcal over the 2 logged days (not over 4 days)
     expect(text).toContain("1500");
+    expect(text).toContain("75,0"); // avg protein, one decimal
+    expect(text).toContain("150,0"); // target protein, one decimal
     expect(text).toContain("2200");
     expect(text).toContain(
       "Las metas mostradas son las actuales; no se guarda historial de metas."
