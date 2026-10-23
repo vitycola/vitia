@@ -20,6 +20,8 @@
     "@supabase/supabase-js": "^2.108.2",
     "dexie": "^4.4.4",
     "drizzle-orm": "^0.44.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "lucide-react": "^1.21.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -132,6 +132,19 @@ describe("ExportRoute format and download", () => {
     expect(screen.getByRole("button", { name: "Descargar CSV" })).toBeEnabled();
   });
 
+  it("enables the PDF card and relabels the button", async () => {
+    renderRoute();
+    await screen.findByText(/30 días/);
+    const pdfCard = screen.getByRole("button", { name: "PDF" });
+    expect(pdfCard).toBeEnabled();
+    fireEvent.click(pdfCard);
+    expect(pdfCard).toHaveAttribute("aria-pressed", "true");
+    const download = screen.getByRole("button", { name: "Descargar PDF" });
+    await waitFor(() => expect(download).toBeEnabled());
+    fireEvent.click(download);
+    expect(mockRun).toHaveBeenCalledWith({ from: "2026-09-24", to: "2026-10-23" }, "pdf");
+  });
+
   it("runs the export with the current range and format", async () => {
     renderRoute();
     const button = await screen.findByRole("button", { name: "Descargar CSV" });

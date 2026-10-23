@@ -39,7 +39,14 @@ export function useDataExport(): {
     setStatus("working");
     try {
       const model = await loadExportModel(range);
-      const blob = new Blob([toCsv(model)], { type: CSV_MIME });
+      let blob: Blob;
+      if (format === "pdf") {
+        // Lazy: keeps jspdf out of the main bundle and the CSV flow.
+        const { toPdf } = await import("@/lib/exportPdf");
+        blob = await toPdf(model);
+      } else {
+        blob = new Blob([toCsv(model)], { type: CSV_MIME });
+      }
       await deliverFile(blob, exportFileName(range, format));
       setStatus("idle");
     } catch {

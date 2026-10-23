@@ -8,16 +8,19 @@ jest.mock("@/db/repos/mealEntries", () => ({
 jest.mock("@/db/repos/progress", () => ({ getRange: jest.fn() }));
 jest.mock("@/db/repos/profile", () => ({ getProfile: jest.fn() }));
 jest.mock("@/lib/exportDelivery", () => ({ deliverFile: jest.fn() }));
+jest.mock("@/lib/exportPdf", () => ({ toPdf: jest.fn() }));
 
 import * as mealRepo from "@/db/repos/mealEntries";
 import * as profileRepo from "@/db/repos/profile";
 import * as progressRepo from "@/db/repos/progress";
 import { deliverFile } from "@/lib/exportDelivery";
+import { toPdf } from "@/lib/exportPdf";
 
 const getTotals = mealRepo.getLoggedTotalsByDateRange as jest.Mock;
 const getRange = progressRepo.getRange as jest.Mock;
 const getProfile = profileRepo.getProfile as jest.Mock;
 const deliver = deliverFile as jest.Mock;
+const pdf = toPdf as jest.Mock;
 
 function readBlob(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,6 +46,7 @@ beforeEach(() => {
     fatGoalG: 70,
   });
   deliver.mockResolvedValue("downloaded");
+  pdf.mockResolvedValue(new Blob(["%PDF"], { type: "application/pdf" }));
 });
 
 describe("useDataExport", () => {
@@ -120,5 +124,39 @@ describe("useDataExport", () => {
       await result.current.run(range, "csv");
     });
     expect(result.current.status).toBe("error");
+  });
+});
+
+describe("useDataExport PDF branch", () => {
+  it("lazily builds a PDF and delivers it with a .pdf name", async () => {
+    const { result } = renderHook(() => useDataExport());
+    await act(async () => {
+      await result.current.run(range, "pdf");
+    });
+
+    expect(pdf).toHaveBeenCalledTimes(1);
+    expect(pdf.mock.calls[0][0]).toMatchObject({ range });
+    const [blob, name] = deliver.mock.calls[0] as [Blob, string];
+    expect(name).toBe("vitia-2026-10-01_2026-10-02.pdf");
+    expect(blob.type).toBe("application/pdf");
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("never loads the PDF module for a CSV export", async () => {
+    const { result } = renderHook(() => useDataExport());
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+    expect(pdf).not.toHaveBeenCalled();
+  });
+
+  it("reports an error when PDF generation fails", async () => {
+    pdf.mockRejectedValueOnce(new Error("pdf boom"));
+    const { result } = renderHook(() => useDataExport());
+    await act(async () => {
+      await result.current.run(range, "pdf");
+    });
+    expect(result.current.status).toBe("error");
+    expect(deliver).not.toHaveBeenCalled();
   });
 });

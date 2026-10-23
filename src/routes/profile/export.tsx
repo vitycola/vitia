@@ -158,7 +158,6 @@ export function ExportRoute() {
               onClick={() => setFormat("pdf")}
               label="PDF"
               large
-              disabled
             />
           </div>
         </section>
