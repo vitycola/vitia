@@ -36,7 +36,7 @@ function summaryText(s: ExportSummary): string {
 export function ExportRoute() {
   const navigate = useNavigate();
   const today = todayISO();
-  const { status, run, reset } = useDataExport();
+  const { status, run, shareNow, reset } = useDataExport();
 
   const [preset, setPreset] = useState<Preset>(30);
   const [format, setFormat] = useState<ExportFormat>("csv");
@@ -94,6 +94,7 @@ export function ExportRoute() {
   const noData = summary !== null && summary.logged === 0 && !summary.hasProgress;
   const onlyBody = summary !== null && summary.logged === 0 && summary.hasProgress;
   const working = status === "working";
+  const readyToShare = status === "ready-to-share";
   // A failed summary load must not trap the user: the download reports its own errors.
   const canDownload =
     range !== null && !rangeError && (summary !== null || summaryError) && !noData && !working;
@@ -124,6 +125,7 @@ export function ExportRoute() {
                 key={p}
                 selected={preset === p}
                 onClick={() => changePreset(p)}
+                disabled={working}
                 label={p === "custom" ? "Personalizado" : String(p)}
               />
             ))}
@@ -137,6 +139,7 @@ export function ExportRoute() {
                 value={customFrom}
                 max={today}
                 onChange={changeCustomFrom}
+                disabled={working}
               />
               <DateField
                 id="export-to"
@@ -144,6 +147,7 @@ export function ExportRoute() {
                 value={customTo}
                 max={today}
                 onChange={changeCustomTo}
+                disabled={working}
               />
             </div>
           )}
@@ -179,12 +183,14 @@ export function ExportRoute() {
               onClick={() => changeFormat("csv")}
               label="CSV"
               large
+              disabled={working}
             />
             <ChipButton
               selected={format === "pdf"}
               onClick={() => changeFormat("pdf")}
               label="PDF"
               large
+              disabled={working}
             />
           </div>
         </section>
@@ -195,14 +201,27 @@ export function ExportRoute() {
           </p>
         )}
 
-        <button
-          type="button"
-          disabled={!canDownload}
-          onClick={() => range && void run(range, format)}
-          className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
-        >
-          {working ? "Generando…" : `Descargar ${formatLabel}`}
-        </button>
+        {readyToShare ? (
+          <>
+            <p className="text-sm text-secondary">Tu archivo está listo. Toca para compartirlo.</p>
+            <button
+              type="button"
+              onClick={() => void shareNow()}
+              className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90"
+            >
+              Compartir archivo
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            disabled={!canDownload}
+            onClick={() => range && void run(range, format)}
+            className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:opacity-90 disabled:opacity-50"
+          >
+            {working ? "Generando…" : `Descargar ${formatLabel}`}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -246,12 +265,14 @@ function DateField({
   value,
   max,
   onChange,
+  disabled = false,
 }: {
   id: string;
   label: string;
   value: string;
   max: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -263,8 +284,9 @@ function DateField({
         type="date"
         value={value}
         max={max}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-default bg-card px-3 py-2 text-sm text-primary outline-none focus:border-accent"
+        className="w-full rounded-xl border border-default bg-card px-3 py-2 text-sm text-primary outline-none focus:border-accent disabled:opacity-50"
       />
     </div>
   );

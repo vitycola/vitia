@@ -1,4 +1,4 @@
-export type DeliveryResult = "downloaded" | "shared" | "cancelled";
+export type DeliveryResult = "downloaded" | "shared" | "cancelled" | "needs-share";
 
 interface DeliveryEnv {
   nav?: Navigator;
@@ -24,6 +24,7 @@ function isIosStandalone(nav: ShareNavigator): boolean {
  * Hand a generated file to the user: Web Share on iOS standalone (when file
  * sharing is supported), otherwise a temporary `<a download>` click.
  * Dismissing the share sheet (AbortError) resolves "cancelled", not an error.
+ * A failed iOS share resolves "needs-share": the file is ready but undelivered.
  */
 export async function deliverFile(
   blob: Blob,
@@ -41,8 +42,10 @@ export async function deliverFile(
         return "shared";
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return "cancelled";
-        // Share can fail once transient activation is gone (async work before
-        // delivery); fall through to the anchor download instead of erroring.
+        // The awaits before delivery (reads, lazy PDF import) consume the tap's
+        // transient activation, so share is rejected. The anchor download does
+        // not work on iOS standalone either: ask the caller for a fresh tap.
+        return "needs-share";
       }
     }
   }

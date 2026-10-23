@@ -14,6 +14,9 @@ describe("deliverFile", () => {
   let createObjectURL: jest.Mock;
   let revokeObjectURL: jest.Mock;
 
+  const originalCreate = URL.createObjectURL;
+  const originalRevoke = URL.revokeObjectURL;
+
   beforeEach(() => {
     jest.useFakeTimers();
     createObjectURL = jest.fn(() => "blob:mock");
@@ -22,6 +25,7 @@ describe("deliverFile", () => {
   });
 
   afterEach(() => {
+    Object.assign(URL, { createObjectURL: originalCreate, revokeObjectURL: originalRevoke });
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
@@ -82,28 +86,38 @@ describe("deliverFile", () => {
     expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("cancelled");
   });
 
-  it("falls back to the anchor download when share rejects with a non-abort error", async () => {
+  it("returns needs-share on iOS standalone when share is rejected with NotAllowedError", async () => {
     const click = jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const denied = Object.assign(new Error("denied"), { name: "NotAllowedError" });
     const share = jest.fn().mockRejectedValue(denied);
     const nav = makeNav({ userAgent: IOS_UA, standalone: true, share, canShare: () => true });
 
-    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("downloaded");
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("needs-share");
     expect(share).toHaveBeenCalledTimes(1);
-    expect(click).toHaveBeenCalledTimes(1);
+    expect(click).not.toHaveBeenCalled();
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 
-  it("throws when share fails and no download path exists", async () => {
-    Object.assign(URL, { createObjectURL: undefined });
+  it("returns needs-share on iOS standalone for any non-abort share failure", async () => {
+    const click = jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const nav = makeNav({
       userAgent: IOS_UA,
       standalone: true,
       share: jest.fn().mockRejectedValue(new Error("boom")),
       canShare: () => true,
     });
-    await expect(deliverFile(blob, "x.csv", { nav, doc: document })).rejects.toThrow(
-      "No se pudo iniciar la descarga en este dispositivo."
-    );
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("needs-share");
+    expect(click).not.toHaveBeenCalled();
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("keeps the anchor download on non-iOS when canShare is false", async () => {
+    const click = jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const share = jest.fn();
+    const nav = makeNav({ standalone: true, share, canShare: () => false });
+    expect(await deliverFile(blob, "x.csv", { nav, doc: document })).toBe("downloaded");
+    expect(share).not.toHaveBeenCalled();
+    expect(click).toHaveBeenCalledTimes(1);
   });
 
   it("shares on iPadOS, which reports a Macintosh user agent", async () => {

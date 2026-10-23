@@ -172,3 +172,163 @@ describe("useDataExport PDF branch", () => {
     expect(deliver).not.toHaveBeenCalled();
   });
 });
+
+function deferred<T>() {
+  let resolve: (v: T) => void = () => {};
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+
+describe("useDataExport selection changes during a run", () => {
+  it("reset() is a no-op while working and a second run is ignored", async () => {
+    const gate = deferred<string>();
+    deliver.mockReturnValue(gate.promise);
+    const { result } = renderHook(() => useDataExport());
+
+    let first: Promise<void> = Promise.resolve();
+    act(() => {
+      first = result.current.run(range, "csv");
+    });
+    expect(result.current.status).toBe("working");
+
+    act(() => result.current.reset());
+    expect(result.current.status).toBe("working");
+
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+    expect(getProfile).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      gate.resolve("downloaded");
+      await first;
+    });
+    expect(deliver).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("reset() clears a previous error", async () => {
+    deliver.mockRejectedValueOnce(new Error("no path"));
+    const { result } = renderHook(() => useDataExport());
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+    expect(result.current.status).toBe("error");
+    act(() => result.current.reset());
+    expect(result.current.status).toBe("idle");
+  });
+});
+
+describe("useDataExport share step (iOS)", () => {
+  const originalShare = Object.getOwnPropertyDescriptor(navigator, "share");
+  let share: jest.Mock;
+
+  beforeEach(() => {
+    share = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: share, configurable: true });
+    deliver.mockResolvedValue("needs-share");
+  });
+
+  afterEach(() => {
+    if (originalShare) Object.defineProperty(navigator, "share", originalShare);
+    else Reflect.deleteProperty(navigator, "share");
+  });
+
+  async function runToReady() {
+    const hook = renderHook(() => useDataExport());
+    await act(async () => {
+      await hook.result.current.run(range, "csv");
+    });
+    return hook;
+  }
+
+  it("enters ready-to-share when delivery needs a fresh tap", async () => {
+    const { result } = await runToReady();
+    expect(result.current.status).toBe("ready-to-share");
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it("shareNow shares the stored file synchronously and returns to idle", async () => {
+    const { result } = await runToReady();
+
+    let pending: Promise<void> = Promise.resolve();
+    act(() => {
+      pending = result.current.shareNow();
+    });
+    // Called inside the tap handler tick, before any await resumes.
+    expect(share).toHaveBeenCalledTimes(1);
+    const arg = share.mock.calls[0][0] as { files: File[] };
+    expect(arg.files).toHaveLength(1);
+    expect(arg.files[0]).toBeInstanceOf(File);
+    expect(arg.files[0].name).toBe("vitia-2026-10-01_2026-10-02.csv");
+    expect(arg.files[0].type).toBe("text/csv;charset=utf-8");
+    expect(deliver).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await pending;
+    });
+    expect(result.current.status).toBe("idle");
+
+    // The stored file was cleared: a second shareNow is a no-op.
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(share).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays ready-to-share when the share sheet is dismissed", async () => {
+    share.mockRejectedValue(Object.assign(new Error("cancel"), { name: "AbortError" }));
+    const { result } = await runToReady();
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(result.current.status).toBe("ready-to-share");
+
+    share.mockResolvedValue(undefined);
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(share).toHaveBeenCalledTimes(2);
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("sets error when sharing fails for another reason", async () => {
+    share.mockRejectedValue(Object.assign(new Error("denied"), { name: "NotAllowedError" }));
+    const { result } = await runToReady();
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(result.current.status).toBe("error");
+  });
+
+  it("sets error when navigator.share throws synchronously", async () => {
+    share.mockImplementation(() => {
+      throw new TypeError("nope");
+    });
+    const { result } = await runToReady();
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(result.current.status).toBe("error");
+  });
+
+  it("reset() clears the stored file and returns to idle", async () => {
+    const { result } = await runToReady();
+    act(() => result.current.reset());
+    expect(result.current.status).toBe("idle");
+    await act(async () => {
+      await result.current.shareNow();
+    });
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it("does not share after unmount", async () => {
+    const { result, unmount } = await runToReady();
+    const { shareNow } = result.current;
+    unmount();
+    await shareNow();
+    expect(share).not.toHaveBeenCalled();
+  });
+});

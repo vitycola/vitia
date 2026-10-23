@@ -18,10 +18,16 @@ jest.mock("react-router-dom", () => ({
 
 const mockRun = jest.fn();
 const mockReset = jest.fn();
-let mockStatus: "idle" | "working" | "error" = "idle";
+const mockShareNow = jest.fn();
+let mockStatus: "idle" | "working" | "ready-to-share" | "error" = "idle";
 const mockLoad = jest.fn();
 jest.mock("@/hooks/useDataExport", () => ({
-  useDataExport: () => ({ status: mockStatus, run: mockRun, reset: mockReset }),
+  useDataExport: () => ({
+    status: mockStatus,
+    run: mockRun,
+    shareNow: mockShareNow,
+    reset: mockReset,
+  }),
   loadExportModel: (range: unknown) => mockLoad(range),
 }));
 
@@ -195,6 +201,79 @@ describe("ExportRoute format and download", () => {
     expect(mockReset).toHaveBeenCalledTimes(4);
     fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: "2026-10-10" } });
     expect(mockReset).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe("ExportRoute while working", () => {
+  it("disables presets, formats and both date inputs", async () => {
+    mockStatus = "working";
+    renderRoute();
+    await screen.findByText(/30 días/);
+    for (const name of ["7", "30", "90", "Personalizado", "CSV", "PDF"]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+  });
+
+  it("disables the date inputs of a custom range", async () => {
+    const view = renderRoute();
+    await screen.findByText(/30 días/);
+    fireEvent.click(screen.getByRole("button", { name: "Personalizado" }));
+    expect(screen.getByLabelText("Desde")).toBeEnabled();
+    mockStatus = "working";
+    view.rerender(
+      <MemoryRouter>
+        <ExportRoute />
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText("Desde")).toBeDisabled();
+    expect(screen.getByLabelText("Hasta")).toBeDisabled();
+  });
+});
+
+describe("ExportRoute share step", () => {
+  it("shows no share button outside ready-to-share", async () => {
+    renderRoute();
+    await screen.findByText(/30 días/);
+    expect(screen.queryByRole("button", { name: "Compartir archivo" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tu archivo está listo. Toca para compartirlo.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the share button and helper, hiding the download button, when ready", async () => {
+    mockStatus = "ready-to-share";
+    renderRoute();
+    await screen.findByText(/30 días/);
+    expect(screen.getByRole("button", { name: "Compartir archivo" })).toBeEnabled();
+    expect(screen.getByText("Tu archivo está listo. Toca para compartirlo.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Descargar CSV" })).not.toBeInTheDocument();
+  });
+
+  it("calls the hook's shareNow on tap", async () => {
+    mockStatus = "ready-to-share";
+    renderRoute();
+    await screen.findByText(/30 días/);
+    fireEvent.click(screen.getByRole("button", { name: "Compartir archivo" }));
+    expect(mockShareNow).toHaveBeenCalledTimes(1);
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("changing the range calls reset, which hides the share step", async () => {
+    mockStatus = "ready-to-share";
+    mockReset.mockImplementation(() => {
+      mockStatus = "idle";
+    });
+    const view = renderRoute();
+    await screen.findByText(/30 días/);
+    fireEvent.click(screen.getByRole("button", { name: "7" }));
+    expect(mockReset).toHaveBeenCalledTimes(1);
+    view.rerender(
+      <MemoryRouter>
+        <ExportRoute />
+      </MemoryRouter>
+    );
+    expect(screen.queryByRole("button", { name: "Compartir archivo" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Descargar CSV" })).toBeVisible();
   });
 });
 
