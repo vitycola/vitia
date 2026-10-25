@@ -1,5 +1,7 @@
-import type { MealEntry, UserProfile } from "@/db/schema";
+import type { GoalHistoryEntry, MealEntry, UserProfile } from "@/db/schema";
 import {
+  goalHistoryFromRemote,
+  goalHistoryToRemote,
   mealEntryFromRemote,
   mealEntryToRemote,
   normalizeQueuedPayload,
@@ -82,6 +84,53 @@ describe("profile mapper", () => {
       ...rest,
       userId: "user-1",
     });
+  });
+});
+
+const goalEntry: GoalHistoryEntry = {
+  effectiveFrom: "2026-02-01",
+  userId: "user-1",
+  calorieGoal: 2200,
+  proteinGoalG: 160,
+  carbsGoalG: 250,
+  fatGoalG: 70,
+  useManualGoals: true,
+  createdAt: "2026-02-01T08:00:00.000Z",
+  updatedAt: "2026-02-01T09:00:00.000Z",
+};
+
+describe("goal_history mappers", () => {
+  it("maps a local entry to the snake_case remote row owned by the given user", () => {
+    expect(goalHistoryToRemote(goalEntry, "user-1")).toEqual({
+      user_id: "user-1",
+      effective_from: "2026-02-01",
+      calorie_goal: 2200,
+      protein_goal_g: 160,
+      carbs_goal_g: 250,
+      fat_goal_g: 70,
+      use_manual_goals: true,
+      created_at: "2026-02-01T08:00:00.000Z",
+      updated_at: "2026-02-01T09:00:00.000Z",
+    });
+  });
+
+  it("round-trips local -> remote -> local", () => {
+    const back = goalHistoryFromRemote(goalHistoryToRemote(goalEntry, "user-1"));
+    expect(back).toEqual(goalEntry);
+  });
+
+  it("normalizes a camelCase queued payload and uses the op owner as user_id", () => {
+    const out = normalizeQueuedPayload(
+      "goal_history",
+      { ...goalEntry, user_id: "stale" },
+      "user-1"
+    );
+    expect(out).toEqual(goalHistoryToRemote(goalEntry, "user-1"));
+  });
+
+  it("is idempotent for already-normalized goal_history payloads", () => {
+    const remote = goalHistoryToRemote(goalEntry, "user-1");
+    expect(normalizeQueuedPayload("goal_history", { ...remote }, "user-1")).toEqual(remote);
   });
 });
 

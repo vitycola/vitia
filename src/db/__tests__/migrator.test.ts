@@ -53,6 +53,48 @@ describe("migration 0009 (foods.cooking_factor)", () => {
   });
 });
 
+describe("migration 0010 (goal_history)", () => {
+  it("creates goal_history keyed by (user_id, effective_from), overwriting on conflict", async () => {
+    const { executor, db } = makeInMemoryExecutor();
+    await runWebMigrations(executor);
+
+    const columns = db.prepare("PRAGMA table_info(goal_history)").all() as {
+      name: string;
+      pk: number;
+    }[];
+    expect(columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "effective_from",
+      "calorie_goal",
+      "protein_goal_g",
+      "carbs_goal_g",
+      "fat_goal_g",
+      "use_manual_goals",
+      "created_at",
+      "updated_at",
+    ]);
+    expect(columns.filter((c) => c.pk > 0).map((c) => c.name)).toEqual([
+      "user_id",
+      "effective_from",
+    ]);
+
+    const insert = db.prepare(
+      "INSERT INTO goal_history (user_id, effective_from, calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(user_id, effective_from) DO UPDATE SET calorie_goal = excluded.calorie_goal"
+    );
+    insert.run("a", "2026-03-10", 2000, 150, 200, 60);
+    insert.run("a", "2026-03-10", 2400, 150, 200, 60);
+    insert.run("b", "2026-03-10", 1500, 150, 200, 60);
+
+    const rows = db
+      .prepare("SELECT user_id, calorie_goal FROM goal_history ORDER BY user_id")
+      .all();
+    expect(rows).toEqual([
+      { user_id: "a", calorie_goal: 2400 },
+      { user_id: "b", calorie_goal: 1500 },
+    ]);
+  });
+});
+
 describe("runWebMigrations", () => {
   it("creates the __drizzle_migrations tracking table on first run", async () => {
     const { executor, db } = makeInMemoryExecutor();
@@ -84,8 +126,8 @@ describe("runWebMigrations", () => {
     const rows = db.prepare("SELECT tag FROM __drizzle_migrations ORDER BY id").all() as {
       tag: string;
     }[];
-    // Ten migrations: 0000 through 0009
-    expect(rows).toHaveLength(10);
+    // Eleven migrations: 0000 through 0010
+    expect(rows).toHaveLength(11);
     expect(rows[0].tag).toBe("0000_thick_eddie_brock");
     expect(rows[1].tag).toBe("0001_name_normalized");
     expect(rows[2].tag).toBe("0002_user_session_persistence");
@@ -96,6 +138,7 @@ describe("runWebMigrations", () => {
     expect(rows[7].tag).toBe("0007_progress_measurements");
     expect(rows[8].tag).toBe("0008_raw_cooked_conversion");
     expect(rows[9].tag).toBe("0009_food_cooking_factor");
+    expect(rows[10].tag).toBe("0010_goal_history");
   });
 
   it("is idempotent — second run applies nothing (Scenario 2.4)", async () => {
@@ -103,11 +146,11 @@ describe("runWebMigrations", () => {
     await runWebMigrations(executor);
     await runWebMigrations(executor); // second run
 
-    // Still exactly ten migration rows — no duplicate inserts
+    // Still exactly eleven migration rows — no duplicate inserts
     const rows = db.prepare("SELECT COUNT(*) as c FROM __drizzle_migrations").get() as {
       c: number;
     };
-    expect(rows.c).toBe(10);
+    expect(rows.c).toBe(11);
   });
 
   it("records migration tag 0005_composite_foods and creates food_ingredients table (Phase 1)", async () => {

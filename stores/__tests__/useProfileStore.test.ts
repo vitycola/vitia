@@ -14,9 +14,42 @@ jest.mock("@/db/repos/profile", () => ({
   upsertProfile: jest.fn(),
 }));
 
+const mockSyncEnabled = false;
+jest.mock("@/src/lib/supabase", () => ({ isSyncEnabled: () => mockSyncEnabled }));
+jest.mock("@/src/services/demoGuard", () => ({ isDemoDevice: () => false }));
+const mockAuthUserId: string | null = null;
+jest.mock("@/src/stores/useAuthStore", () => ({
+  useAuthStore: { getState: () => ({ userId: mockAuthUserId }) },
+}));
+
+// In-memory goal history (same-day overwrite, like the real repos).
+const mockGoalRows = new Map<string, Record<string, unknown>>();
+jest.mock("@/db/repos/goalHistory", () => ({
+  list: jest.fn(async () =>
+    [...mockGoalRows.values()].sort((a, b) =>
+      (a.effectiveFrom as string).localeCompare(b.effectiveFrom as string)
+    )
+  ),
+  record: jest.fn(async (data: Record<string, unknown>) => {
+    mockGoalRows.set(data.effectiveFrom as string, data);
+    return data;
+  }),
+}));
+jest.mock("@/db/repos/mealEntries", () => ({
+  getAll: jest.fn(async () => []),
+}));
+
+let mockToday = "2026-03-10";
+jest.mock("@/lib/date", () => ({
+  ...jest.requireActual("@/lib/date"),
+  todayISO: () => mockToday,
+}));
+
+import * as goalHistoryRepo from "@/db/repos/goalHistory";
 import * as profileRepo from "@/db/repos/profile";
 import * as progressRepo from "@/db/repos/progress";
 // Imported after mocks so the store module picks up the mocked deps.
+import { computeAutoGoals } from "@/lib/nutrition";
 import { useProfileStore } from "@/stores/useProfileStore";
 
 const mockedUpsertProfile = profileRepo.upsertProfile as jest.MockedFunction<
@@ -53,6 +86,7 @@ const manualProfile = {
 describe("useProfileStore.revertToAutomaticGoals", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGoalRows.clear();
     useProfileStore.setState({ profile: null, hasProfile: false, isLoading: false });
   });
 
@@ -110,6 +144,7 @@ describe("useProfileStore.syncWeightFromProgress", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGoalRows.clear();
     useProfileStore.setState({ profile: null, hasProfile: false, isLoading: false });
     mockedUpsertProfile.mockImplementation(async (data) => ({ ...autoProfile, ...data }));
     mockedGetRange.mockResolvedValue([]);
@@ -247,5 +282,181 @@ describe("useProfileStore.syncWeightFromProgress", () => {
       expect(mockedUpsertProfile).not.toHaveBeenCalled();
       expect(useProfileStore.getState().profile?.weightKg).toBe(82);
     });
+  });
+});
+
+describe("useProfileStore goal history recording", () => {
+  const input = {
+    age: 30,
+    heightCm: 175,
+    weightKg: 70,
+    sex: "male" as const,
+    activityLevel: "moderately_active" as const,
+    goal: "maintain" as const,
+  };
+  const autoProfile = { ...manualProfile, calorieGoal: 2308, useManualGoals: false };
+  const record = goalHistoryRepo.record as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGoalRows.clear();
+    mockToday = "2026-03-10";
+    useProfileStore.setState({ profile: null, hasProfile: false, isLoading: false });
+    mockedGetProfile.mockResolvedValue(null);
+    mockedUpsertProfile.mockImplementation(async (data) => ({ ...autoProfile, ...data }));
+    mockedGetRange.mockResolvedValue([]);
+  });
+
+  it("records the initial entry when the first profile is created (onboarding)", async () => {
+    await useProfileStore.getState().saveProfile(input);
+
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({ effectiveFrom: "2026-03-10", useManualGoals: false }),
+      "local"
+    );
+  });
+
+  it("seeds the persisted previous goals when saveProfile runs before the store is loaded", async () => {
+    // Store not hydrated (profile: null) but a profile already exists on disk
+    mockedGetProfile.mockResolvedValueOnce(autoProfile);
+
+    await useProfileStore.getState().saveProfile({ ...input, goal: "gain_muscle" });
+
+    expect(mockGoalRows.get("2025-12-31")?.calorieGoal).toBe(autoProfile.calorieGoal);
+    expect(mockGoalRows.get("2026-03-10")?.calorieGoal).not.toBe(autoProfile.calorieGoal);
+  });
+
+  it("records when saveProfile changes the computed goals", async () => {
+    useProfileStore.setState({ profile: autoProfile, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().saveProfile({ ...input, goal: "gain_muscle" });
+
+    expect(mockGoalRows.get("2026-03-10")).toEqual(
+      expect.objectContaining({ calorieGoal: expect.any(Number), useManualGoals: false })
+    );
+    expect(mockGoalRows.get("2026-03-10")?.calorieGoal).not.toBe(autoProfile.calorieGoal);
+  });
+
+  it("does not record when saveProfile yields the same goals as before", async () => {
+    const sameGoals = { ...autoProfile, ...computeAutoGoals(input), useManualGoals: false };
+    useProfileStore.setState({ profile: sameGoals, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().saveProfile(input);
+
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it("records a manual override with useManualGoals = true", async () => {
+    useProfileStore.setState({ profile: autoProfile, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().overrideGoals({
+      calorieGoal: 1800,
+      proteinGoalG: 140,
+      carbsGoalG: 150,
+      fatGoalG: 60,
+    });
+
+    expect(mockGoalRows.get("2026-03-10")).toEqual(
+      expect.objectContaining({ calorieGoal: 1800, useManualGoals: true })
+    );
+  });
+
+  it("does not record an override that re-submits the same manual goals", async () => {
+    const manual = { ...manualProfile };
+    useProfileStore.setState({ profile: manual, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().overrideGoals({
+      calorieGoal: manual.calorieGoal,
+      proteinGoalG: manual.proteinGoalG,
+      carbsGoalG: manual.carbsGoalG,
+      fatGoalG: manual.fatGoalG,
+    });
+
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it("overwrites the same day's entry on a second change the same day", async () => {
+    useProfileStore.setState({ profile: autoProfile, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().overrideGoals({
+      calorieGoal: 1800,
+      proteinGoalG: 140,
+      carbsGoalG: 150,
+      fatGoalG: 60,
+    });
+    await useProfileStore.getState().overrideGoals({
+      calorieGoal: 1700,
+      proteinGoalG: 140,
+      carbsGoalG: 150,
+      fatGoalG: 60,
+    });
+
+    expect(mockGoalRows.get("2026-03-10")?.calorieGoal).toBe(1700);
+    // Seed of the pre-change goals + today's single entry (no duplicate for today)
+    expect([...mockGoalRows.keys()]).toEqual(["2025-12-31", "2026-03-10"]);
+  });
+
+  it("records a new entry on a different day", async () => {
+    useProfileStore.setState({ profile: autoProfile, hasProfile: true, isLoading: false });
+    await useProfileStore.getState().overrideGoals({
+      calorieGoal: 1800,
+      proteinGoalG: 140,
+      carbsGoalG: 150,
+      fatGoalG: 60,
+    });
+
+    mockToday = "2026-03-11";
+    await useProfileStore.getState().revertToAutomaticGoals();
+
+    expect(mockGoalRows.get("2026-03-10")?.calorieGoal).toBe(1800);
+    expect(mockGoalRows.get("2026-03-11")).toEqual(
+      expect.objectContaining({ useManualGoals: false })
+    );
+  });
+
+  it("records when revertToAutomaticGoals flips manual goals back to automatic", async () => {
+    useProfileStore.setState({ profile: manualProfile, hasProfile: true, isLoading: false });
+
+    await useProfileStore.getState().revertToAutomaticGoals();
+
+    expect(mockGoalRows.get("2026-03-10")).toEqual(
+      expect.objectContaining({ useManualGoals: false })
+    );
+  });
+
+  it("records when a weight sync recalculates automatic goals", async () => {
+    useProfileStore.setState({
+      profile: { ...autoProfile, weightKg: 82 },
+      hasProfile: true,
+      isLoading: false,
+    });
+    mockedGetRange.mockResolvedValue([weighIn("2026-03-09", 95)]);
+
+    await useProfileStore.getState().syncWeightFromProgress("2026-03-10");
+
+    expect(mockGoalRows.get("2026-03-10")?.calorieGoal).not.toBe(autoProfile.calorieGoal);
+    // The pre-change goals are preserved as the seeded entry
+    expect(mockGoalRows.get("2025-12-31")?.calorieGoal).toBe(autoProfile.calorieGoal);
+  });
+
+  it("does not record when a weight sync leaves manual goals untouched", async () => {
+    useProfileStore.setState({ profile: manualProfile, hasProfile: true, isLoading: false });
+    mockedGetRange.mockResolvedValue([weighIn("2026-03-09", 95)]);
+
+    await useProfileStore.getState().syncWeightFromProgress("2026-03-10");
+
+    expect(mockedUpsertProfile).toHaveBeenCalledTimes(1);
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it("still saves the profile when recording the history fails", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    record.mockRejectedValueOnce(new Error("disk full"));
+
+    await useProfileStore.getState().saveProfile(input);
+
+    expect(useProfileStore.getState().hasProfile).toBe(true);
+    errorSpy.mockRestore();
   });
 });

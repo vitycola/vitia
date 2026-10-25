@@ -15,16 +15,26 @@
  */
 
 import { db, dexieAdapter } from "@/db/client";
+import * as goalHistoryRepo from "@/db/repos/goalHistory";
 import * as mealEntriesRepo from "@/db/repos/mealEntries";
 import * as profileRepo from "@/db/repos/profile";
 import { mealEntries as mealEntriesTable } from "@/db/schema";
 import type { MealEntry, NewMealEntry, UserProfile } from "@/db/schema";
+import { isValidRemoteGoalHistory, parseTimestampMs } from "@/lib/goalHistory";
 import { getSupabaseClient, isSyncEnabled } from "@/src/lib/supabase";
 import { cleanupDemoData } from "@/src/services/demoCleanup";
 import { isDemoDevice, isDemoMealEntry } from "@/src/services/demoGuard";
 import {
+  markGoalHistoryReconciled,
+  resetGoalHistoryReconciled,
+  resolvePendingGoalSeed,
+} from "@/src/services/goalHistoryService";
+import {
+  type RemoteGoalHistory,
   type RemoteMealEntry,
   type RemoteProfile,
+  goalHistoryFromRemote,
+  goalHistoryToRemote,
   mealEntryFromRemote,
   mealEntryToRemote,
   normalizeQueuedPayload,
@@ -35,6 +45,7 @@ import { describeMealOp, planFlush } from "@/src/services/syncPlanner";
 import { drain, remove, setOnEnqueue } from "@/src/services/syncQueue";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useDayStore } from "@/stores/useDayStore";
+import { useGoalHistoryStore } from "@/stores/useGoalHistoryStore";
 import { useProfileStore } from "@/stores/useProfileStore";
 import { eq } from "drizzle-orm";
 
@@ -133,6 +144,9 @@ export function stop(): void {
   _flushAgain = false;
   _flushDeferred = false;
   _generation++;
+  // Signed out / switching user: the next sign-in must pull the cloud history
+  // again before the profile may be used to seed entries.
+  resetGoalHistoryReconciled();
 }
 
 function clearEnqueueTimer(): void {
@@ -225,6 +239,13 @@ export function flush(): Promise<void> {
   return _flushInFlight;
 }
 
+/** Supabase upsert conflict target per synced table. */
+function conflictTarget(table: string): string {
+  if (table === "meal_entries") return "id";
+  if (table === "goal_history") return "user_id,effective_from";
+  return "user_id";
+}
+
 /** True when a queued meal upsert (snake_case or legacy camelCase) targets a demo food. */
 function isDemoQueuedUpsert(op: { row: unknown; table: string; userId: string }): boolean {
   try {
@@ -289,9 +310,10 @@ async function runFlush(): Promise<void> {
         // Queue rows persisted before the mappers existed are camelCase
         const payload = normalizeQueuedPayload(op.table, parsed, op.userId);
         // Real upsert: edits must overwrite the remote row (meal_entries by
-        // id, profile by user_id). Only the backfill ignores duplicates.
+        // id, profile by user_id, goal_history by user_id + effective_from).
+        // Only the backfill ignores duplicates.
         const { error } = await supabase.from(op.table).upsert(payload, {
-          onConflict: op.table === "meal_entries" ? "id" : "user_id",
+          onConflict: conflictTarget(op.table),
         });
 
         if (error) throw error;
@@ -399,6 +421,10 @@ async function runReconcile(userId: string): Promise<void> {
         }
       }
     }
+
+    // ── Goal history reconcile ────────────────────────────────────────
+    await reconcileGoalHistory(supabase, userId, isStale);
+    if (isStale()) return;
 
     // ── Meal entries reconcile ────────────────────────────────────────
     // Snapshot pending deletes BEFORE the remote fetch and again after it: a
@@ -511,9 +537,93 @@ async function runReconcile(userId: string): Promise<void> {
 
     // Reload stores after reconcile
     await useProfileStore.getState().load();
+    await useGoalHistoryStore.getState().load();
     await useDayStore.getState().loadEntries();
   } catch (err) {
     console.error("[syncService] reconcile failed:", err);
+  }
+}
+
+/**
+ * Per-day last-write-wins merge of goal_history for the session user: days only
+ * on one side are copied to the other; days on both sides keep whichever has
+ * the newer updatedAt. Only rows owned by `userId` are ever pushed or
+ * overwritten; signed-out ("local") rows are adopted into the user only when
+ * the user has no history anywhere yet. Malformed remote rows are dropped.
+ * Failures are logged and never abort the rest of the reconcile.
+ */
+async function reconcileGoalHistory(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  userId: string,
+  isStale: () => boolean
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.from("goal_history").select("*").eq("user_id", userId);
+    if (isStale()) return;
+    if (error) {
+      console.warn("[syncService] reconcile: goal_history fetch failed:", error);
+      return;
+    }
+
+    const rawRows = (data ?? []) as RemoteGoalHistory[];
+    const remoteRows = rawRows.filter((row) => {
+      const valid = isValidRemoteGoalHistory(row) && row.user_id === userId;
+      if (!valid)
+        console.warn("[syncService] reconcile: dropping malformed goal_history row:", row);
+      return valid;
+    });
+    const remoteByDay = new Map(remoteRows.map((row) => [row.effective_from, row]));
+
+    // History recorded while signed out ("local" owner) is adopted per day:
+    // each local day moves to this user unless the user already has that day
+    // (then the user's row wins and the local one is dropped). Done on every
+    // reconcile, so rows recorded between sign-in and reconcile or on a
+    // re-sign-in are never stranded under "local".
+    await goalHistoryRepo.adoptLocalOwned(userId);
+    if (isStale()) return;
+
+    // A pending seed (pre-change goals saved before the first pull) is dropped
+    // when the cloud already has history, kept when the cloud is empty.
+    await resolvePendingGoalSeed(userId, remoteRows.length > 0);
+    if (isStale()) return;
+
+    const localEntries = await goalHistoryRepo.list(userId);
+    if (isStale()) return;
+
+    const localByDay = new Map(localEntries.map((entry) => [entry.effectiveFrom, entry]));
+
+    const toPull: ReturnType<typeof goalHistoryFromRemote>[] = [];
+    const toPush: RemoteGoalHistory[] = [];
+
+    for (const [day, remote] of remoteByDay) {
+      const local = localByDay.get(day);
+      if (!local || parseTimestampMs(remote.updated_at) > parseTimestampMs(local.updatedAt)) {
+        toPull.push(goalHistoryFromRemote(remote));
+      }
+    }
+    for (const [day, local] of localByDay) {
+      const remote = remoteByDay.get(day);
+      if (!remote || parseTimestampMs(local.updatedAt) > parseTimestampMs(remote.updated_at)) {
+        toPush.push(goalHistoryToRemote(local, userId));
+      }
+    }
+
+    if (toPull.length > 0) await goalHistoryRepo.replaceFromRemote(toPull);
+    if (isStale()) return;
+
+    // The cloud history is now merged locally: seeding from the profile is safe.
+    markGoalHistoryReconciled(userId);
+
+    if (toPush.length > 0) {
+      const { error: pushError } = await supabase
+        .from("goal_history")
+        .upsert(toPush, { onConflict: "user_id,effective_from" });
+      if (pushError) {
+        console.warn("[syncService] reconcile: goal_history push failed:", pushError);
+      }
+    }
+  } catch (err) {
+    console.warn("[syncService] reconcile: goal_history failed:", err);
   }
 }
 
