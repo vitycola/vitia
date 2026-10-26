@@ -31,6 +31,19 @@ jest.mock("@/db/repos/profile", () => ({
   upsertProfile: (...a: unknown[]) => mockUpsertProfile(...a),
   replaceProfileFromRemote: (...a: unknown[]) => mockReplaceProfile(...a),
 }));
+const mockGoalList = jest.fn();
+const mockGoalReplace = jest.fn();
+const mockGoalAdopt = jest.fn();
+const mockGoalRemove = jest.fn();
+jest.mock("@/db/repos/goalHistory", () => ({
+  adoptLocalOwned: (...a: unknown[]) => mockGoalAdopt(...a),
+  remove: (...a: unknown[]) => mockGoalRemove(...a),
+  list: (...a: unknown[]) => mockGoalList(...a),
+  replaceFromRemote: (...a: unknown[]) => mockGoalReplace(...a),
+}));
+jest.mock("@/stores/useGoalHistoryStore", () => ({
+  useGoalHistoryStore: { getState: () => ({ load: jest.fn() }) },
+}));
 jest.mock("@/stores/useDayStore", () => ({
   useDayStore: { getState: () => ({ loadEntries: jest.fn() }) },
 }));
@@ -70,6 +83,7 @@ jest.mock("@/src/stores/useAuthStore", () => ({
 }));
 
 import { isSyncEnabled } from "@/src/lib/supabase";
+import { canSeedGoalHistory } from "@/src/services/goalHistoryService";
 import {
   backfillMealEntries,
   bindSyncToAuth,
@@ -101,6 +115,20 @@ function makeEntry(i: number) {
   };
 }
 
+/**
+ * Installs a per-table supabase fake. goal_history always resolves to an empty
+ * remote so tests focused on other tables don't have to model it.
+ */
+function mockFromTables(impl: (table: string) => unknown) {
+  mockFrom.mockImplementation(((table: string) =>
+    table === "goal_history"
+      ? {
+          select: () => ({ eq: async () => ({ data: [], error: null }) }),
+          upsert: mockUpsert,
+        }
+      : impl(table)) as never);
+}
+
 let store: Record<string, string>;
 let warnSpy: jest.SpyInstance;
 let errorSpy: jest.SpyInstance;
@@ -115,6 +143,9 @@ beforeEach(() => {
     getItem: (k: string) => store[k] ?? null,
     setItem: (k: string, v: string) => {
       store[k] = v;
+    },
+    removeItem: (k: string) => {
+      delete store[k];
     },
   };
   (globalThis as { window?: unknown }).window = {
@@ -132,6 +163,8 @@ beforeEach(() => {
   mockDrain.mockResolvedValue([]);
   mockGetAll.mockResolvedValue([]);
   mockGetProfile.mockResolvedValue(null);
+  mockGoalList.mockResolvedValue([]);
+  mockGoalAdopt.mockResolvedValue(undefined);
   mockDexie.mealEntries.getByDate.mockResolvedValue([]);
   mockFrom.mockImplementation(() => ({ upsert: mockUpsert }));
   warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
@@ -371,8 +404,21 @@ describe("reconcile", () => {
     profileError?: unknown;
     entries?: unknown[];
     entriesError?: unknown;
+    goalHistory?: unknown[];
+    goalHistoryError?: unknown;
   }) {
     mockFrom.mockImplementation(((table: string) => {
+      if (table === "goal_history") {
+        return {
+          select: () => ({
+            eq: async () => ({
+              data: opts.goalHistory ?? [],
+              error: opts.goalHistoryError ?? null,
+            }),
+          }),
+          upsert: mockUpsert,
+        };
+      }
       if (table === "users_profile") {
         return {
           select: () => ({
@@ -394,6 +440,231 @@ describe("reconcile", () => {
       };
     }) as never);
   }
+
+  describe("goal_history", () => {
+    const remoteGoal = (effective_from: string, updated_at: string, calorie_goal = 2000) => ({
+      user_id: "user-1",
+      effective_from,
+      calorie_goal,
+      protein_goal_g: 150,
+      carbs_goal_g: 200,
+      fat_goal_g: 60,
+      use_manual_goals: false,
+      created_at: updated_at,
+      updated_at,
+    });
+    const localGoal = (effectiveFrom: string, updatedAt: string, calorieGoal = 2000) => ({
+      effectiveFrom,
+      userId: "user-1",
+      calorieGoal,
+      proteinGoalG: 150,
+      carbsGoalG: 200,
+      fatGoalG: 60,
+      useManualGoals: false,
+      createdAt: updatedAt,
+      updatedAt,
+    });
+    const goalUpserts = () =>
+      mockUpsert.mock.calls.filter(
+        ([, options]) => options?.onConflict === "user_id,effective_from"
+      );
+
+    it("pulls remote-only days without enqueueing", async () => {
+      mockRemote({ goalHistory: [remoteGoal("2026-02-01", "2026-02-01T00:00:00.000Z")] });
+
+      await reconcile("user-1");
+
+      expect(mockGoalReplace).toHaveBeenCalledTimes(1);
+      expect(mockGoalReplace.mock.calls[0][0]).toEqual([
+        expect.objectContaining({
+          effectiveFrom: "2026-02-01",
+          userId: "user-1",
+          updatedAt: "2026-02-01T00:00:00.000Z",
+        }),
+      ]);
+      expect(goalUpserts()).toHaveLength(0);
+    });
+
+    it("pushes local-only days, one remote row per effective_from", async () => {
+      mockRemote({});
+      mockGoalList.mockResolvedValue([
+        localGoal("2026-01-01", "2026-01-01T00:00:00.000Z"),
+        localGoal("2026-02-01", "2026-02-01T00:00:00.000Z"),
+      ]);
+
+      await reconcile("user-1");
+
+      expect(goalUpserts()).toHaveLength(1);
+      const [rows, options] = goalUpserts()[0];
+      expect(options).toEqual({ onConflict: "user_id,effective_from" });
+      expect(rows.map((r: { effective_from: string }) => r.effective_from)).toEqual([
+        "2026-01-01",
+        "2026-02-01",
+      ]);
+      expect(rows[0].user_id).toBe("user-1");
+      expect(mockGoalReplace).not.toHaveBeenCalled();
+    });
+
+    it("resolves a day present on both sides by newest updated_at", async () => {
+      mockRemote({
+        goalHistory: [
+          remoteGoal("2026-01-01", "2026-03-01T00:00:00.000Z", 2500), // remote newer
+          remoteGoal("2026-02-01", "2026-01-01T00:00:00.000Z", 1900), // local newer
+        ],
+      });
+      mockGoalList.mockResolvedValue([
+        localGoal("2026-01-01", "2026-02-01T00:00:00.000Z", 2000),
+        localGoal("2026-02-01", "2026-02-15T00:00:00.000Z", 2100),
+      ]);
+
+      await reconcile("user-1");
+
+      expect(mockGoalReplace.mock.calls[0][0]).toEqual([
+        expect.objectContaining({ effectiveFrom: "2026-01-01", calorieGoal: 2500 }),
+      ]);
+      const [rows] = goalUpserts()[0];
+      expect(rows).toEqual([
+        expect.objectContaining({ effective_from: "2026-02-01", calorie_goal: 2100 }),
+      ]);
+    });
+
+    it("only reads the session user's local history (never another account's rows)", async () => {
+      mockRemote({});
+
+      await reconcile("user-1");
+
+      expect(mockGoalList).toHaveBeenCalledWith("user-1");
+      expect(mockGoalList).not.toHaveBeenCalledWith();
+    });
+
+    it("always adopts signed-out history per day, whatever the cloud/local state", async () => {
+      mockRemote({ goalHistory: [remoteGoal("2026-02-01", "2026-02-01T00:00:00.000Z")] });
+      mockGoalList.mockResolvedValue([localGoal("2026-01-01", "2026-01-01T00:00:00.000Z")]);
+
+      await reconcile("user-1");
+
+      expect(mockGoalAdopt).toHaveBeenCalledWith("user-1");
+    });
+
+    it("adopts before reading the user's history so adopted days are pushed", async () => {
+      mockRemote({});
+      const order: string[] = [];
+      mockGoalAdopt.mockImplementation(async () => void order.push("adopt"));
+      mockGoalList.mockImplementation(async () => {
+        order.push("list");
+        return [];
+      });
+
+      await reconcile("user-1");
+
+      expect(order[0]).toBe("adopt");
+    });
+
+    it("after the pull, drops a pending seed when the cloud has history", async () => {
+      store["vitia:goalHistory:pendingSeed:user-1"] = "2026-01-01";
+      mockRemote({ goalHistory: [remoteGoal("2026-02-01", "2026-02-01T00:00:00.000Z")] });
+      mockGoalList.mockResolvedValue([localGoal("2026-01-01", "2026-01-01T00:00:00.000Z")]);
+
+      await reconcile("user-1");
+
+      expect(mockGoalRemove).toHaveBeenCalledWith("2026-01-01", "user-1");
+      expect(store["vitia:goalHistory:pendingSeed:user-1"]).toBeUndefined();
+    });
+
+    it("keeps (and pushes) a pending seed when the cloud is empty", async () => {
+      store["vitia:goalHistory:pendingSeed:user-1"] = "2026-01-01";
+      mockRemote({});
+      mockGoalList.mockResolvedValue([localGoal("2026-01-01", "2026-01-01T00:00:00.000Z")]);
+
+      await reconcile("user-1");
+
+      expect(mockGoalRemove).not.toHaveBeenCalled();
+      expect(store["vitia:goalHistory:pendingSeed:user-1"]).toBeUndefined();
+      expect(goalUpserts()[0][0]).toEqual([
+        expect.objectContaining({ effective_from: "2026-01-01" }),
+      ]);
+    });
+
+    it("re-gates seeding after a same-user sign-out / sign-in", async () => {
+      mockRemote({});
+      start("user-1");
+      await reconcile("user-1");
+      expect(canSeedGoalHistory()).toBe(true);
+
+      stop(); // sign-out (auth -> anon)
+      expect(canSeedGoalHistory()).toBe(false);
+    });
+
+    it("compares a zone-less local timestamp as UTC, not local time (non-UTC TZ)", async () => {
+      // 12:00 UTC on both sides. Read as local time (UTC-3) the zone-less local
+      // value would look 3h NEWER and wrongly overwrite the remote row.
+      mockRemote({
+        goalHistory: [remoteGoal("2026-02-01", "2026-02-01T12:00:00.000Z", 2500)],
+      });
+      mockGoalList.mockResolvedValue([localGoal("2026-02-01", "2026-02-01 12:00:00", 2000)]);
+
+      await reconcile("user-1");
+
+      expect(goalUpserts()).toHaveLength(0);
+      expect(mockGoalReplace).not.toHaveBeenCalled();
+
+      // 12:00 UTC local vs 11:00 UTC remote: local is genuinely newer and wins.
+      mockRemote({
+        goalHistory: [remoteGoal("2026-02-01", "2026-02-01T11:00:00.000Z", 2500)],
+      });
+      await reconcile("user-1");
+      expect(goalUpserts()).toHaveLength(1);
+    });
+
+    it("drops malformed remote rows with a warning and keeps the valid ones", async () => {
+      mockRemote({
+        goalHistory: [
+          remoteGoal("2026-02-01", "2026-02-01T00:00:00.000Z"),
+          remoteGoal("2026-02-30", "2026-02-01T00:00:00.000Z"),
+          { ...remoteGoal("2026-03-01", "2026-03-01T00:00:00.000Z"), calorie_goal: -5 },
+          { ...remoteGoal("2026-04-01", "2026-04-01T00:00:00.000Z"), protein_goal_g: "150" },
+          remoteGoal("2026-05-01", "not a date"),
+          { ...remoteGoal("2026-06-01", "2026-06-01T00:00:00.000Z"), user_id: "someone-else" },
+        ],
+      });
+
+      await reconcile("user-1");
+
+      expect(mockGoalReplace.mock.calls[0][0]).toEqual([
+        expect.objectContaining({ effectiveFrom: "2026-02-01" }),
+      ]);
+      expect(warnSpy).toHaveBeenCalledTimes(5);
+    });
+
+    it("keeps reconciling meal entries when the goal_history fetch fails", async () => {
+      mockRemote({ goalHistoryError: { message: "boom" } });
+
+      await reconcile("user-1");
+
+      expect(mockGoalReplace).not.toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("upserts queued goal_history ops on (user_id, effective_from)", async () => {
+      mockDrain.mockResolvedValue([
+        {
+          id: "q1",
+          table: "goal_history",
+          op: "upsert",
+          row: JSON.stringify(remoteGoal("2026-02-01", "2026-02-01T00:00:00.000Z")),
+          userId: "user-1",
+          updatedAt: "2026-02-01T00:00:00.000Z",
+        },
+      ]);
+
+      await flush();
+
+      const [payload, options] = mockUpsert.mock.calls[0];
+      expect(payload).toMatchObject({ user_id: "user-1", effective_from: "2026-02-01" });
+      expect(options).toEqual({ onConflict: "user_id,effective_from" });
+      expect(mockRemove).toHaveBeenCalledWith("q1");
+    });
+  });
 
   it("pulls a newer remote profile without enqueueing and keeps its updatedAt", async () => {
     mockRemote({ profile: remoteProfile });
@@ -870,7 +1141,7 @@ describe("reconcile with pending deletes", () => {
   }
 
   function mockEntries(entries: unknown[]) {
-    mockFrom.mockImplementation(((table: string) =>
+    mockFromTables(((table: string) =>
       table === "users_profile"
         ? {
             select: () => ({
@@ -950,7 +1221,7 @@ describe("reconcile with pending deletes", () => {
   it("does not resurrect a row whose delete was delivered mid-reconcile", async () => {
     // The delete is still queued until the remote fetch happens, then "flushed".
     let fetched = false;
-    mockFrom.mockImplementation(((table: string) =>
+    mockFromTables(((table: string) =>
       table === "users_profile"
         ? {
             select: () => ({
@@ -984,7 +1255,7 @@ describe("reconcile with pending deletes", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    mockFrom.mockImplementation(((table: string) =>
+    mockFromTables(((table: string) =>
       table === "users_profile"
         ? {
             select: () => ({
