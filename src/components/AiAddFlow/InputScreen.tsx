@@ -11,15 +11,18 @@ const MEAL_SECTIONS = MEAL_ORDER.map((key) => ({ key, label: MEAL_LABELS[key] })
 type MealKey = MealType;
 
 export function InputScreen() {
-  const { inputMode, status, error, submitPhoto, submitText } = useAiAddFlowStore(
-    useShallow((s) => ({
-      inputMode: s.inputMode,
-      status: s.status,
-      error: s.error,
-      submitPhoto: s.submitPhoto,
-      submitText: s.submitText,
-    }))
-  );
+  const { inputMode, status, error, submitPhoto, submitText, mealContext, setMealContext } =
+    useAiAddFlowStore(
+      useShallow((s) => ({
+        inputMode: s.inputMode,
+        status: s.status,
+        error: s.error,
+        submitPhoto: s.submitPhoto,
+        submitText: s.submitText,
+        mealContext: s.mealContext,
+        setMealContext: s.setMealContext,
+      }))
+    );
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mealTexts, setMealTexts] = useState<Record<MealKey, string>>({
@@ -106,6 +109,25 @@ export function InputScreen() {
             onChange={handleFileChange}
           />
           {selectedFile && <p className="text-xs text-gray-500">Archivo: {selectedFile.name}</p>}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="meal-context" className="text-sm font-medium text-gray-700">
+              Contexto (opcional)
+            </label>
+            <textarea
+              id="meal-context"
+              value={mealContext}
+              onChange={(e) => setMealContext(e.target.value)}
+              maxLength={150}
+              rows={2}
+              disabled={isLoading}
+              aria-describedby="meal-context-count"
+              placeholder="Ej.: 200 g de arroz, pollo a la plancha"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            />
+            <p id="meal-context-count" className="self-end text-xs text-gray-500">
+              {`${mealContext.length}/150`}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-1">

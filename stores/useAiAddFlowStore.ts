@@ -23,6 +23,8 @@ interface AiAddFlowState {
   error: string | null;
   /** Meals whose text could not be analyzed in the last text submit. */
   failedMeals: MealType[];
+  /** Optional written context for photo analysis (max 150 chars, enforced by the UI). */
+  mealContext: string;
 }
 
 interface AiAddFlowActions {
@@ -34,6 +36,7 @@ interface AiAddFlowActions {
   toggleItem: (index: number) => void;
   setQuantity: (index: number, qty: number) => void;
   setMeal: (meal: MealType) => void;
+  setMealContext: (value: string) => void;
   back: () => void;
   reset: () => void;
   /** Derived: sum of scaled macros for checked items. */
@@ -57,6 +60,7 @@ const INITIAL_STATE: AiAddFlowState = {
   status: "idle",
   error: null,
   failedMeals: [],
+  mealContext: "",
 };
 
 const STEP_ORDER: Step[] = ["selection", "input", "results", "confirmation"];
@@ -77,7 +81,7 @@ export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((se
   submitPhoto: async (file: File) => {
     set({ status: "loading", error: null, failedMeals: [] });
     try {
-      const items = await analyzePhoto(file);
+      const items = await analyzePhoto(file, get().mealContext);
       get().setResults(items);
       set({ step: "results", status: "idle" });
     } catch (err) {
@@ -136,6 +140,8 @@ export const useAiAddFlowStore = create<AiAddFlowState & AiAddFlowActions>()((se
   },
 
   setMeal: (meal: MealType) => set({ selectedMeal: meal }),
+
+  setMealContext: (value: string) => set({ mealContext: value }),
 
   back: () => {
     const { step } = get();

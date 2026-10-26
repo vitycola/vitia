@@ -153,4 +153,37 @@ describe("aiFood service — analyzePhoto", () => {
     expect(url).toContain("/api/analyze");
     expect(init.body).toBeInstanceOf(FormData);
   });
+
+  describe("meal_context", () => {
+    async function sentBody(...args: [string?]): Promise<FormData> {
+      mockFetchOk({ items: [RAW_FOOD] });
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      await (args.length ? analyzePhoto(file, args[0]) : analyzePhoto(file));
+      return (global.fetch as jest.Mock).mock.calls[0][1].body as FormData;
+    }
+
+    it("sends the trimmed meal_context alongside the image", async () => {
+      const body = await sentBody("  200 g arroz  ");
+      expect(body.get("meal_context")).toBe("200 g arroz");
+      expect(body.get("image")).not.toBeNull();
+    });
+
+    it("omits meal_context when called with a single argument", async () => {
+      const body = await sentBody();
+      expect(body.get("meal_context")).toBeNull();
+      expect(body.get("image")).not.toBeNull();
+    });
+
+    it("omits meal_context when empty", async () => {
+      const body = await sentBody("");
+      expect(body.get("meal_context")).toBeNull();
+      expect(body.get("image")).not.toBeNull();
+    });
+
+    it("omits meal_context when whitespace-only", async () => {
+      const body = await sentBody("   \n ");
+      expect(body.get("meal_context")).toBeNull();
+      expect(body.get("image")).not.toBeNull();
+    });
+  });
 });

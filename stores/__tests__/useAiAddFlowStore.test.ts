@@ -218,6 +218,62 @@ describe("submitPhoto", () => {
   });
 });
 
+describe("mealContext", () => {
+  it("starts empty", () => {
+    expect(getStore().mealContext).toBe("");
+  });
+
+  it("setMealContext updates the value", () => {
+    getStore().setMealContext("200 g arroz");
+    expect(getStore().mealContext).toBe("200 g arroz");
+  });
+
+  it("reset clears it", () => {
+    getStore().setMealContext("200 g arroz");
+    getStore().reset();
+    expect(getStore().mealContext).toBe("");
+  });
+
+  it("back from results keeps it", async () => {
+    mockAnalyzePhoto.mockResolvedValueOnce([HIGH_ITEM]);
+    getStore().chooseMode("photo");
+    getStore().setMealContext("pollo");
+    await getStore().submitPhoto(new File(["data"], "photo.jpg", { type: "image/jpeg" }));
+    getStore().back();
+    expect(getStore().step).toBe("input");
+    expect(getStore().mealContext).toBe("pollo");
+  });
+
+  it("chooseMode keeps it", () => {
+    getStore().setMealContext("pollo");
+    getStore().chooseMode("photo");
+    expect(getStore().mealContext).toBe("pollo");
+  });
+
+  it("setResults (photo selection flow) keeps it", () => {
+    getStore().setMealContext("pollo");
+    getStore().setResults([HIGH_ITEM]);
+    expect(getStore().mealContext).toBe("pollo");
+  });
+
+  it("submitPhoto forwards the context to analyzePhoto", async () => {
+    mockAnalyzePhoto.mockResolvedValueOnce([HIGH_ITEM]);
+    getStore().chooseMode("photo");
+    getStore().setMealContext("200 g arroz, pollo a la plancha");
+    const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+    await getStore().submitPhoto(file);
+    expect(mockAnalyzePhoto).toHaveBeenCalledWith(file, "200 g arroz, pollo a la plancha");
+  });
+
+  it("submitText does not send the context to parseText", async () => {
+    mockParseText.mockResolvedValueOnce([MEDIUM_ITEM]);
+    getStore().chooseMode("text");
+    getStore().setMealContext("pollo");
+    await getStore().submitText([{ mealType: "lunch", text: "100g de arroz" }]);
+    expect(mockParseText).toHaveBeenCalledWith("100g de arroz");
+  });
+});
+
 describe("submitText", () => {
   it("on success: step=results, items tagged with their meal", async () => {
     mockParseText.mockResolvedValueOnce([MEDIUM_ITEM]);
