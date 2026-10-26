@@ -97,12 +97,15 @@ async function request(url: string, init: RequestInit): Promise<AIFoodItem[]> {
 
 /**
  * Send a photo to the vitia-ai backend for food recognition.
- * Returns normalized AIFoodItem array.
+ * An optional written meal context is sent as `meal_context` only when it is
+ * non-empty after trimming. Returns normalized AIFoodItem array.
  */
-export async function analyzePhoto(file: File): Promise<AIFoodItem[]> {
+export async function analyzePhoto(file: File, mealContext?: string): Promise<AIFoodItem[]> {
   const base = getBaseUrl();
   const body = new FormData();
   body.append("image", file);
+  const ctx = mealContext?.trim();
+  if (ctx) body.append("meal_context", ctx);
   return request(`${base}/api/analyze`, { method: "POST", body });
 }
 

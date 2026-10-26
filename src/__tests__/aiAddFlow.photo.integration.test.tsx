@@ -125,4 +125,23 @@ describe("Photo happy path integration", () => {
     expect(entryArg.quantityG).toBe(100);
     expect(entryArg.calories).toBeCloseTo(165);
   });
+  it("updates the context counter live and forwards the context on submit", async () => {
+    mockAnalyzePhoto.mockResolvedValueOnce([FOOD_ITEM]);
+
+    render(<AiAddFlow />);
+    fireEvent.click(screen.getByText("Foto"));
+
+    const textarea = await screen.findByLabelText(/contexto/i);
+    expect(screen.getByText("0/150")).toBeInTheDocument();
+    fireEvent.change(textarea, { target: { value: "arroz" } });
+    expect(screen.getByText("5/150")).toBeInTheDocument();
+
+    const file = new File(["data"], "meal.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByTestId("photo-file-input"), { target: { files: [file] } });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole("button", { name: /analizar con ia/i }));
+    });
+
+    await waitFor(() => expect(mockAnalyzePhoto).toHaveBeenCalledWith(file, "arroz"));
+  });
 });

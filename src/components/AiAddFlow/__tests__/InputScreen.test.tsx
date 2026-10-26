@@ -11,6 +11,7 @@ import { InputScreen } from "../InputScreen";
 
 const mockSubmitPhoto = jest.fn();
 const mockSubmitText = jest.fn();
+const mockSetMealContext = jest.fn();
 
 function setupStore(overrides: Record<string, unknown> = {}) {
   (useAiAddFlowStore as unknown as jest.Mock).mockReturnValue({
@@ -19,6 +20,8 @@ function setupStore(overrides: Record<string, unknown> = {}) {
     error: null,
     submitPhoto: mockSubmitPhoto,
     submitText: mockSubmitText,
+    mealContext: "",
+    setMealContext: mockSetMealContext,
     ...overrides,
   });
 }
@@ -26,6 +29,7 @@ function setupStore(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   mockSubmitPhoto.mockReset();
   mockSubmitText.mockReset();
+  mockSetMealContext.mockReset();
   Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
 });
 
@@ -43,6 +47,62 @@ describe("InputScreen — photo mode", () => {
     const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
     fireEvent.change(input, { target: { files: [file] } });
     expect(screen.getByRole("button", { name: /analizar con ia/i })).toBeInTheDocument();
+  });
+});
+
+describe("InputScreen — meal context (photo mode)", () => {
+  it("shows the context textarea and counter in photo mode", () => {
+    setupStore({ inputMode: "photo" });
+    render(<InputScreen />);
+    expect(screen.getByLabelText(/contexto/i)).toBeInTheDocument();
+    expect(screen.getByText("0/150")).toBeInTheDocument();
+  });
+
+  it("does not show the context textarea or counter in text mode", () => {
+    setupStore({ inputMode: "text" });
+    render(<InputScreen />);
+    expect(screen.queryByLabelText(/contexto/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\/150$/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(4);
+  });
+
+  it("renders the counter from the store value as a single text node", () => {
+    setupStore({ inputMode: "photo", mealContext: "abc" });
+    render(<InputScreen />);
+    expect(screen.getByText("3/150")).toBeInTheDocument();
+  });
+
+  it("caps the textarea at 150 characters", () => {
+    setupStore({ inputMode: "photo" });
+    render(<InputScreen />);
+    expect(screen.getByLabelText(/contexto/i)).toHaveAttribute("maxlength", "150");
+  });
+
+  it("calls setMealContext when typing", () => {
+    setupStore({ inputMode: "photo" });
+    render(<InputScreen />);
+    fireEvent.change(screen.getByLabelText(/contexto/i), { target: { value: "x" } });
+    expect(mockSetMealContext).toHaveBeenCalledWith("x");
+  });
+
+  it("disables the textarea while loading", () => {
+    setupStore({ inputMode: "photo", status: "loading" });
+    render(<InputScreen />);
+    expect(screen.getByLabelText(/contexto/i)).toBeDisabled();
+  });
+
+  it("keeps the CTA hidden without a file even when context is filled", () => {
+    setupStore({ inputMode: "photo", mealContext: "pollo" });
+    render(<InputScreen />);
+    expect(screen.queryByRole("button", { name: /analizar con ia/i })).not.toBeInTheDocument();
+  });
+
+  it("enables the CTA with a file and empty context", () => {
+    setupStore({ inputMode: "photo", mealContext: "" });
+    render(<InputScreen />);
+    const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByTestId("photo-file-input"), { target: { files: [file] } });
+    expect(screen.getByRole("button", { name: /analizar con ia/i })).not.toBeDisabled();
   });
 });
 
