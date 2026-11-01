@@ -38,7 +38,7 @@ function num(value: number | null, decimals: number): string {
   return String(Math.round(value * factor) / factor);
 }
 
-function rowFields(r: ExportRow, targets: ExportModel["targets"]): string[] {
+function rowFields(r: ExportRow): string[] {
   return [
     r.date,
     r.logged ? "true" : "false",
@@ -54,10 +54,10 @@ function rowFields(r: ExportRow, targets: ExportModel["targets"]): string[] {
     num(r.hipCm, 1),
     num(r.thighCm, 1),
     num(r.bodyFatPct, 1),
-    num(targets?.calorieKcal ?? null, 0),
-    num(targets?.proteinG ?? null, 1),
-    num(targets?.carbsG ?? null, 1),
-    num(targets?.fatG ?? null, 1),
+    num(r.targets?.calorieKcal ?? null, 0),
+    num(r.targets?.proteinG ?? null, 1),
+    num(r.targets?.carbsG ?? null, 1),
+    num(r.targets?.fatG ?? null, 1),
   ];
 }
 
@@ -65,7 +65,7 @@ function rowFields(r: ExportRow, targets: ExportModel["targets"]): string[] {
 export function toCsv(m: ExportModel): string {
   const lines = [CSV_HEADERS.join(",")];
   for (const r of m.rows) {
-    lines.push(rowFields(r, m.targets).map(quoteField).join(","));
+    lines.push(rowFields(r).map(quoteField).join(","));
   }
   return lines.join(CRLF) + CRLF;
 }

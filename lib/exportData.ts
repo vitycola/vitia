@@ -1,5 +1,6 @@
 import type { ProgressEntry, UserProfile } from "@/db/schema";
 import { addDays, enumerateDays, rollingWindow } from "./date";
+import { type GoalSnapshot, resolveGoalFor } from "./goalHistory";
 
 /** Maximum number of days (inclusive) a single export may span. */
 export const MAX_EXPORT_DAYS = 366;
@@ -32,6 +33,8 @@ export interface ExportRow {
   hipCm: number | null;
   thighCm: number | null;
   bodyFatPct: number | null;
+  /** Goals that applied on this date (history, else live profile); null with neither. */
+  targets: ExportTargets | null;
 }
 
 export interface ExportTargets {
@@ -41,10 +44,19 @@ export interface ExportTargets {
   fatG: number;
 }
 
+/** Consecutive days of the range sharing the same goals. */
+export interface TargetPeriod {
+  from: string;
+  to: string;
+  targets: ExportTargets;
+}
+
+/** Goal history entry as needed by the export (a subset of GoalHistoryEntry). */
+export type ExportGoalEntry = GoalSnapshot & { effectiveFrom: string };
+
 export interface ExportModel {
   range: ExportRange;
   rows: ExportRow[];
-  targets: ExportTargets | null;
   /** True when at least one progress row falls inside the range. */
   hasProgress: boolean;
 }
@@ -79,12 +91,15 @@ export function exportFileName(r: ExportRange, ext: "csv" | "pdf"): string {
  * Pure builder: one row per calendar day in the range. Nutrition is filled
  * only on days with meals; body data is filled whenever a progress row exists
  * for that exact date. Missing values are null — never 0, never carried over.
+ * Each row carries the goals that applied on its own date, resolved from
+ * `goalHistory` (falling back to `profile` when the history has no entry).
  */
 export function buildExportModel(
   range: ExportRange,
   totals: ExportDayTotals[],
   progress: ProgressEntry[],
-  profile: UserProfile | null
+  profile: UserProfile | null,
+  goalHistory: readonly ExportGoalEntry[] = []
 ): ExportModel {
   const totalsByDate = new Map(totals.map((t) => [t.date, t]));
   const progressByDate = new Map(progress.map((p) => [p.date, p]));
@@ -92,6 +107,7 @@ export function buildExportModel(
   const rows = enumerateDays(range.from, range.to).map((date): ExportRow => {
     const t = totalsByDate.get(date);
     const p = progressByDate.get(date);
+    const g = resolveGoalFor(goalHistory, profile, date);
     return {
       date,
       logged: t !== undefined,
@@ -107,20 +123,20 @@ export function buildExportModel(
       hipCm: p?.hipCm ?? null,
       thighCm: p?.thighCm ?? null,
       bodyFatPct: p?.bodyFatPct ?? null,
+      targets: g
+        ? {
+            calorieKcal: g.calorieGoal,
+            proteinG: g.proteinGoalG,
+            carbsG: g.carbsGoalG,
+            fatG: g.fatGoalG,
+          }
+        : null,
     };
   });
 
   return {
     range,
     rows,
-    targets: profile
-      ? {
-          calorieKcal: profile.calorieGoal,
-          proteinG: profile.proteinGoalG,
-          carbsG: profile.carbsGoalG,
-          fatG: profile.fatGoalG,
-        }
-      : null,
     hasProgress: progress.some((p) => p.date >= range.from && p.date <= range.to),
   };
 }
@@ -147,4 +163,22 @@ export function summarize(m: ExportModel): ExportSummary {
             fatG: mean((r) => r.fatG),
           },
   };
+}
+
+const sameTargets = (a: ExportTargets, b: ExportTargets) =>
+  a.calorieKcal === b.calorieKcal &&
+  a.proteinG === b.proteinG &&
+  a.carbsG === b.carbsG &&
+  a.fatG === b.fatG;
+
+/** Group consecutive rows with identical goals; days without goals are skipped. */
+export function targetPeriods(rows: readonly ExportRow[]): TargetPeriod[] {
+  const periods: TargetPeriod[] = [];
+  for (const r of rows) {
+    if (!r.targets) continue;
+    const last = periods[periods.length - 1];
+    if (last && sameTargets(last.targets, r.targets)) last.to = r.date;
+    else periods.push({ from: r.date, to: r.date, targets: r.targets });
+  }
+  return periods;
 }
