@@ -3,6 +3,7 @@ import {
   blob,
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -29,6 +30,31 @@ export const usersProfile = sqliteTable("users_profile", {
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
+
+// ── goal_history (versioned calorie/macro goals; one row per owner + day) ──
+// Lets past days be judged against the goal that was active on that day.
+// effective_from is the device-local date (YYYY-MM-DD) the goals took effect.
+// user_id is the owning account: the Supabase auth.uid() of the signed-in user,
+// or the "local" marker (LOCAL_GOAL_OWNER in lib/goalHistory.ts) while signed
+// out, so accounts sharing a device never see each other's history. Key =
+// (user_id, effective_from): recording twice on the same day overwrites it.
+export const goalHistory = sqliteTable(
+  "goal_history",
+  {
+    userId: text("user_id").notNull(),
+    effectiveFrom: text("effective_from").notNull(), // YYYY-MM-DD device-local
+    calorieGoal: real("calorie_goal").notNull(),
+    proteinGoalG: real("protein_goal_g").notNull(),
+    carbsGoalG: real("carbs_goal_g").notNull(),
+    fatGoalG: real("fat_goal_g").notNull(),
+    useManualGoals: integer("use_manual_goals", { mode: "boolean" }).notNull().default(false),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.effectiveFrom] }),
+  })
+);
 
 // ── foods (cache of OFF results + custom foods) ───────────────────────
 export const foods = sqliteTable(
@@ -203,7 +229,9 @@ export const progressPhotos = sqliteTable(
 // sync is deferred (design: Photo storage strategy across dual backend).
 export const syncQueue = sqliteTable("sync_queue", {
   id: text("id").primaryKey(), // UUID — idempotent re-enqueue guard
-  table: text("table", { enum: ["users_profile", "meal_entries", "progress_entries"] }).notNull(),
+  table: text("table", {
+    enum: ["users_profile", "meal_entries", "progress_entries", "goal_history"],
+  }).notNull(),
   op: text("op", { enum: ["upsert", "delete"] }).notNull(),
   row: text("row").notNull(), // JSON-serialised payload
   userId: text("user_id").notNull(),
@@ -226,6 +254,8 @@ export const offCategoryCorrections = sqliteTable("off_category_corrections", {
 // Inferred types (single source of truth for the app)
 export type UserProfile = typeof usersProfile.$inferSelect;
 export type NewUserProfile = typeof usersProfile.$inferInsert;
+export type GoalHistoryEntry = typeof goalHistory.$inferSelect;
+export type NewGoalHistoryEntry = typeof goalHistory.$inferInsert;
 export type Food = typeof foods.$inferSelect;
 export type NewFood = typeof foods.$inferInsert;
 export type MealEntry = typeof mealEntries.$inferSelect;

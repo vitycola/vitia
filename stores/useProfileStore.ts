@@ -4,6 +4,7 @@ import type { UserProfile } from "@/db/schema";
 import { todayISO } from "@/lib/date";
 import { pickLatestWeight } from "@/lib/latestWeight";
 import { computeAutoGoals } from "@/lib/nutrition";
+import { recordGoalChange } from "@/src/services/goalHistoryService";
 import type { ActivityLevel, Goal, Sex } from "@/types";
 import { create } from "zustand";
 
@@ -77,6 +78,21 @@ interface ProfileActions {
   syncWeightFromProgress: (today?: string) => Promise<boolean>;
 }
 
+/**
+ * Single choke point for goal history writes: call after every successful
+ * profile upsert. Records an entry only when the goals changed (or on the
+ * first-ever profile). Never throws — a history failure must not fail the
+ * profile save that already succeeded. The app has no error reporter
+ * (Sentry/logger), so failures are surfaced with console.error.
+ */
+async function recordGoalHistory(previous: UserProfile | null, next: UserProfile): Promise<void> {
+  try {
+    await recordGoalChange(previous, next);
+  } catch (err) {
+    console.error("[profileStore] recording goal history FAILED", err);
+  }
+}
+
 export const useProfileStore = create<ProfileState & ProfileActions>()((set, get) => ({
   // ── Initial state ──────────────────────────────────────────────────
   profile: null,
@@ -109,6 +125,9 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
   },
 
   saveProfile: async (input: ProfileInput) => {
+    // The store may not be hydrated yet: use the persisted profile so the
+    // goals that applied before this save are not lost from the history.
+    const previous = get().profile ?? (await profileRepo.getProfile()) ?? null;
     const goals = computeAutoGoals(input);
 
     const profile = await profileRepo.upsertProfile({
@@ -122,6 +141,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       useManualGoals: false,
     });
 
+    await recordGoalHistory(previous, profile);
     set({ profile, hasProfile: true });
   },
 
@@ -143,6 +163,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       useManualGoals: true,
     });
 
+    await recordGoalHistory(current, profile);
     set({ profile });
   },
 
@@ -164,6 +185,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       useManualGoals: false,
     });
 
+    await recordGoalHistory(current, profile);
     set({ profile });
   },
 
@@ -198,6 +220,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       useManualGoals: current.useManualGoals,
     });
 
+    await recordGoalHistory(current, profile);
     set({ profile });
     return true;
   },
@@ -219,6 +242,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
       useManualGoals: false,
     });
 
+    await recordGoalHistory(current, profile);
     set({ profile });
   },
 }));

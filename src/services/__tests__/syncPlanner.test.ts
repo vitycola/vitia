@@ -241,3 +241,54 @@ describe("planFlush", () => {
     expect(ids(ordered)).toEqual(["bad", "del"]);
   });
 });
+
+describe("planFlush — goal_history", () => {
+  function goalUpsert(id: string, effectiveFrom: string, t: number, userId = U): SyncQueueRow {
+    return {
+      ...upsert(id, "unused", t, {}, "goal_history"),
+      row: JSON.stringify({ user_id: userId, effective_from: effectiveFrom, calorie_goal: 2000 }),
+      userId,
+    };
+  }
+
+  it("does not collapse upserts for distinct effective_from days into one per user", () => {
+    const ops = [
+      goalUpsert("a", "2026-01-01", 1),
+      goalUpsert("b", "2026-02-01", 2),
+      goalUpsert("c", "2026-03-01", 3),
+    ];
+
+    const { ordered, superseded } = planFlush(ops);
+
+    expect(superseded).toEqual([]);
+    expect(ids(ordered)).toEqual(["a", "b", "c"]);
+  });
+
+  it("supersedes an earlier upsert of the SAME (user, effective_from)", () => {
+    const { ordered, superseded } = planFlush([
+      goalUpsert("old", "2026-02-01", 1),
+      goalUpsert("other-day", "2026-03-01", 2),
+      goalUpsert("new", "2026-02-01", 3),
+    ]);
+
+    expect(superseded).toEqual(["old"]);
+    expect(ids(ordered)).toEqual(["other-day", "new"]);
+  });
+
+  it("does not collapse the same effective_from across users", () => {
+    const { superseded } = planFlush([
+      goalUpsert("u1", "2026-02-01", 1),
+      goalUpsert("u2", "2026-02-01", 2, "user-2"),
+    ]);
+
+    expect(superseded).toEqual([]);
+  });
+
+  it("keeps goal_history ops with an unparseable payload", () => {
+    const broken: SyncQueueRow = { ...goalUpsert("bad", "2026-02-01", 1), row: "{not json" };
+
+    const { superseded } = planFlush([broken, goalUpsert("good", "2026-02-01", 2)]);
+
+    expect(superseded).toEqual([]);
+  });
+});

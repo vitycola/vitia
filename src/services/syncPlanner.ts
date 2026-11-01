@@ -84,6 +84,21 @@ export function describeMealOp(op: SyncQueueRow): MealOpInfo | null {
   return null;
 }
 
+/**
+ * Key of the (user, effective_from) row a goal_history upsert targets, or null
+ * when the payload cannot be understood. Each day's entry is its own remote
+ * row, so only upserts of the SAME day may collapse into one another.
+ */
+export function goalHistoryKey(op: SyncQueueRow): string | null {
+  if (op.table !== "goal_history" || op.op !== "upsert") return null;
+  const payload = parseOpRow(op);
+  if (!payload) return null;
+  const normalized = normalizeQueuedPayload("goal_history", payload, op.userId);
+  return normalized.effective_from == null
+    ? null
+    : `${op.userId}|${String(normalized.effective_from)}`;
+}
+
 export function planFlush(ops: SyncQueueRow[]): FlushPlan {
   const ordered = [...ops].sort(compareOps);
   const superseded = new Set<string>();
@@ -93,6 +108,7 @@ export function planFlush(ops: SyncQueueRow[]): FlushPlan {
   const laterDeletedIds = new Set<string>();
   const laterBulkSlots = new Set<string>();
   const laterProfileUsers = new Set<string>();
+  const laterGoalHistoryKeys = new Set<string>();
 
   for (let i = ordered.length - 1; i >= 0; i--) {
     const op = ordered[i];
@@ -100,6 +116,13 @@ export function planFlush(ops: SyncQueueRow[]): FlushPlan {
     if (op.table === "users_profile" && op.op === "upsert") {
       if (laterProfileUsers.has(op.userId)) superseded.add(op.id);
       else laterProfileUsers.add(op.userId);
+      continue;
+    }
+
+    const goalKey = goalHistoryKey(op);
+    if (goalKey !== null) {
+      if (laterGoalHistoryKeys.has(goalKey)) superseded.add(op.id);
+      else laterGoalHistoryKeys.add(goalKey);
       continue;
     }
 

@@ -9,7 +9,7 @@
  * untouched.
  */
 
-import type { MealEntry, UserProfile } from "@/db/schema";
+import type { GoalHistoryEntry, MealEntry, UserProfile } from "@/db/schema";
 
 export interface RemoteMealEntry {
   id: string;
@@ -35,6 +35,18 @@ export interface RemoteProfile {
   sex: UserProfile["sex"];
   activity_level: UserProfile["activityLevel"];
   goal: UserProfile["goal"];
+  calorie_goal: number;
+  protein_goal_g: number;
+  carbs_goal_g: number;
+  fat_goal_g: number;
+  use_manual_goals: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RemoteGoalHistory {
+  user_id: string;
+  effective_from: string;
   calorie_goal: number;
   protein_goal_g: number;
   carbs_goal_g: number;
@@ -125,6 +137,38 @@ export function profileFromRemote(row: RemoteProfile): Omit<UserProfile, "id"> {
   };
 }
 
+// ── goal_history ────────────────────────────────────────────────────────
+
+/** The remote table is keyed by (user_id, effective_from). */
+export function goalHistoryToRemote(entry: GoalHistoryEntry, userId: string): RemoteGoalHistory {
+  return {
+    user_id: userId,
+    effective_from: entry.effectiveFrom,
+    calorie_goal: entry.calorieGoal,
+    protein_goal_g: entry.proteinGoalG,
+    carbs_goal_g: entry.carbsGoalG,
+    fat_goal_g: entry.fatGoalG,
+    use_manual_goals: entry.useManualGoals,
+    created_at: entry.createdAt,
+    updated_at: entry.updatedAt,
+  };
+}
+
+/** Maps a remote row to the local shape. `userId` is stored locally as-is. */
+export function goalHistoryFromRemote(row: RemoteGoalHistory): GoalHistoryEntry {
+  return {
+    effectiveFrom: row.effective_from,
+    userId: row.user_id,
+    calorieGoal: row.calorie_goal,
+    proteinGoalG: row.protein_goal_g,
+    carbsGoalG: row.carbs_goal_g,
+    fatGoalG: row.fat_goal_g,
+    useManualGoals: row.use_manual_goals,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // ── Legacy queue normalization ──────────────────────────────────────────
 
 const MEAL_ENTRY_KEYS: Record<string, string> = {
@@ -145,6 +189,18 @@ const PROFILE_KEYS: Record<string, string> = {
   heightCm: "height_cm",
   weightKg: "weight_kg",
   activityLevel: "activity_level",
+  calorieGoal: "calorie_goal",
+  proteinGoalG: "protein_goal_g",
+  carbsGoalG: "carbs_goal_g",
+  fatGoalG: "fat_goal_g",
+  useManualGoals: "use_manual_goals",
+  createdAt: "created_at",
+  updatedAt: "updated_at",
+};
+
+const GOAL_HISTORY_KEYS: Record<string, string> = {
+  userId: "user_id",
+  effectiveFrom: "effective_from",
   calorieGoal: "calorie_goal",
   proteinGoalG: "protein_goal_g",
   carbsGoalG: "carbs_goal_g",
@@ -187,6 +243,18 @@ const PROFILE_COLUMNS = new Set([
   "updated_at",
 ]);
 
+const GOAL_HISTORY_COLUMNS = new Set([
+  "user_id",
+  "effective_from",
+  "calorie_goal",
+  "protein_goal_g",
+  "carbs_goal_g",
+  "fat_goal_g",
+  "use_manual_goals",
+  "created_at",
+  "updated_at",
+]);
+
 function renameKeys(
   payload: Record<string, unknown>,
   keyMap: Record<string, string>,
@@ -220,6 +288,9 @@ export function normalizeQueuedPayload(
   }
   if (table === "users_profile") {
     return renameKeys(payload, PROFILE_KEYS, PROFILE_COLUMNS, userId);
+  }
+  if (table === "goal_history") {
+    return renameKeys(payload, GOAL_HISTORY_KEYS, GOAL_HISTORY_COLUMNS, userId);
   }
   return payload;
 }

@@ -17,9 +17,11 @@
 import type {
   Food,
   FoodIngredient,
+  GoalHistoryEntry,
   MealEntry,
   NewFood,
   NewFoodIngredient,
+  NewGoalHistoryEntry,
   NewMealEntry,
   NewSyncQueueRow,
   NewUserProfile,
@@ -30,6 +32,7 @@ import type {
   UserProfile,
 } from "@/db/schema";
 import { computeNavyBodyFat } from "@/lib/bodyFat";
+import { LOCAL_GOAL_OWNER } from "@/lib/goalHistory";
 import { sumIngredientMacros } from "@/lib/nutrition";
 import { normalizeForSearch } from "@/lib/search";
 import type { MealType } from "@/types";
@@ -51,6 +54,7 @@ interface SyncQueueDexieRow extends SyncQueueRow {}
 interface UserFavoriteFoodRow extends UserFavoriteFood {}
 interface FoodIngredientRow extends FoodIngredient {}
 interface ProgressEntryRow extends ProgressEntry {}
+interface GoalHistoryRow extends GoalHistoryEntry {}
 interface OffCategoryCorrectionRow extends OffCategoryCorrection {}
 
 /**
@@ -82,6 +86,9 @@ interface MigrationRow {
 // Dexie database class
 // ---------------------------------------------------------------------------
 
+// NOTE: lags the real schema version (10, declared as a literal below). The
+// v3/v6/v7/v9 blocks historically reuse this constant, so bumping it would
+// collapse them into v10; leave it alone and use literals for new versions.
 const DB_VERSION = 9;
 
 /**
@@ -100,6 +107,7 @@ const MIGRATION_TAGS: Array<{ tag: string; when: number }> = [
   { tag: "0007_progress_measurements", when: 1815000000000 },
   { tag: "0008_raw_cooked_conversion", when: 1820000000000 },
   { tag: "0009_food_cooking_factor", when: 1825000000000 },
+  { tag: "0010_goal_history", when: 1830000000000 },
 ];
 
 class VitiaDb extends Dexie {
@@ -112,6 +120,7 @@ class VitiaDb extends Dexie {
   progress_entries!: Table<ProgressEntryRow, string>;
   progress_photos!: Table<ProgressPhotoRow, string>;
   off_category_corrections!: Table<OffCategoryCorrectionRow, number>;
+  goal_history!: Table<GoalHistoryRow, [string, string]>;
   __drizzle_migrations!: Table<MigrationRow, number>;
 
   constructor(name: string) {
@@ -244,6 +253,24 @@ class VitiaDb extends Dexie {
     // No upgrade() needed: dataBasis is a new optional column and
     // off_category_corrections is a brand-new store (additive, mirrors v6-v8
     // rollout style).
+
+    // Version 10: adds goal_history table (0010_goal_history migration)
+    this.version(10).stores({
+      foods: "id, name, nameNormalized, source, offProductCode, category, dataBasis",
+      meal_entries: "id, date, [date+mealType], foodId, userId",
+      users_profile: "id, userId",
+      sync_queue: "id, userId, table",
+      user_favorite_foods: "id, userId, foodId, [userId+foodId], [userId+foodId+mealType]",
+      food_ingredients: "id, parentFoodId, ingredientFoodId",
+      progress_entries: "id, date, userId",
+      progress_photos: "id, entryId",
+      off_category_corrections: "id",
+      goal_history: "[userId+effectiveFrom], userId",
+      __drizzle_migrations: "++id, &tag",
+    });
+    // No upgrade() needed: goal_history is a brand-new store (additive). Dexie
+    // upgrades are forward-only: an older build cannot open a v10 database, so
+    // changing this store's key later requires a new version, never an edit.
   }
 }
 
@@ -373,6 +400,20 @@ export interface OffCategoryCorrectionsRepo {
   getCount(): Promise<number>;
 }
 
+/** GoalHistory repository surface — mirrors db/repositories/goalHistory.ts exactly */
+export interface GoalHistoryRepo {
+  /** The owner's entries, oldest effective_from first. */
+  list(userId: string): Promise<GoalHistoryEntry[]>;
+  /** Insert or overwrite the entry for (userId, effectiveFrom) (same-day overwrite). */
+  record(data: NewGoalHistoryEntry): Promise<GoalHistoryEntry>;
+  /** Writes cloud-pulled entries, preserving their updatedAt. */
+  replaceFromRemote(rows: NewGoalHistoryEntry[]): Promise<void>;
+  /** Re-owns signed-out ("local") entries to userId; days it already has are kept. */
+  adoptLocalOwned(userId: string): Promise<void>;
+  /** Deletes the owner's entry for one day. No-op when absent. */
+  remove(userId: string, effectiveFrom: string): Promise<void>;
+}
+
 /** SyncQueue repository surface — durable outbound operation queue */
 export interface SyncQueueRepo {
   enqueue(op: NewSyncQueueRow): Promise<void>;
@@ -411,6 +452,7 @@ export interface DexieAdapter {
   readonly syncQueue: SyncQueueRepo;
   readonly favorites: FavoritesRepo;
   readonly progress: ProgressRepo;
+  readonly goalHistory: GoalHistoryRepo;
   readonly offCategoryCorrections: OffCategoryCorrectionsRepo;
   /** Exposed for testing: returns the list of applied migration tags (W2/S1). */
   getAppliedMigrationTags(): Promise<string[]>;
@@ -758,6 +800,60 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
       };
       await db.users_profile.put(row);
       return row;
+    },
+  };
+
+  // ── GoalHistory ──────────────────────────────────────────────────────────
+
+  function toGoalHistoryRow(data: NewGoalHistoryEntry, stamp: string): GoalHistoryRow {
+    return {
+      userId: data.userId,
+      effectiveFrom: data.effectiveFrom,
+      calorieGoal: data.calorieGoal,
+      proteinGoalG: data.proteinGoalG,
+      carbsGoalG: data.carbsGoalG,
+      fatGoalG: data.fatGoalG,
+      useManualGoals: data.useManualGoals ?? false,
+      createdAt: data.createdAt ?? stamp,
+      updatedAt: data.updatedAt ?? stamp,
+    };
+  }
+
+  const goalHistory: GoalHistoryRepo = {
+    async list(userId) {
+      const rows = await db.goal_history.where("userId").equals(userId).toArray();
+      return rows.sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
+    },
+
+    async record(data) {
+      const existing = await db.goal_history.get([data.userId, data.effectiveFrom]);
+      const stamp = new Date().toISOString();
+      const row = toGoalHistoryRow(
+        { ...data, createdAt: existing?.createdAt ?? data.createdAt, updatedAt: stamp },
+        stamp
+      );
+      await db.goal_history.put(row);
+      return row;
+    },
+
+    async replaceFromRemote(rows) {
+      const stamp = new Date().toISOString();
+      await db.goal_history.bulkPut(rows.map((r) => toGoalHistoryRow(r, stamp)));
+    },
+
+    async remove(userId, effectiveFrom) {
+      await db.goal_history.delete([userId, effectiveFrom]);
+    },
+
+    async adoptLocalOwned(userId) {
+      await db.transaction("rw", db.goal_history, async () => {
+        const locals = await db.goal_history.where("userId").equals(LOCAL_GOAL_OWNER).toArray();
+        for (const row of locals) {
+          const owned = await db.goal_history.get([userId, row.effectiveFrom]);
+          if (!owned) await db.goal_history.put({ ...row, userId });
+          await db.goal_history.delete([LOCAL_GOAL_OWNER, row.effectiveFrom]);
+        }
+      });
     },
   };
 
@@ -1185,6 +1281,7 @@ export function createDexieAdapter(dbName = "vitia"): DexieAdapter {
     syncQueue,
     favorites,
     progress,
+    goalHistory,
     offCategoryCorrections,
 
     async getAppliedMigrationTags() {

@@ -20,6 +20,11 @@ jest.mock("@/db/repos/profile", () => {
   };
 });
 
+jest.mock("@/src/services/goalHistoryService", () => ({
+  recordGoalChange: jest.fn(async () => false),
+  backfillGoalHistory: jest.fn(async () => false),
+}));
+
 jest.mock("@/db/repos/progress", () => {
   const rows = new Map<string, Record<string, unknown>>();
   return {

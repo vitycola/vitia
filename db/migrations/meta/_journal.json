@@ -71,6 +71,13 @@
       "when": 1825000000000,
       "tag": "0009_food_cooking_factor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1830000000000,
+      "tag": "0010_goal_history",
+      "breakpoints": true
     }
   ]
 }
