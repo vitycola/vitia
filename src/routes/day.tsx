@@ -1,6 +1,7 @@
 import type { MealEntryView } from "@/db/repos/mealEntries";
 import { useDailyTotals } from "@/hooks/useDailyTotals";
-import { MEAL_ORDER } from "@/lib/constants";
+import { useGoalFor } from "@/hooks/useGoalFor";
+import { DEFAULT_GOALS, MEAL_ORDER } from "@/lib/constants";
 import { formatAxisDateLabel, todayISO } from "@/lib/date";
 import { formatNumber } from "@/lib/formatNumber";
 import { CalorieCard } from "@/src/components/CalorieCard";
@@ -133,10 +134,9 @@ export function DayScreen() {
     return repeatMeal(mealType);
   }
 
-  const calorieGoal = profile?.calorieGoal ?? 2000;
-  const proteinGoalG = profile?.proteinGoalG ?? 150;
-  const carbsGoalG = profile?.carbsGoalG ?? 250;
-  const fatGoalG = profile?.fatGoalG ?? 70;
+  // Judge the day against the goals that applied on that date, not the live profile.
+  const { calorieGoal, proteinGoalG, carbsGoalG, fatGoalG } =
+    useGoalFor(selectedDate) ?? DEFAULT_GOALS;
 
   return (
     <div className="flex h-full flex-col bg-surface">

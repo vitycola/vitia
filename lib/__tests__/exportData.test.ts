@@ -1,10 +1,12 @@
 import type { ProgressEntry, UserProfile } from "@/db/schema";
 import {
+  type ExportRow,
   MAX_EXPORT_DAYS,
   buildExportModel,
   exportFileName,
   presetRange,
   summarize,
+  targetPeriods,
   validateRange,
 } from "../exportData";
 
@@ -133,14 +135,100 @@ describe("buildExportModel", () => {
     expect(m.rows[2].weightKg).toBeNull();
   });
 
-  it("targets come from the profile, null when absent", () => {
-    expect(buildExportModel(range, [], [], profile).targets).toEqual({
-      calorieKcal: 2200,
-      proteinG: 150,
-      carbsG: 250,
-      fatG: 70,
+  it("row targets fall back to the profile without history, null when absent", () => {
+    const expected = { calorieKcal: 2200, proteinG: 150, carbsG: 250, fatG: 70 };
+    const m = buildExportModel(range, [], [], profile);
+    expect(m.rows.map((r) => r.targets)).toEqual([expected, expected, expected]);
+    expect(buildExportModel(range, [], [], profile, []).rows[0].targets).toEqual(expected);
+    expect(buildExportModel(range, [], [], null).rows.every((r) => r.targets === null)).toBe(true);
+  });
+
+  describe("goal history", () => {
+    const goal = (effectiveFrom: string, calorieGoal: number) => ({
+      effectiveFrom,
+      calorieGoal,
+      proteinGoalG: calorieGoal / 10,
+      carbsGoalG: calorieGoal / 5,
+      fatGoalG: calorieGoal / 30,
+      useManualGoals: false,
     });
-    expect(buildExportModel(range, [], [], null).targets).toBeNull();
+    const kcalOf = (m: ReturnType<typeof buildExportModel>) =>
+      m.rows.map((r) => r.targets?.calorieKcal);
+    const r = { from: "2026-10-30", to: "2026-11-02" };
+
+    it("each day carries the goal active on that date (1700 -> 1500)", () => {
+      const history = [goal("2026-01-01", 1700), goal("2026-11-01", 1500)];
+      const m = buildExportModel(r, [], [], profile, history);
+      expect(kcalOf(m)).toEqual([1700, 1700, 1500, 1500]);
+      expect(m.rows[0].targets).toEqual({
+        calorieKcal: 1700,
+        proteinG: 170,
+        carbsG: 340,
+        fatG: 1700 / 30,
+      });
+    });
+
+    it("accepts unsorted history", () => {
+      const history = [goal("2026-11-01", 1500), goal("2026-01-01", 1700)];
+      expect(kcalOf(buildExportModel(r, [], [], profile, history))).toEqual([
+        1700, 1700, 1500, 1500,
+      ]);
+    });
+
+    it("a change on the first day of the range applies to the whole range", () => {
+      const history = [goal("2026-01-01", 1700), goal("2026-10-30", 1500)];
+      expect(kcalOf(buildExportModel(r, [], [], profile, history))).toEqual([
+        1500, 1500, 1500, 1500,
+      ]);
+    });
+
+    it("a change before the range start makes the whole range 1500", () => {
+      const history = [goal("2026-01-01", 1700), goal("2026-10-01", 1500)];
+      expect(kcalOf(buildExportModel(r, [], [], profile, history))).toEqual([
+        1500, 1500, 1500, 1500,
+      ]);
+    });
+
+    it("a change after the range end leaves the whole range at 1700", () => {
+      const history = [goal("2026-01-01", 1700), goal("2026-11-03", 1500)];
+      expect(kcalOf(buildExportModel(r, [], [], profile, history))).toEqual([
+        1700, 1700, 1700, 1700,
+      ]);
+    });
+
+    it("dates before the first entry use the earliest entry", () => {
+      const history = [goal("2026-11-01", 1500)];
+      expect(kcalOf(buildExportModel(r, [], [], profile, history))).toEqual([
+        1500, 1500, 1500, 1500,
+      ]);
+    });
+  });
+
+  describe("targetPeriods", () => {
+    const t = (calorieKcal: number) => ({ calorieKcal, proteinG: 1, carbsG: 2, fatG: 3 });
+    const row = (date: string, targets: ExportRow["targets"]) => ({ date, targets }) as ExportRow;
+
+    it("returns one period when the goal is constant", () => {
+      expect(targetPeriods([row("2026-10-01", t(1700)), row("2026-10-02", t(1700))])).toEqual([
+        { from: "2026-10-01", to: "2026-10-02", targets: t(1700) },
+      ]);
+    });
+
+    it("splits where the goal changes", () => {
+      const rows = [
+        row("2026-10-30", t(1700)),
+        row("2026-10-31", t(1700)),
+        row("2026-11-01", t(1500)),
+      ];
+      expect(targetPeriods(rows)).toEqual([
+        { from: "2026-10-30", to: "2026-10-31", targets: t(1700) },
+        { from: "2026-11-01", to: "2026-11-01", targets: t(1500) },
+      ]);
+    });
+
+    it("returns no periods when there are no goals", () => {
+      expect(targetPeriods([row("2026-10-01", null)])).toEqual([]);
+    });
   });
 
   it("builds a full 366-day model", () => {

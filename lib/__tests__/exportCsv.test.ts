@@ -19,15 +19,15 @@ function row(date: string, over: Partial<ExportRow> = {}): ExportRow {
     hipCm: null,
     thighCm: null,
     bodyFatPct: null,
+    targets: TARGETS,
     ...over,
   };
 }
 
-function model(rows: ExportRow[], targets: ExportModel["targets"] = TARGETS): ExportModel {
+function model(rows: ExportRow[]): ExportModel {
   return {
     range: { from: rows[0].date, to: rows[rows.length - 1].date },
     rows,
-    targets,
     hasProgress: false,
   };
 }
@@ -80,8 +80,18 @@ describe("toCsv", () => {
     expect(lines[1]).not.toContain("72,5");
   });
 
-  it("leaves targets empty when the profile is missing", () => {
-    const lines = toCsv(model([row("2026-10-01")], null)).split("\r\n");
+  it("fills each row's targets from its own date", () => {
+    const t1700 = { calorieKcal: 1700, proteinG: 130, carbsG: 200, fatG: 55.5 };
+    const t1500 = { calorieKcal: 1500, proteinG: 120, carbsG: 170, fatG: 50 };
+    const lines = toCsv(
+      model([row("2026-10-31", { targets: t1700 }), row("2026-11-01", { targets: t1500 })])
+    ).split("\r\n");
+    expect(lines[1]).toBe("2026-10-31,false,,,,,,,,,,,,,1700,130,200,55.5");
+    expect(lines[2]).toBe("2026-11-01,false,,,,,,,,,,,,,1500,120,170,50");
+  });
+
+  it("leaves targets empty when there are no goals", () => {
+    const lines = toCsv(model([row("2026-10-01", { targets: null })])).split("\r\n");
     expect(lines[1]).toBe("2026-10-01,false,,,,,,,,,,,,,,,,");
   });
 

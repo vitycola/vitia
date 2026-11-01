@@ -1,3 +1,4 @@
+import * as goalHistoryRepo from "@/db/repos/goalHistory";
 import * as mealRepo from "@/db/repos/mealEntries";
 import * as profileRepo from "@/db/repos/profile";
 import * as progressRepo from "@/db/repos/progress";
@@ -20,12 +21,19 @@ export type ExportStatus = "idle" | "working" | "ready-to-share" | "error";
  * download flow so the summary and the file never diverge.
  */
 export async function loadExportModel(range: ExportRange): Promise<ExportModel> {
-  const [totals, progress, profile] = await Promise.all([
+  const [totals, progress, profile, goalHistory] = await Promise.all([
     mealRepo.getLoggedTotalsByDateRange(range.from, range.to),
     progressRepo.getRange(range.from, range.to),
     profileRepo.getProfile(),
+    // Goal history is an enhancement: if it cannot be read, fall back to the profile goals.
+    goalHistoryRepo
+      .list()
+      .catch((err: unknown) => {
+        console.warn("[export] goal history unavailable, using profile goals", err);
+        return [];
+      }),
   ]);
-  return buildExportModel(range, totals, progress, profile);
+  return buildExportModel(range, totals, progress, profile, goalHistory);
 }
 
 /**
