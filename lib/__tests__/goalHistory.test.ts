@@ -1,10 +1,12 @@
 import {
+  type GoalSnapshot,
   goalForDate,
   goalsEqual,
   isValidISODate,
   isValidRemoteGoalHistory,
   parseTimestampMs,
   pickGoals,
+  resolveGoalFor,
   timestampToLocalDate,
 } from "@/lib/goalHistory";
 
@@ -164,5 +166,59 @@ describe("parseTimestampMs bare offsets", () => {
     expect(parseTimestampMs("2026-03-10 12:00:00.123456+00")).toBe(
       Date.parse("2026-03-10T12:00:00.123Z")
     );
+  });
+});
+
+describe("resolveGoalFor", () => {
+  const snapshot = (calorieGoal: number, extra: Partial<GoalSnapshot> = {}): GoalSnapshot => ({
+    calorieGoal,
+    proteinGoalG: 150,
+    carbsGoalG: 250,
+    fatGoalG: 70,
+    useManualGoals: false,
+    ...extra,
+  });
+  const history = [
+    { effectiveFrom: "2026-10-01", ...snapshot(1700) },
+    { effectiveFrom: "2026-10-24", ...snapshot(1500) },
+  ];
+  const profile = snapshot(1900);
+
+  it("keeps the old goal on the day before a change and uses the new one from its start date", () => {
+    expect(resolveGoalFor(history, profile, "2026-10-23")?.calorieGoal).toBe(1700);
+    expect(resolveGoalFor(history, profile, "2026-10-24")?.calorieGoal).toBe(1500);
+  });
+
+  it("resolves a date before the first entry to the earliest entry", () => {
+    expect(resolveGoalFor(history, profile, "2026-09-01")?.calorieGoal).toBe(1700);
+  });
+
+  it("falls back to the live profile goals when the history is empty", () => {
+    expect(resolveGoalFor([], profile, "2026-10-23")).toEqual(profile);
+  });
+
+  it("returns null with no history and no profile", () => {
+    expect(resolveGoalFor([], null, "2026-10-23")).toBeNull();
+  });
+
+  it("carries every tracked field and drops extra entry fields", () => {
+    const rich = [
+      {
+        effectiveFrom: "2026-10-01",
+        ...snapshot(1700, {
+          proteinGoalG: 120,
+          carbsGoalG: 180,
+          fatGoalG: 55,
+          useManualGoals: true,
+        }),
+      },
+    ];
+    expect(resolveGoalFor(rich, profile, "2026-10-05")).toEqual({
+      calorieGoal: 1700,
+      proteinGoalG: 120,
+      carbsGoalG: 180,
+      fatGoalG: 55,
+      useManualGoals: true,
+    });
   });
 });

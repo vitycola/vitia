@@ -1,6 +1,6 @@
 import * as goalHistoryRepo from "@/db/repos/goalHistory";
 import type { GoalHistoryEntry } from "@/db/schema";
-import { type GoalSnapshot, goalForDate, pickGoals } from "@/lib/goalHistory";
+import { type GoalSnapshot, pickGoals, resolveGoalFor } from "@/lib/goalHistory";
 import { backfillGoalHistory, repairGoalGap } from "@/src/services/goalHistoryService";
 import { useAuthStore } from "@/src/stores/useAuthStore";
 import { useProfileStore } from "@/stores/useProfileStore";
@@ -48,13 +48,8 @@ export const useGoalHistoryStore = create<GoalHistoryState & GoalHistoryActions>
     }
   },
 
-  getGoalFor: (date: string) => {
-    const entry = goalForDate(get().entries, date);
-    if (entry) return pickGoals(entry);
-
-    const profile = useProfileStore.getState().profile;
-    return profile ? pickGoals(profile) : null;
-  },
+  getGoalFor: (date: string) =>
+    resolveGoalFor(get().entries, useProfileStore.getState().profile, date),
 }));
 
 // Keep the history in step with goal edits: the profile store records the

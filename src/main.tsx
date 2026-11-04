@@ -7,6 +7,8 @@ import { UpdateToast } from "@/src/components/UpdateToast";
 import { seedDemoProfile } from "@/src/seed/seedDemoProfile";
 import { bindSyncToAuth } from "@/src/services/syncService";
 import { useAuthStore } from "@/src/stores/useAuthStore";
+import { useGoalHistoryStore } from "@/stores/useGoalHistoryStore";
+import { useProfileStore } from "@/stores/useProfileStore";
 import { router } from "./router";
 
 const rootEl = document.getElementById("root");
@@ -28,6 +30,11 @@ dbReady
     // seedDemoProfile() never rejects (internal try/catch), so no additional
     // try/catch is needed at this call site.
     await seedDemoProfile();
+    // Hydrate profile then goal history before first render so the day screen
+    // and week dots never flash the live goal. Profile first: the history
+    // backfill reads it. load() never rejects.
+    await useProfileStore.getState().load();
+    await useGoalHistoryStore.getState().load();
     rootEl.innerHTML = "";
     createRoot(rootEl).render(
       <StrictMode>

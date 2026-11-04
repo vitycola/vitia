@@ -68,6 +68,21 @@ export function pickGoals(source: GoalSnapshot): GoalSnapshot {
 }
 
 /**
+ * Goals that applied on `date`: the history entry covering it, else the live
+ * profile goals, else null (no history and no profile). Single home of the
+ * fallback so the store and the React hooks cannot drift apart.
+ */
+export function resolveGoalFor(
+  entries: readonly (GoalSnapshot & { effectiveFrom: string })[],
+  profile: GoalSnapshot | null | undefined,
+  date: string
+): GoalSnapshot | null {
+  const entry = goalForDate(entries, date);
+  if (entry) return pickGoals(entry);
+  return profile ? pickGoals(profile) : null;
+}
+
+/**
  * Epoch ms of a stored timestamp: an ISO string, a Postgres-style one with a
  * bare "+00"/"-05" offset, or SQLite's "YYYY-MM-DD HH:MM:SS" (UTC, no zone),
  * which Date.parse alone would read as local time. NaN when unparseable.

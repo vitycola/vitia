@@ -45,3 +45,14 @@ export function isWithinGoalRange(
 ): boolean {
   return goal > 0 && consumed >= goal * low && consumed <= goal * high;
 }
+
+/**
+ * Goals shown on the day screen before any profile or goal history exists.
+ * Only home of these fallbacks.
+ */
+export const DEFAULT_GOALS = {
+  calorieGoal: 2000,
+  proteinGoalG: 150,
+  carbsGoalG: 250,
+  fatGoalG: 70,
+} as const;

@@ -7,9 +7,11 @@ jest.mock("@/db/repos/mealEntries", () => ({
 }));
 jest.mock("@/db/repos/progress", () => ({ getRange: jest.fn() }));
 jest.mock("@/db/repos/profile", () => ({ getProfile: jest.fn() }));
+jest.mock("@/db/repos/goalHistory", () => ({ list: jest.fn() }));
 jest.mock("@/lib/exportDelivery", () => ({ deliverFile: jest.fn() }));
 jest.mock("@/lib/exportPdf", () => ({ toPdf: jest.fn() }));
 
+import * as goalHistoryRepo from "@/db/repos/goalHistory";
 import * as mealRepo from "@/db/repos/mealEntries";
 import * as profileRepo from "@/db/repos/profile";
 import * as progressRepo from "@/db/repos/progress";
@@ -18,6 +20,7 @@ import { toPdf } from "@/lib/exportPdf";
 
 const getTotals = mealRepo.getLoggedTotalsByDateRange as jest.Mock;
 const getRange = progressRepo.getRange as jest.Mock;
+const listGoalHistory = goalHistoryRepo.list as jest.Mock;
 const getProfile = profileRepo.getProfile as jest.Mock;
 const deliver = deliverFile as jest.Mock;
 const pdf = toPdf as jest.Mock;
@@ -45,6 +48,7 @@ beforeEach(() => {
     carbsGoalG: 250,
     fatGoalG: 70,
   });
+  listGoalHistory.mockResolvedValue([]);
   deliver.mockResolvedValue("downloaded");
   pdf.mockResolvedValue(new Blob(["%PDF"], { type: "application/pdf" }));
 });
@@ -69,6 +73,45 @@ describe("useDataExport", () => {
     const text = await readBlob(blob);
     expect(text.split("\r\n")[1]).toBe("2026-10-01,true,2000,100,200,60,,,,,,,,,2200,150,250,70");
     expect(result.current.status).toBe("idle");
+  });
+
+  it("exports the goal that was active on each date from the goal history", async () => {
+    const g = (effectiveFrom: string, calorieGoal: number) => ({
+      effectiveFrom,
+      calorieGoal,
+      proteinGoalG: 100,
+      carbsGoalG: 200,
+      fatGoalG: 60,
+      useManualGoals: false,
+    });
+    listGoalHistory.mockResolvedValue([g("2026-01-01", 1700), g("2026-10-02", 1500)]);
+    const { result } = renderHook(() => useDataExport());
+
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+
+    const [blob] = deliver.mock.calls[0] as [Blob, string];
+    const lines = (await readBlob(blob)).split("\r\n");
+    expect(lines[1]).toBe("2026-10-01,true,2000,100,200,60,,,,,,,,,1700,100,200,60");
+    expect(lines[2]).toBe("2026-10-02,false,,,,,,,,,,,,,1500,100,200,60");
+  });
+
+  it("falls back to the profile goals when the goal history cannot be read", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    listGoalHistory.mockRejectedValue(new Error("db down"));
+    const { result } = renderHook(() => useDataExport());
+
+    await act(async () => {
+      await result.current.run(range, "csv");
+    });
+
+    expect(result.current.status).toBe("idle");
+    const [blob] = deliver.mock.calls[0] as [Blob, string];
+    const lines = (await readBlob(blob)).split("\r\n");
+    expect(lines[1]).toBe("2026-10-01,true,2000,100,200,60,,,,,,,,,2200,150,250,70");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("goes through the working state while generating", async () => {

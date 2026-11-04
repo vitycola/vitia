@@ -15,12 +15,38 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 if (!URL.createObjectURL) URL.createObjectURL = jest.fn(() => "blob:mock-url");
 if (!URL.revokeObjectURL) URL.revokeObjectURL = jest.fn();
 
-jest.mock("@/src/components/CalorieCard", () => ({ CalorieCard: () => <div>CalorieCard</div> }));
+jest.mock("@/src/components/CalorieCard", () => ({
+  CalorieCard: (p: {
+    goal: number;
+    proteinGoalG: number;
+    carbsGoalG: number;
+    fatGoalG: number;
+  }) => (
+    <div
+      data-testid="calorie-card"
+      data-goals={[p.goal, p.proteinGoalG, p.carbsGoalG, p.fatGoalG].join("/")}
+    >
+      CalorieCard
+    </div>
+  ),
+}));
 jest.mock("@/src/components/GoalEditorSheet", () => ({
   GoalEditorSheet: () => <div>GoalEditorSheet</div>,
 }));
 jest.mock("@/src/components/HeaderMacroRow", () => ({
-  HeaderMacroRow: () => <div>HeaderMacroRow</div>,
+  HeaderMacroRow: (p: {
+    calorieGoal: number;
+    proteinGoalG: number;
+    carbsGoalG: number;
+    fatGoalG: number;
+  }) => (
+    <div
+      data-testid="header-macro-row"
+      data-goals={[p.calorieGoal, p.proteinGoalG, p.carbsGoalG, p.fatGoalG].join("/")}
+    >
+      HeaderMacroRow
+    </div>
+  ),
 }));
 jest.mock("@/src/components/MealSection", () => ({ MealSection: () => <div>MealSection</div> }));
 jest.mock("@/src/components/WeekCalendarHeader", () => ({
@@ -65,6 +91,11 @@ jest.mock("@/stores/useProfileStore", () => {
   return { useProfileStore: fn };
 });
 
+const mockUseGoalFor = jest.fn();
+jest.mock("@/hooks/useGoalFor", () => ({
+  useGoalFor: (date: string) => mockUseGoalFor(date),
+}));
+
 const mockLoadByDate = jest.fn();
 const mockSaveEntry = jest.fn();
 const mockDeleteEntry = jest.fn();
@@ -85,6 +116,7 @@ jest.mock("@/stores/useProgressStore", () => ({
   },
 }));
 
+import { DEFAULT_GOALS } from "@/lib/constants";
 import { todayISO } from "@/lib/date";
 import { DayScreen } from "../day";
 
@@ -128,6 +160,7 @@ describe("DayScreen — progress-log entry point", () => {
     jest.clearAllMocks();
     mockUseDayStore.mockReturnValue(baseDayState);
     mockUseProfileStore.mockReturnValue(baseProfile);
+    mockUseGoalFor.mockReturnValue(null);
     mockProgressState = { current: null, isLoading: false };
     (URL.createObjectURL as jest.Mock).mockReturnValue("blob:mock-url");
   });
@@ -382,5 +415,53 @@ describe("DayScreen — date-aware logging", () => {
     await waitFor(() =>
       expect(mockSaveEntry).toHaveBeenCalledWith({ date: "2025-10-05", weightKg: 70 })
     );
+  });
+});
+
+describe("DayScreen — goals follow the selected date", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseDayStore.mockReturnValue(baseDayState);
+    mockUseProfileStore.mockReturnValue(baseProfile);
+    mockProgressState = { current: null, isLoading: false };
+  });
+
+  it("passes the goals resolved for the selected date to the header and the calorie card", () => {
+    mockUseGoalFor.mockImplementation((date: string) =>
+      date === "2026-01-01"
+        ? { calorieGoal: 1700, proteinGoalG: 120, carbsGoalG: 200, fatGoalG: 60 }
+        : { calorieGoal: 1500, proteinGoalG: 110, carbsGoalG: 180, fatGoalG: 50 }
+    );
+
+    renderDayScreen();
+
+    expect(mockUseGoalFor).toHaveBeenCalledWith("2026-01-01");
+    expect(screen.getByTestId("header-macro-row")).toHaveAttribute("data-goals", "1700/120/200/60");
+    expect(screen.getByTestId("calorie-card")).toHaveAttribute("data-goals", "1700/120/200/60");
+  });
+
+  it("uses a different goal when another date is selected", () => {
+    mockUseGoalFor.mockImplementation((date: string) => ({
+      calorieGoal: date === "2026-01-01" ? 1700 : 1500,
+      proteinGoalG: 100,
+      carbsGoalG: 100,
+      fatGoalG: 100,
+    }));
+    mockUseDayStore.mockReturnValue({ ...baseDayState, selectedDate: "2026-01-02" });
+
+    renderDayScreen();
+
+    expect(screen.getByTestId("calorie-card")).toHaveAttribute("data-goals", "1500/100/100/100");
+  });
+
+  it("falls back to DEFAULT_GOALS when no goal resolves", () => {
+    mockUseGoalFor.mockReturnValue(null);
+
+    renderDayScreen();
+
+    const { calorieGoal, proteinGoalG, carbsGoalG, fatGoalG } = DEFAULT_GOALS;
+    const expected = [calorieGoal, proteinGoalG, carbsGoalG, fatGoalG].join("/");
+    expect(screen.getByTestId("header-macro-row")).toHaveAttribute("data-goals", expected);
+    expect(screen.getByTestId("calorie-card")).toHaveAttribute("data-goals", expected);
   });
 });
